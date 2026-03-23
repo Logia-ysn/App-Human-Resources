@@ -1,7 +1,5 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/db";
 import type { Role } from "@prisma/client";
 
 declare module "next-auth" {
@@ -20,12 +18,37 @@ declare module "next-auth" {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface ExtendedJWT {
-  id: string;
-  role: Role;
-  employeeId: string | null;
-}
+// Demo users — replace with database lookup when PostgreSQL is connected
+const DEMO_USERS = [
+  {
+    id: "usr-superadmin",
+    email: "admin@company.co.id",
+    password: "admin123",
+    role: "SUPER_ADMIN" as Role,
+    employeeId: null,
+  },
+  {
+    id: "usr-hr",
+    email: "hr@company.co.id",
+    password: "hr123",
+    role: "HR_ADMIN" as Role,
+    employeeId: "emp-001",
+  },
+  {
+    id: "usr-manager",
+    email: "manager@company.co.id",
+    password: "manager123",
+    role: "MANAGER" as Role,
+    employeeId: "emp-002",
+  },
+  {
+    id: "usr-employee",
+    email: "karyawan@company.co.id",
+    password: "karyawan123",
+    role: "EMPLOYEE" as Role,
+    employeeId: "emp-003",
+  },
+];
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
@@ -44,27 +67,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+        const email = credentials.email as string;
+        const password = credentials.password as string;
 
-        if (!user || !user.isActive) {
-          return null;
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password as string,
-          user.passwordHash
+        // Demo mode: check against hardcoded users
+        const user = DEMO_USERS.find(
+          (u) => u.email === email && u.password === password
         );
 
-        if (!isPasswordValid) {
+        if (!user) {
           return null;
         }
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        });
 
         return {
           id: user.id,

@@ -27,19 +27,8 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { pattern: /^\/positions/, minRole: "HR_ADMIN" },
 ];
 
-// TODO: Remove DEMO_MODE when database is connected
-const DEMO_MODE = process.env.DEMO_MODE !== "false";
-
 export default auth((req) => {
   const { pathname } = req.nextUrl;
-
-  // In demo mode, bypass auth and allow all routes
-  if (DEMO_MODE) {
-    if (pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-    return NextResponse.next();
-  }
 
   // Skip public routes and API auth routes
   if (

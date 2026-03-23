@@ -6,31 +6,19 @@ import { Header } from "@/components/layout/header";
 import { Toaster } from "@/components/ui/sonner";
 import type { Role } from "@prisma/client";
 
-// TODO: Remove DEMO_MODE when database is connected
-const DEMO_MODE = process.env.DEMO_MODE !== "false";
-
-const DEMO_USER = {
-  email: "admin@company.co.id",
-  role: "SUPER_ADMIN" as Role,
-  employeeId: null,
-};
-
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  let userEmail = DEMO_USER.email;
-  let userRole: Role = DEMO_USER.role;
+  const session = await auth();
 
-  if (!DEMO_MODE) {
-    const session = await auth();
-    if (!session?.user) {
-      redirect("/login");
-    }
-    userEmail = session.user.email!;
-    userRole = session.user.role as Role;
+  if (!session?.user) {
+    redirect("/login");
   }
+
+  const userEmail = session.user.email!;
+  const userRole = session.user.role as Role;
 
   return (
     <SidebarProvider>
