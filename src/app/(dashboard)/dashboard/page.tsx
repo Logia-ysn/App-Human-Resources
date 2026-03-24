@@ -37,6 +37,7 @@ import { format, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
 import Link from "next/link";
 import { AttendanceChart, LeaveChart } from "./dashboard-charts";
+import { WelcomeBanner } from "./welcome-banner";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -209,7 +210,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      {/* Welcome Banner */}
+      {/* Setup / Welcome Banner for empty data */}
+      <WelcomeBanner />
+
+      {/* Greeting Banner */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 px-4 py-4 text-white shadow-lg sm:px-6 sm:py-5">
         {/* Subtle pattern overlay */}
         <div

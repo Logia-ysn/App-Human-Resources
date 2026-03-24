@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { companySettings, type CompanySettings } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import {
   Card,
   CardContent,
@@ -28,6 +29,18 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, RotateCcw, Database, AlertTriangle } from "lucide-react";
 
 const provinces = [
   "Aceh",
@@ -302,6 +315,129 @@ export default function SettingsPage() {
           <Button type="submit">Simpan Pengaturan</Button>
         </div>
       </form>
+
+      <Separator />
+
+      {/* Manajemen Data */}
+      <DataManagementSection />
     </div>
+  );
+}
+
+function DataManagementSection() {
+  const isUsingDemoData = useAppStore((s) => s.isUsingDemoData);
+  const resetAllData = useAppStore((s) => s.resetAllData);
+  const restoreDemoData = useAppStore((s) => s.restoreDemoData);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+
+  function handleReset() {
+    resetAllData();
+    setResetDialogOpen(false);
+    toast.success("Semua data berhasil dihapus");
+  }
+
+  function handleRestore() {
+    restoreDemoData();
+    setRestoreDialogOpen(false);
+    toast.success("Data demo berhasil dimuat");
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Database className="h-5 w-5 text-muted-foreground" />
+          <CardTitle>Manajemen Data</CardTitle>
+        </div>
+        <CardDescription>
+          Hapus semua data untuk memulai dari awal, atau muat ulang data demo.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Status */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Status saat ini:</span>
+          {isUsingDemoData ? (
+            <Badge variant="secondary">Menggunakan data demo</Badge>
+          ) : (
+            <Badge variant="outline">Data kosong (fresh start)</Badge>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-3">
+          {/* Hapus Semua Data */}
+          <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+            <DialogTrigger
+              render={
+                <Button variant="destructive" size="lg">
+                  <Trash2 className="mr-1.5 h-4 w-4" data-icon="inline-start" />
+                  Hapus Semua Data
+                </Button>
+              }
+            />
+            <DialogContent>
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                  </div>
+                  <DialogTitle>Hapus Semua Data</DialogTitle>
+                </div>
+                <DialogDescription>
+                  Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak
+                  dapat dibatalkan.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose
+                  render={<Button variant="outline" />}
+                >
+                  Batal
+                </DialogClose>
+                <Button variant="destructive" onClick={handleReset}>
+                  Ya, Hapus Semua
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Muat Data Demo */}
+          <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+            <DialogTrigger
+              render={
+                <Button variant="secondary" size="lg">
+                  <RotateCcw className="mr-1.5 h-4 w-4" data-icon="inline-start" />
+                  Muat Data Demo
+                </Button>
+              }
+            />
+            <DialogContent>
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                    <RotateCcw className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <DialogTitle>Muat Data Demo</DialogTitle>
+                </div>
+                <DialogDescription>
+                  Ini akan mengganti semua data saat ini dengan data demo.
+                  Lanjutkan?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose
+                  render={<Button variant="outline" />}
+                >
+                  Batal
+                </DialogClose>
+                <Button onClick={handleRestore}>Ya, Muat Data Demo</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
