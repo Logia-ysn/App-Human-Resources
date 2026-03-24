@@ -148,7 +148,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/90 via-primary/70 to-primary/50 px-4 py-8">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 px-4 py-8">
       <Suspense>
         <LoginForm />
       </Suspense>

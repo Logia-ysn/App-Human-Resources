@@ -49,6 +49,14 @@ const SECTION_TITLES: Record<string, string> = {
   "/ess/training": "Training Saya",
   "/settings": "Pengaturan",
   "/notifications": "Notifikasi",
+  "/org-chart": "Bagan Organisasi",
+  "/onboarding": "Onboarding",
+  "/lifecycle": "Riwayat Karir",
+  "/expenses/advances": "Kasbon Karyawan",
+  "/expenses/claims": "Klaim Pengeluaran",
+  "/shifts": "Manajemen Shift",
+  "/ess/expenses": "Kasbon & Klaim Saya",
+  "/ess/shifts": "Jadwal Shift Saya",
 };
 
 function getPageTitle(pathname: string): string {

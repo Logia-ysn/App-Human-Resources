@@ -16,6 +16,12 @@ import {
   UserCircle,
   FileText,
   ClipboardList,
+  Network,
+  RefreshCw,
+  UserCheck,
+  TrendingUp,
+  Banknote,
+  Receipt,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -52,6 +58,7 @@ const mainNav: NavItem[] = [
   { title: "Karyawan", url: "/employees", icon: Users },
   { title: "Departemen", url: "/departments", icon: Building, minRole: "HR_ADMIN" },
   { title: "Jabatan", url: "/positions", icon: Briefcase, minRole: "HR_ADMIN" },
+  { title: "Bagan Organisasi", url: "/org-chart", icon: Network },
 ];
 
 const hrNav: NavItem[] = [
@@ -61,6 +68,17 @@ const hrNav: NavItem[] = [
   { title: "Rekrutmen", url: "/recruitment", icon: UserPlus, minRole: "HR_ADMIN" },
   { title: "Penilaian Kinerja", url: "/performance", icon: BarChart3 },
   { title: "Training", url: "/training", icon: GraduationCap },
+  { title: "Shift", url: "/shifts", icon: RefreshCw, minRole: "HR_ADMIN" },
+];
+
+const lifecycleNav: NavItem[] = [
+  { title: "Onboarding", url: "/onboarding", icon: UserCheck, minRole: "HR_ADMIN" },
+  { title: "Riwayat Karir", url: "/lifecycle", icon: TrendingUp, minRole: "HR_ADMIN" },
+];
+
+const financeNav: NavItem[] = [
+  { title: "Kasbon", url: "/expenses/advances", icon: Banknote },
+  { title: "Klaim Pengeluaran", url: "/expenses/claims", icon: Receipt },
 ];
 
 const essNav: NavItem[] = [
@@ -70,6 +88,8 @@ const essNav: NavItem[] = [
   { title: "Absensi Saya", url: "/ess/attendance", icon: Clock },
   { title: "Kinerja Saya", url: "/ess/performance", icon: ClipboardList },
   { title: "Training Saya", url: "/ess/training", icon: GraduationCap },
+  { title: "Kasbon Saya", url: "/ess/expenses", icon: Banknote },
+  { title: "Shift Saya", url: "/ess/shifts", icon: RefreshCw },
 ];
 
 const systemNav: NavItem[] = [
@@ -82,6 +102,13 @@ function filterByRole(items: NavItem[], role: Role): NavItem[] {
     return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY[item.minRole];
   });
 }
+
+const ROLE_LABEL: Record<Role, string> = {
+  SUPER_ADMIN: "Super Admin",
+  HR_ADMIN: "HR Admin",
+  MANAGER: "Manager",
+  EMPLOYEE: "Employee",
+};
 
 function NavSection({
   label,
@@ -116,38 +143,51 @@ function NavSection({
   );
 }
 
-export function AppSidebar({ userRole }: { userRole: Role }) {
+export function AppSidebar({
+  userRole,
+  userEmail,
+}: {
+  userRole: Role;
+  userEmail: string;
+}) {
   const pathname = usePathname();
 
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-primary/60">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600">
             <Building2 className="h-5 w-5 text-white" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-base font-bold leading-tight text-sidebar-foreground">
-              HRIS
-            </span>
-            <span className="text-[11px] leading-tight text-sidebar-foreground/50">
-              Human Resources
-            </span>
-          </div>
+          <span className="text-base font-bold text-sidebar-foreground">
+            HRIS
+          </span>
         </Link>
       </SidebarHeader>
 
       <SidebarContent>
         <NavSection label="Menu Utama" items={filterByRole(mainNav, userRole)} pathname={pathname} />
         <NavSection label="HR Management" items={filterByRole(hrNav, userRole)} pathname={pathname} />
+        <NavSection label="Employee Lifecycle" items={filterByRole(lifecycleNav, userRole)} pathname={pathname} />
+        <NavSection label="Keuangan" items={filterByRole(financeNav, userRole)} pathname={pathname} />
         <NavSection label="Self Service" items={filterByRole(essNav, userRole)} pathname={pathname} />
         <NavSection label="Sistem" items={filterByRole(systemNav, userRole)} pathname={pathname} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border px-4 py-3">
-        <p className="text-[11px] text-sidebar-foreground/40">
-          HRIS v1.0 | 2026
-        </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-medium text-white">
+            {userEmail.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-medium text-sidebar-foreground">
+              {userEmail}
+            </span>
+            <span className="text-[11px] font-medium text-blue-600">
+              {ROLE_LABEL[userRole]}
+            </span>
+          </div>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
