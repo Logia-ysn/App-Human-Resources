@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { cn } from "@/lib/utils";
 import {
   departments,
   positions,
@@ -25,7 +26,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -303,9 +304,9 @@ export default function NewEmployeePage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" render={<Link href="/employees" />}>
+        <Link href="/employees" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
           <ArrowLeft className="size-4" />
-        </Button>
+        </Link>
         <div>
           <h1 className="text-xl font-bold tracking-tight md:text-2xl">
             Tambah Karyawan Baru

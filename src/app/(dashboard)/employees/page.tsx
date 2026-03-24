@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { employees as allEmployees, departments } from "@/lib/dummy-data";
 import { StatusBadge } from "@/components/shared/status-badge";
 
@@ -34,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -235,10 +236,10 @@ export default function EmployeesPage() {
           </div>
         </div>
         {/* Desktop add button */}
-        <Button className="hidden md:inline-flex" render={<Link href="/employees/new" />}>
+        <Link href="/employees/new" className={cn(buttonVariants(), "hidden md:inline-flex")}>
           <Plus data-icon="inline-start" />
           Tambah Karyawan
-        </Button>
+        </Link>
       </div>
 
       {/* Filter bar */}
@@ -453,22 +454,20 @@ export default function EmployeesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          render={<Link href={`/employees/${emp.id}`} />}
+                        <Link
+                          href={`/employees/${emp.id}`}
+                          className={cn(buttonVariants({ variant: "ghost", size: "icon-xs" }))}
                         >
                           <Eye className="size-4" />
                           <span className="sr-only">Lihat</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          render={<Link href={`/employees/${emp.id}/edit`} />}
+                        </Link>
+                        <Link
+                          href={`/employees/${emp.id}/edit`}
+                          className={cn(buttonVariants({ variant: "ghost", size: "icon-xs" }))}
                         >
                           <Pencil className="size-4" />
                           <span className="sr-only">Edit</span>
-                        </Button>
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -566,13 +565,16 @@ export default function EmployeesPage() {
       </Card>
 
       {/* Mobile FAB: add employee */}
-      <Button
-        className="fixed bottom-6 right-6 z-40 size-14 rounded-full shadow-lg md:hidden [&_svg]:size-6"
-        render={<Link href="/employees/new" />}
+      <Link
+        href="/employees/new"
+        className={cn(
+          buttonVariants(),
+          "fixed bottom-6 right-6 z-40 size-14 rounded-full shadow-lg md:hidden [&_svg]:size-6"
+        )}
       >
         <Plus />
         <span className="sr-only">Tambah Karyawan</span>
-      </Button>
+      </Link>
     </div>
   );
 }

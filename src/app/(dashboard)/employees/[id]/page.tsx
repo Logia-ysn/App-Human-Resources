@@ -20,6 +20,7 @@ import {
   Contact,
 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { employees } from "@/lib/dummy-data";
 import { StatusBadge } from "@/components/shared/status-badge";
 
@@ -27,7 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const GENDER_LABELS: Record<string, string> = {
@@ -135,10 +136,10 @@ export default function EmployeeDetailPage() {
         <p className="text-muted-foreground">
           Data karyawan dengan ID tersebut tidak ditemukan atau telah dihapus.
         </p>
-        <Button variant="outline" render={<Link href="/employees" />}>
+        <Link href="/employees" className={cn(buttonVariants({ variant: "outline" }))}>
           <ArrowLeft data-icon="inline-start" />
           Kembali ke Data Karyawan
-        </Button>
+        </Link>
       </div>
     );
   }
@@ -148,10 +149,10 @@ export default function EmployeeDetailPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Back button */}
-      <Button variant="ghost" size="sm" render={<Link href="/employees" />}>
+      <Link href="/employees" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
         <ArrowLeft data-icon="inline-start" />
         Kembali
-      </Button>
+      </Link>
 
       {/* Profile header with gradient banner */}
       <Card className="overflow-hidden">

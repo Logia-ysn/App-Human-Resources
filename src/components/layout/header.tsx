@@ -7,7 +7,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -174,14 +173,14 @@ export function Header({ userEmail, userRole }: HeaderProps) {
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>
+          <div className="px-1.5 py-1">
             <div className="flex flex-col space-y-1.5">
               <p className="text-sm font-medium">{userEmail}</p>
               <Badge variant="secondary" className="w-fit text-[10px]">
                 {ROLE_LABEL[userRole] || userRole}
               </Badge>
             </div>
-          </DropdownMenuLabel>
+          </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <Link href="/ess/profile" className="flex items-center w-full">
