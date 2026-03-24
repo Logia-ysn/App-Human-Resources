@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  Filter,
   Pencil,
   Plus,
   Search,
@@ -41,6 +42,14 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -70,6 +79,18 @@ const TYPE_OPTIONS = [
 
 function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+}
+
+function activeFilterCount(
+  departmentFilter: string,
+  statusFilter: string,
+  typeFilter: string,
+): number {
+  let count = 0;
+  if (departmentFilter !== "ALL") count++;
+  if (statusFilter !== "ALL") count++;
+  if (typeFilter !== "ALL") count++;
+  return count;
 }
 
 export default function EmployeesPage() {
@@ -152,8 +173,54 @@ export default function EmployeesPage() {
     return pages;
   };
 
+  const filterCount = activeFilterCount(departmentFilter, statusFilter, typeFilter);
+
+  const filterControls = (
+    <div className="space-y-3">
+      <Select value={departmentFilter} onValueChange={handleDepartmentChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Departemen" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">Semua Departemen</SelectItem>
+          {departments.map((dept) => (
+            <SelectItem key={dept.id} value={dept.id}>
+              {dept.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={statusFilter} onValueChange={handleStatusChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          {STATUS_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={typeFilter} onValueChange={handleTypeChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Tipe" />
+        </SelectTrigger>
+        <SelectContent>
+          {TYPE_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -161,13 +228,14 @@ export default function EmployeesPage() {
             <Users className="size-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Data Karyawan</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl font-bold tracking-tight md:text-2xl">Data Karyawan</h1>
+            <p className="hidden text-sm text-muted-foreground sm:block">
               Kelola data dan informasi seluruh karyawan
             </p>
           </div>
         </div>
-        <Button render={<Link href="/employees/new" />}>
+        {/* Desktop add button */}
+        <Button className="hidden md:inline-flex" render={<Link href="/employees/new" />}>
           <Plus data-icon="inline-start" />
           Tambah Karyawan
         </Button>
@@ -176,7 +244,45 @@ export default function EmployeesPage() {
       {/* Filter bar */}
       <Card className="bg-muted/40">
         <CardContent className="pt-4 pb-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Mobile: search + filter button */}
+          <div className="flex items-center gap-2 md:hidden">
+            <InputGroup className="flex-1">
+              <InputGroupAddon align="inline-start">
+                <Search className="size-4 text-muted-foreground" />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Cari nama, email..."
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+            </InputGroup>
+
+            <Sheet>
+              <SheetTrigger
+                render={
+                  <Button variant="outline" size="default" className="shrink-0 gap-1.5" />
+                }
+              >
+                <Filter className="size-4" />
+                Filter
+                {filterCount > 0 && (
+                  <Badge className="ml-0.5 size-5 justify-center rounded-full px-0 text-[10px]">
+                    {filterCount}
+                  </Badge>
+                )}
+              </SheetTrigger>
+              <SheetContent side="bottom" className="px-4 pb-6">
+                <SheetHeader>
+                  <SheetTitle>Filter Karyawan</SheetTitle>
+                  <SheetDescription>Pilih filter untuk mempersempit data</SheetDescription>
+                </SheetHeader>
+                {filterControls}
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          {/* Desktop: inline filters */}
+          <div className="hidden md:grid md:grid-cols-4 md:gap-3">
             <InputGroup>
               <InputGroupAddon align="inline-start">
                 <Search className="size-4 text-muted-foreground" />
@@ -231,8 +337,62 @@ export default function EmployeesPage() {
         </CardContent>
       </Card>
 
-      {/* Data table */}
-      <Card>
+      {/* Mobile card view */}
+      <div className="md:hidden">
+        {paginated.length === 0 ? (
+          <Card>
+            <CardContent className="flex h-24 items-center justify-center text-muted-foreground">
+              Tidak ada data karyawan ditemukan.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {paginated.map((emp) => (
+              <Link key={emp.id} href={`/employees/${emp.id}`} className="block">
+                <Card className="transition-colors hover:bg-muted/50">
+                  <CardContent className="p-4">
+                    {/* Top: avatar + name + email */}
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarFallback className="text-xs">
+                          {getInitials(emp.firstName, emp.lastName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {emp.firstName} {emp.lastName}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {emp.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Middle: department + status badges */}
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <Badge variant="secondary" className="text-[10px]">
+                        {emp.departmentName}
+                      </Badge>
+                      <StatusBadge status={emp.status} />
+                    </div>
+
+                    {/* Bottom: position + join date */}
+                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="truncate">{emp.positionName}</span>
+                      <span className="shrink-0">
+                        {format(new Date(emp.joinDate), "dd MMM yyyy", { locale: idLocale })}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -317,10 +477,38 @@ export default function EmployeesPage() {
             </TableBody>
           </Table>
         </CardContent>
+      </Card>
 
-        {/* Pagination */}
-        <CardContent className="border-t">
-          <div className="flex items-center justify-between">
+      {/* Pagination */}
+      <Card>
+        <CardContent>
+          {/* Mobile pagination: simple prev/next */}
+          <div className="flex items-center justify-between md:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              <ChevronLeft className="size-4" />
+              <span className="sr-only">Previous</span>
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {safePage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              <ChevronRight className="size-4" />
+              <span className="sr-only">Next</span>
+            </Button>
+          </div>
+
+          {/* Desktop pagination: full */}
+          <div className="hidden md:flex md:items-center md:justify-between">
             <p className="text-sm text-muted-foreground">
               Menampilkan {filtered.length === 0 ? 0 : (safePage - 1) * ITEMS_PER_PAGE + 1}
               &ndash;{Math.min(safePage * ITEMS_PER_PAGE, filtered.length)} dari{" "}
@@ -368,13 +556,23 @@ export default function EmployeesPage() {
               </Button>
             </div>
           </div>
+
           {totalPages > 1 && (
-            <p className="mt-1 text-xs text-muted-foreground text-right">
+            <p className="mt-1 hidden text-xs text-muted-foreground text-right md:block">
               Halaman {safePage} dari {totalPages}
             </p>
           )}
         </CardContent>
       </Card>
+
+      {/* Mobile FAB: add employee */}
+      <Button
+        className="fixed bottom-6 right-6 z-40 size-14 rounded-full shadow-lg md:hidden [&_svg]:size-6"
+        render={<Link href="/employees/new" />}
+      >
+        <Plus />
+        <span className="sr-only">Tambah Karyawan</span>
+      </Button>
     </div>
   );
 }

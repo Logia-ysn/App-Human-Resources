@@ -26,7 +26,7 @@ export default async function DashboardLayout({
         <AppSidebar userRole={userRole} userEmail={userEmail} />
         <div className="flex flex-1 flex-col">
           <Header userEmail={userEmail} userRole={userRole} />
-          <main className="flex-1 overflow-auto bg-[#F5F7FA] p-6 lg:px-8">{children}</main>
+          <main className="flex-1 overflow-auto bg-[#F5F7FA] p-4 md:p-6 lg:px-8">{children}</main>
         </div>
       </div>
       <Toaster />

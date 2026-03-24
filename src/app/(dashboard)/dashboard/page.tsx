@@ -22,6 +22,7 @@ import {
   UserCheck,
   HandCoins,
   Activity,
+  TrendingUp,
 } from "lucide-react";
 import {
   employees,
@@ -49,13 +50,41 @@ function getFormattedDate(): string {
   return format(today, "EEEE, dd MMMM yyyy", { locale: id });
 }
 
-const ACTIVITY_ICON_MAP: Record<ActivityItem["type"], { icon: typeof Users; color: string; bg: string }> = {
-  leave: { icon: CalendarClock, color: "text-purple-600", bg: "bg-purple-50" },
+const ACTIVITY_BORDER_MAP: Record<ActivityItem["type"], string> = {
+  leave: "border-l-purple-500",
+  employee: "border-l-blue-500",
+  payroll: "border-l-emerald-500",
+  attendance: "border-l-amber-500",
+  recruitment: "border-l-indigo-500",
+  training: "border-l-pink-500",
+};
+
+const ACTIVITY_ICON_MAP: Record<
+  ActivityItem["type"],
+  { icon: typeof Users; color: string; bg: string }
+> = {
+  leave: {
+    icon: CalendarClock,
+    color: "text-purple-600",
+    bg: "bg-purple-50",
+  },
   employee: { icon: UserCheck, color: "text-blue-600", bg: "bg-blue-50" },
-  payroll: { icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-50" },
+  payroll: {
+    icon: HandCoins,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+  },
   attendance: { icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-  recruitment: { icon: Briefcase, color: "text-indigo-600", bg: "bg-indigo-50" },
-  training: { icon: GraduationCap, color: "text-pink-600", bg: "bg-pink-50" },
+  recruitment: {
+    icon: Briefcase,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+  },
+  training: {
+    icon: GraduationCap,
+    color: "text-pink-600",
+    bg: "bg-pink-50",
+  },
 };
 
 function formatRelativeTime(timestamp: string): string {
@@ -71,22 +100,31 @@ function formatRelativeTime(timestamp: string): string {
   return `${diffDays} hari lalu`;
 }
 
+const DEPT_BAR_COLORS = [
+  "bg-blue-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-indigo-500",
+  "bg-cyan-500",
+];
+
 export default async function DashboardPage() {
   const today = new Date("2026-03-24");
   const activeEmployees = employees.filter(
-    (e) => e.status === "ACTIVE" && !e.isDeleted
+    (e) => e.status === "ACTIVE" && !e.isDeleted,
   );
   const activeDepartments = departments.filter((d) => d.isActive);
   const contractExpiring = employees.filter(
-    (e) => e.endDate && new Date(e.endDate) <= new Date("2026-06-30")
+    (e) => e.endDate && new Date(e.endDate) <= new Date("2026-06-30"),
   );
   const probationEmployees = employees.filter(
-    (e) => e.status === "PROBATION"
+    (e) => e.status === "PROBATION",
   );
 
   const deptCounts = activeDepartments.slice(0, 6).map((dept) => {
     const count = employees.filter(
-      (e) => e.departmentId === dept.id && !e.isDeleted
+      (e) => e.departmentId === dept.id && !e.isDeleted,
     ).length;
     return { ...dept, count };
   });
@@ -95,7 +133,7 @@ export default async function DashboardPage() {
   const recentEmployees = [...employees]
     .sort(
       (a, b) =>
-        new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime()
+        new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime(),
     )
     .slice(0, 5);
 
@@ -103,109 +141,123 @@ export default async function DashboardPage() {
     {
       label: "Total Karyawan",
       value: activeEmployees.length,
-      subtitle: `${probationEmployees.length} dalam masa probation`,
+      trend: "+2 dari bulan lalu",
       icon: Users,
-      borderColor: "border-l-blue-500",
-      iconBg: "bg-blue-50 text-blue-600",
-      href: "/employees",
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
+      href: "/employees" as string | undefined,
     },
     {
       label: "Departemen",
       value: activeDepartments.length,
-      subtitle: `${positions.length} jabatan terdaftar`,
+      trend: `${positions.length} jabatan`,
       icon: Building,
-      borderColor: "border-l-emerald-500",
-      iconBg: "bg-emerald-50 text-emerald-600",
-      href: "/departments",
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-600",
+      href: "/departments" as string | undefined,
     },
     {
       label: "Hadir Hari Ini",
       value: 12,
-      subtitle: `Dari ${activeEmployees.length} karyawan`,
+      trend: `Dari ${activeEmployees.length} karyawan`,
       icon: Clock,
-      borderColor: "border-l-amber-500",
-      iconBg: "bg-amber-50 text-amber-600",
-      href: undefined,
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-600",
+      href: undefined as string | undefined,
     },
     {
       label: "Pengajuan Cuti",
       value: 3,
-      subtitle: "Menunggu persetujuan",
+      trend: "Menunggu persetujuan",
       icon: CalendarDays,
-      borderColor: "border-l-red-500",
-      iconBg: "bg-red-50 text-red-600",
-      href: undefined,
+      iconBg: "bg-rose-100",
+      iconColor: "text-rose-600",
+      href: undefined as string | undefined,
     },
-  ] as const;
+  ];
 
   const quickActions = [
     {
       label: "Tambah Karyawan",
       icon: UserPlus,
       href: "/employees",
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      iconColor: "text-blue-600",
+      iconBg: "bg-blue-50",
     },
     {
       label: "Proses Payroll",
       icon: DollarSign,
       href: "/payroll",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      iconColor: "text-emerald-600",
+      iconBg: "bg-emerald-50",
     },
     {
       label: "Ajukan Cuti",
       icon: CalendarPlus,
       href: "/leave",
-      color: "text-purple-600",
-      bg: "bg-purple-50",
+      iconColor: "text-purple-600",
+      iconBg: "bg-purple-50",
     },
     {
       label: "Lihat Absensi",
       icon: ClipboardList,
       href: "/attendance",
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      iconColor: "text-amber-600",
+      iconBg: "bg-amber-50",
     },
   ] as const;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Welcome Banner */}
-      <div className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-5 text-white shadow-sm">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {getGreeting()} 👋
-        </h1>
-        <p className="mt-1 text-sm text-blue-100">{getFormattedDate()}</p>
-        <p className="mt-0.5 text-sm text-blue-100">
-          Berikut ringkasan data karyawan hari ini
-        </p>
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 px-4 py-4 text-white shadow-lg sm:px-6 sm:py-5">
+        {/* Subtle pattern overlay */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-10"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+        <div className="relative">
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            {getGreeting()}
+          </h1>
+          <p className="mt-1 text-sm text-white/80">{getFormattedDate()}</p>
+          <p className="mt-0.5 text-xs text-white/70 sm:text-sm">
+            Berikut ringkasan data karyawan hari ini
+          </p>
+        </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stat Cards - 2col mobile, 4col desktop */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           const inner = (
             <Card
               key={card.label}
-              className={`border-l-4 ${card.borderColor} transition-colors hover:bg-muted/50 ${card.href ? "cursor-pointer" : ""}`}
+              className={`transition-all hover:shadow-md ${card.href ? "cursor-pointer" : ""}`}
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {card.label}
-                </CardTitle>
+              <CardContent className="flex items-center gap-3 p-4">
                 <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full ${card.iconBg}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className={`h-5 w-5 ${card.iconColor}`} />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{card.value}</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {card.subtitle}
-                </p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold leading-none">
+                    {card.value}
+                  </p>
+                  <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
+                    {card.label}
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground/70">
+                    <TrendingUp className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{card.trend}</span>
+                  </p>
+                </div>
               </CardContent>
             </Card>
           );
@@ -221,23 +273,22 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - 2x2 mobile, 4col desktop */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {quickActions.map((action) => {
           const Icon = action.icon;
           return (
             <Link key={action.label} href={action.href}>
-              <Card className="group cursor-pointer transition-all hover:shadow-md">
-                <CardContent className="flex items-center gap-3 py-4">
+              <Card className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
+                <CardContent className="flex flex-col items-center justify-center gap-2 p-4 text-center">
                   <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${action.bg}`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${action.iconBg}`}
                   >
-                    <Icon className={`h-5 w-5 ${action.color}`} />
+                    <Icon className={`h-5 w-5 ${action.iconColor}`} />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{action.label}</p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  <p className="text-xs font-medium sm:text-sm">
+                    {action.label}
+                  </p>
                 </CardContent>
               </Card>
             </Link>
@@ -246,13 +297,15 @@ export default async function DashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Attendance Trend */}
         <Card>
           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-            <CardTitle className="text-base font-semibold">
-              Tren Kehadiran (7 Hari Terakhir)
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+              <BarChart3 className="h-4 w-4 text-blue-500" />
+            </div>
+            <CardTitle className="text-sm font-semibold sm:text-base">
+              Tren Kehadiran (7 Hari)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -263,8 +316,10 @@ export default async function DashboardPage() {
         {/* Leave Distribution */}
         <Card>
           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-            <CalendarDays className="h-4 w-4 text-purple-500" />
-            <CardTitle className="text-base font-semibold">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50">
+              <CalendarDays className="h-4 w-4 text-purple-500" />
+            </div>
+            <CardTitle className="text-sm font-semibold sm:text-base">
               Distribusi Cuti
             </CardTitle>
           </CardHeader>
@@ -275,12 +330,14 @@ export default async function DashboardPage() {
       </div>
 
       {/* Bottom Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Kontrak Segera Berakhir */}
         <Card>
           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
-            <CardTitle className="text-base font-semibold">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+            </div>
+            <CardTitle className="text-sm font-semibold sm:text-base">
               Kontrak Segera Berakhir
             </CardTitle>
           </CardHeader>
@@ -290,11 +347,12 @@ export default async function DashboardPage() {
                 Tidak ada kontrak yang segera berakhir
               </p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {contractExpiring.map((emp) => {
                   const endDate = new Date(emp.endDate!);
                   const daysLeft = differenceInDays(endDate, today);
                   const isPast = daysLeft < 0;
+                  const isUrgent = daysLeft >= 0 && daysLeft <= 30;
                   return (
                     <div
                       key={emp.id}
@@ -309,13 +367,21 @@ export default async function DashboardPage() {
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-sm font-semibold text-orange-600">
-                          {format(endDate, "dd MMM yyyy", { locale: id })}
-                        </p>
-                        <p
-                          className={`text-xs font-medium ${isPast ? "text-red-500" : "text-muted-foreground"}`}
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            isPast
+                              ? "bg-red-100 text-red-700"
+                              : isUrgent
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-amber-50 text-amber-700"
+                          }`}
                         >
-                          {isPast ? "Sudah berakhir" : `${daysLeft} hari lagi`}
+                          {isPast
+                            ? "Sudah berakhir"
+                            : `${daysLeft} hari lagi`}
+                        </span>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {format(endDate, "dd MMM yyyy", { locale: id })}
                         </p>
                       </div>
                     </div>
@@ -329,28 +395,31 @@ export default async function DashboardPage() {
         {/* Karyawan per Departemen */}
         <Card>
           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-            <CardTitle className="text-base font-semibold">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+              <BarChart3 className="h-4 w-4 text-blue-500" />
+            </div>
+            <CardTitle className="text-sm font-semibold sm:text-base">
               Karyawan per Departemen
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {deptCounts.map((dept) => {
+            <div className="space-y-2.5">
+              {deptCounts.map((dept, idx) => {
                 const widthPercent = Math.round(
-                  (dept.count / maxDeptCount) * 100
+                  (dept.count / maxDeptCount) * 100,
                 );
+                const barColor = DEPT_BAR_COLORS[idx % DEPT_BAR_COLORS.length];
                 return (
                   <div key={dept.id} className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{dept.name}</span>
-                      <span className="text-sm font-semibold">
+                      <span className="text-xs sm:text-sm">{dept.name}</span>
+                      <span className="text-xs font-semibold sm:text-sm">
                         {dept.count}
                       </span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                       <div
-                        className="h-full rounded-full bg-blue-500 transition-all"
+                        className={`h-full rounded-full ${barColor} transition-all`}
                         style={{ width: `${widthPercent}%` }}
                       />
                     </div>
@@ -364,13 +433,15 @@ export default async function DashboardPage() {
         {/* Karyawan Baru */}
         <Card>
           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-            <UserPlus className="h-4 w-4 text-emerald-500" />
-            <CardTitle className="text-base font-semibold">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50">
+              <UserPlus className="h-4 w-4 text-emerald-500" />
+            </div>
+            <CardTitle className="text-sm font-semibold sm:text-base">
               Karyawan Baru
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               {recentEmployees.map((emp) => (
                 <div
                   key={emp.id}
@@ -384,7 +455,7 @@ export default async function DashboardPage() {
                       {emp.departmentName}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                  <span className="shrink-0 text-xs text-muted-foreground">
                     {format(new Date(emp.joinDate), "dd MMM yyyy", {
                       locale: id,
                     })}
@@ -399,27 +470,35 @@ export default async function DashboardPage() {
       {/* Activity Feed */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-          <Activity className="h-4 w-4 text-blue-500" />
-          <CardTitle className="text-base font-semibold">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+            <Activity className="h-4 w-4 text-blue-500" />
+          </div>
+          <CardTitle className="text-sm font-semibold sm:text-base">
             Aktivitas Terbaru
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {activityFeed.map((item) => {
               const config = ACTIVITY_ICON_MAP[item.type];
+              const borderClass = ACTIVITY_BORDER_MAP[item.type];
               const Icon = config.icon;
               return (
-                <div key={item.id} className="flex gap-3">
+                <div
+                  key={item.id}
+                  className={`flex gap-3 rounded-lg border-l-2 py-2 pl-3 ${borderClass}`}
+                >
                   <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${config.bg}`}
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${config.bg}`}
                   >
-                    <Icon className={`h-4 w-4 ${config.color}`} />
+                    <Icon className={`h-3.5 w-3.5 ${config.color}`} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium">{item.action}</p>
+                        <p className="text-sm font-medium leading-tight">
+                          {item.action}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {item.description}
                         </p>

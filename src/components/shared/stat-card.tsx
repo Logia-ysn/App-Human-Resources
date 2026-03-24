@@ -2,77 +2,82 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
 
 type StatCardProps = {
-  label: string;
+  title: string;
   value: string | number;
   subtitle?: string;
   icon: LucideIcon;
-  color?: "blue" | "emerald" | "amber" | "red" | "purple" | "indigo";
+  color?: "blue" | "emerald" | "amber" | "rose" | "violet" | "indigo";
+  trend?: { value: string; positive: boolean };
   href?: string;
 };
 
 const COLOR_MAP = {
   blue: {
-    border: "border-t-blue-500",
-    iconBg: "bg-blue-50",
+    iconBg: "bg-blue-100",
     iconText: "text-blue-600",
   },
   emerald: {
-    border: "border-t-emerald-500",
-    iconBg: "bg-emerald-50",
+    iconBg: "bg-emerald-100",
     iconText: "text-emerald-600",
   },
   amber: {
-    border: "border-t-amber-500",
-    iconBg: "bg-amber-50",
+    iconBg: "bg-amber-100",
     iconText: "text-amber-600",
   },
-  red: {
-    border: "border-t-red-500",
-    iconBg: "bg-red-50",
-    iconText: "text-red-600",
+  rose: {
+    iconBg: "bg-rose-100",
+    iconText: "text-rose-600",
   },
-  purple: {
-    border: "border-t-purple-500",
-    iconBg: "bg-purple-50",
-    iconText: "text-purple-600",
+  violet: {
+    iconBg: "bg-violet-100",
+    iconText: "text-violet-600",
   },
   indigo: {
-    border: "border-t-indigo-500",
-    iconBg: "bg-indigo-50",
+    iconBg: "bg-indigo-100",
     iconText: "text-indigo-600",
   },
 } as const;
 
 export function StatCard({
-  label,
+  title,
   value,
   subtitle,
   icon: Icon,
   color = "blue",
+  trend,
 }: StatCardProps) {
   const colors = COLOR_MAP[color];
 
   return (
-    <Card
-      className={`border-t-2 ${colors.border} shadow-[0_1px_3px_rgba(0,0,0,0.06)]`}
-    >
-      <CardContent className="pt-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {label}
+    <Card className="shadow-card hover:shadow-soft transition-shadow duration-200">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${colors.iconBg}`}
+          >
+            <Icon className={`h-5 w-5 ${colors.iconText}`} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-muted-foreground truncate">
+              {title}
             </p>
-            <p className="mt-1 text-2xl font-bold">{value}</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold leading-tight">{value}</p>
+              {trend && (
+                <span
+                  className={`text-xs font-semibold ${
+                    trend.positive ? "text-emerald-600" : "text-rose-600"
+                  }`}
+                >
+                  {trend.value}
+                </span>
+              )}
+            </div>
             {subtitle && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
                 {subtitle}
               </p>
             )}
-          </div>
-          <div
-            className={`flex h-10 w-10 items-center justify-center rounded-lg ${colors.iconBg}`}
-          >
-            <Icon className={`h-5 w-5 ${colors.iconText}`} />
           </div>
         </div>
       </CardContent>

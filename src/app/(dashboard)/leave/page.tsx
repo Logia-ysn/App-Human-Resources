@@ -163,14 +163,14 @@ export default function LeavePage() {
 
   // -----------------------------------------------------------------------
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex items-center gap-3">
         <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
           <CalendarDays className="size-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manajemen Cuti</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Manajemen Cuti</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Kelola pengajuan, saldo, dan tipe cuti karyawan
           </p>
         </div>
@@ -187,66 +187,58 @@ export default function LeavePage() {
             TAB 1 — Pengajuan Cuti
         ================================================================ */}
         <TabsContent value="requests" className="space-y-4">
-          {/* Summary cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="shadow-sm border-l-4 border-l-blue-500">
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
-                    <FileText className="size-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Pengajuan</p>
-                    <p className="text-2xl font-bold">{stats.total}</p>
-                  </div>
+          {/* Stat Cards - 2 col mobile, 4 col desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-blue-500">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100">
+                  <FileText className="h-4 w-4 text-blue-600" />
                 </div>
-              </CardContent>
+                <div>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">Total Pengajuan</p>
+                </div>
+              </div>
             </Card>
 
-            <Card className="shadow-sm border-l-4 border-l-yellow-500">
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-yellow-100">
-                    <Clock className="size-5 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Menunggu</p>
-                    <p className="text-2xl font-bold">{stats.pending}</p>
-                  </div>
+            <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-yellow-500">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-100">
+                  <Clock className="h-4 w-4 text-yellow-600" />
                 </div>
-              </CardContent>
+                <div>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.pending}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">Menunggu</p>
+                </div>
+              </div>
             </Card>
 
-            <Card className="shadow-sm border-l-4 border-l-green-500">
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-green-100">
-                    <CheckCircle2 className="size-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Disetujui</p>
-                    <p className="text-2xl font-bold">{stats.approved}</p>
-                  </div>
+            <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-green-500">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-100">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
                 </div>
-              </CardContent>
+                <div>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.approved}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">Disetujui</p>
+                </div>
+              </div>
             </Card>
 
-            <Card className="shadow-sm border-l-4 border-l-red-500">
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-                    <XCircle className="size-5 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Ditolak</p>
-                    <p className="text-2xl font-bold">{stats.rejected}</p>
-                  </div>
+            <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-red-500">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
+                  <XCircle className="h-4 w-4 text-red-600" />
                 </div>
-              </CardContent>
+                <div>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.rejected}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">Ditolak</p>
+                </div>
+              </div>
             </Card>
           </div>
 
-          {/* Filter + Table */}
+          {/* Filter */}
           <Card className="shadow-sm">
             <CardContent>
               <div className="flex items-center gap-4">
@@ -264,187 +256,339 @@ export default function LeavePage() {
                 </Select>
               </div>
             </CardContent>
+          </Card>
 
-            <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Departemen</TableHead>
-                    <TableHead>Tipe Cuti</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Jumlah Hari</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRequests.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="h-24 text-center text-muted-foreground"
+          {/* Mobile card view */}
+          <div className="md:hidden space-y-3">
+            {filteredRequests.length === 0 ? (
+              <Card className="p-4">
+                <p className="text-center text-sm text-muted-foreground">
+                  Tidak ada pengajuan cuti ditemukan.
+                </p>
+              </Card>
+            ) : (
+              filteredRequests.map((req) => (
+                <Card key={req.id} className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-sm">{req.employeeName}</span>
+                    <StatusBadge status={req.status} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">Tipe Cuti</p>
+                      <p className="font-medium">{req.leaveTypeName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">Jumlah</p>
+                      <p className="font-medium">{req.totalDays} hari</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[11px] text-muted-foreground">Tanggal</p>
+                      <p className="font-medium">
+                        {format(new Date(req.startDate), "dd MMM", {
+                          locale: idLocale,
+                        })}{" "}
+                        &ndash;{" "}
+                        {format(new Date(req.endDate), "dd MMM yyyy", {
+                          locale: idLocale,
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  {req.status === "PENDING" && (
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                        onClick={() => handleApprove(req.id)}
                       >
-                        Tidak ada pengajuan cuti ditemukan.
-                      </TableCell>
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                        Setujui
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                        onClick={() => handleReject(req.id)}
+                      >
+                        <XCircle className="h-3.5 w-3.5 mr-1" />
+                        Tolak
+                      </Button>
+                    </div>
+                  )}
+                  {req.status !== "PENDING" && req.approvedBy && (
+                    <p className="text-xs text-muted-foreground pt-2 border-t">
+                      oleh {req.approvedBy}
+                    </p>
+                  )}
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden md:block">
+            <Card className="shadow-sm">
+              <CardContent className="px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Nama</TableHead>
+                      <TableHead>Departemen</TableHead>
+                      <TableHead>Tipe Cuti</TableHead>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Jumlah Hari</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredRequests.map((req) => (
-                      <TableRow key={req.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          {req.employeeName}
-                        </TableCell>
-                        <TableCell>{req.departmentName}</TableCell>
-                        <TableCell>{req.leaveTypeName}</TableCell>
-                        <TableCell>
-                          {format(new Date(req.startDate), "dd MMM", {
-                            locale: idLocale,
-                          })}{" "}
-                          &ndash;{" "}
-                          {format(new Date(req.endDate), "dd MMM yyyy", {
-                            locale: idLocale,
-                          })}
-                        </TableCell>
-                        <TableCell>{req.totalDays} hari</TableCell>
-                        <TableCell>
-                          <StatusBadge status={req.status} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {req.status === "PENDING" ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                className="border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
-                                onClick={() => handleApprove(req.id)}
-                              >
-                                <CheckCircle2 data-icon="inline-start" />
-                                Setujui
-                              </Button>
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                className="border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
-                                onClick={() => handleReject(req.id)}
-                              >
-                                <XCircle data-icon="inline-start" />
-                                Tolak
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              {req.approvedBy
-                                ? `oleh ${req.approvedBy}`
-                                : "\u2014"}
-                            </span>
-                          )}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRequests.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          Tidak ada pengajuan cuti ditemukan.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                    ) : (
+                      filteredRequests.map((req) => (
+                        <TableRow key={req.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">
+                            {req.employeeName}
+                          </TableCell>
+                          <TableCell>{req.departmentName}</TableCell>
+                          <TableCell>{req.leaveTypeName}</TableCell>
+                          <TableCell>
+                            {format(new Date(req.startDate), "dd MMM", {
+                              locale: idLocale,
+                            })}{" "}
+                            &ndash;{" "}
+                            {format(new Date(req.endDate), "dd MMM yyyy", {
+                              locale: idLocale,
+                            })}
+                          </TableCell>
+                          <TableCell>{req.totalDays} hari</TableCell>
+                          <TableCell>
+                            <StatusBadge status={req.status} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {req.status === "PENDING" ? (
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className="border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
+                                  onClick={() => handleApprove(req.id)}
+                                >
+                                  <CheckCircle2 data-icon="inline-start" />
+                                  Setujui
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className="border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                                  onClick={() => handleReject(req.id)}
+                                >
+                                  <XCircle data-icon="inline-start" />
+                                  Tolak
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                {req.approvedBy
+                                  ? `oleh ${req.approvedBy}`
+                                  : "\u2014"}
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* ================================================================
             TAB 2 — Saldo Cuti
         ================================================================ */}
         <TabsContent value="balances" className="space-y-4">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Saldo Cuti Karyawan</CardTitle>
-            </CardHeader>
-            <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Tipe Cuti</TableHead>
-                    <TableHead className="text-center">Hak</TableHead>
-                    <TableHead className="text-center">Sisa Tahun Lalu</TableHead>
-                    <TableHead className="text-center">Digunakan</TableHead>
-                    <TableHead className="text-center">Pending</TableHead>
-                    <TableHead className="text-center">Sisa</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {leaveBalances.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        Tidak ada data saldo cuti.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    leaveBalances.map((bal) => {
-                      const remaining = computeRemaining(bal);
-                      const totalPool = bal.entitlement + bal.carried;
-                      const usedPercentage =
-                        totalPool > 0
-                          ? Math.round(((totalPool - remaining) / totalPool) * 100)
-                          : 0;
+          {/* Mobile card grid for leave balances */}
+          <div className="md:hidden space-y-3">
+            {leaveBalances.length === 0 ? (
+              <Card className="p-4">
+                <p className="text-center text-sm text-muted-foreground">
+                  Tidak ada data saldo cuti.
+                </p>
+              </Card>
+            ) : (
+              leaveBalances.map((bal) => {
+                const remaining = computeRemaining(bal);
+                const totalPool = bal.entitlement + bal.carried;
+                const usedPercentage =
+                  totalPool > 0
+                    ? Math.round(((totalPool - remaining) / totalPool) * 100)
+                    : 0;
 
-                      return (
-                        <TableRow key={bal.id} className="hover:bg-muted/50">
-                          <TableCell className="font-medium">
-                            {bal.employeeName}
-                          </TableCell>
-                          <TableCell>{bal.leaveTypeName}</TableCell>
-                          <TableCell className="text-center">
-                            {bal.entitlement}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {bal.carried}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {bal.used}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {bal.pending > 0 ? (
-                              <Badge variant="outline" className="text-yellow-700 border-yellow-300">
-                                {bal.pending}
-                              </Badge>
-                            ) : (
-                              bal.pending
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex flex-col items-center gap-1">
-                              <span
-                                className={
-                                  remaining <= 2
-                                    ? "font-bold text-red-600"
-                                    : "font-bold"
-                                }
-                              >
-                                {remaining}
-                              </span>
-                              <div className="h-1.5 w-16 rounded-full bg-muted">
-                                <div
-                                  className={`h-1.5 rounded-full transition-all ${
-                                    usedPercentage >= 80
-                                      ? "bg-red-500"
-                                      : usedPercentage >= 50
-                                        ? "bg-yellow-500"
-                                        : "bg-green-500"
-                                  }`}
-                                  style={{ width: `${Math.min(usedPercentage, 100)}%` }}
-                                />
+                return (
+                  <Card key={bal.id} className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-medium text-sm">{bal.employeeName}</p>
+                        <p className="text-xs text-muted-foreground">{bal.leaveTypeName}</p>
+                      </div>
+                      <div className="text-right">
+                        <span
+                          className={`text-lg font-bold ${
+                            remaining <= 2 ? "text-red-600" : ""
+                          }`}
+                        >
+                          {remaining}
+                        </span>
+                        <p className="text-[11px] text-muted-foreground">sisa hari</p>
+                      </div>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-muted mb-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${
+                          usedPercentage >= 80
+                            ? "bg-red-500"
+                            : usedPercentage >= 50
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                        }`}
+                        style={{ width: `${Math.min(usedPercentage, 100)}%` }}
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div>
+                        <p className="font-semibold">{bal.entitlement}</p>
+                        <p className="text-[11px] text-muted-foreground">Hak</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold">{bal.used}</p>
+                        <p className="text-[11px] text-muted-foreground">Digunakan</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold">
+                          {bal.pending > 0 ? (
+                            <Badge variant="outline" className="text-yellow-700 border-yellow-300 text-xs px-1.5">
+                              {bal.pending}
+                            </Badge>
+                          ) : (
+                            bal.pending
+                          )}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">Pending</p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden md:block">
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle>Saldo Cuti Karyawan</CardTitle>
+              </CardHeader>
+              <CardContent className="px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Nama</TableHead>
+                      <TableHead>Tipe Cuti</TableHead>
+                      <TableHead className="text-center">Hak</TableHead>
+                      <TableHead className="text-center">Sisa Tahun Lalu</TableHead>
+                      <TableHead className="text-center">Digunakan</TableHead>
+                      <TableHead className="text-center">Pending</TableHead>
+                      <TableHead className="text-center">Sisa</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leaveBalances.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          Tidak ada data saldo cuti.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      leaveBalances.map((bal) => {
+                        const remaining = computeRemaining(bal);
+                        const totalPool = bal.entitlement + bal.carried;
+                        const usedPercentage =
+                          totalPool > 0
+                            ? Math.round(((totalPool - remaining) / totalPool) * 100)
+                            : 0;
+
+                        return (
+                          <TableRow key={bal.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">
+                              {bal.employeeName}
+                            </TableCell>
+                            <TableCell>{bal.leaveTypeName}</TableCell>
+                            <TableCell className="text-center">
+                              {bal.entitlement}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {bal.carried}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {bal.used}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {bal.pending > 0 ? (
+                                <Badge variant="outline" className="text-yellow-700 border-yellow-300">
+                                  {bal.pending}
+                                </Badge>
+                              ) : (
+                                bal.pending
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex flex-col items-center gap-1">
+                                <span
+                                  className={
+                                    remaining <= 2
+                                      ? "font-bold text-red-600"
+                                      : "font-bold"
+                                  }
+                                >
+                                  {remaining}
+                                </span>
+                                <div className="h-1.5 w-16 rounded-full bg-muted">
+                                  <div
+                                    className={`h-1.5 rounded-full transition-all ${
+                                      usedPercentage >= 80
+                                        ? "bg-red-500"
+                                        : usedPercentage >= 50
+                                          ? "bg-yellow-500"
+                                          : "bg-green-500"
+                                    }`}
+                                    style={{ width: `${Math.min(usedPercentage, 100)}%` }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* ================================================================
@@ -591,89 +735,137 @@ export default function LeavePage() {
               </Dialog>
             </CardHeader>
 
-            <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Kode</TableHead>
-                    <TableHead className="text-center">Kuota</TableHead>
-                    <TableHead className="text-center">Berbayar</TableHead>
-                    <TableHead className="text-center">Carry Over</TableHead>
-                    <TableHead className="text-center">Perlu Dokumen</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {types.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        Tidak ada tipe cuti.
-                      </TableCell>
+            {/* Mobile card view for leave types */}
+            <div className="md:hidden px-4 pb-4 space-y-3">
+              {types.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-6">
+                  Tidak ada tipe cuti.
+                </p>
+              ) : (
+                types.map((lt) => (
+                  <Card key={lt.id} className="p-4 border">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-sm">{lt.name}</p>
+                        <Badge variant="outline" className="font-mono text-xs mt-1">
+                          {lt.code}
+                        </Badge>
+                      </div>
+                      {lt.isActive ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Aktif
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                          Nonaktif
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs mt-2">
+                      <div>
+                        <p className="text-muted-foreground">Kuota</p>
+                        <p className="font-semibold">{lt.defaultQuota} hari</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Berbayar</p>
+                        <p className="font-semibold">{lt.isPaid ? "Ya" : "Tidak"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Carry Over</p>
+                        <p className="font-semibold">{lt.isCarryOver ? `Maks ${lt.maxCarryOver}` : "Tidak"}</p>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block">
+              <CardContent className="px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Nama</TableHead>
+                      <TableHead>Kode</TableHead>
+                      <TableHead className="text-center">Kuota</TableHead>
+                      <TableHead className="text-center">Berbayar</TableHead>
+                      <TableHead className="text-center">Carry Over</TableHead>
+                      <TableHead className="text-center">Perlu Dokumen</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
                     </TableRow>
-                  ) : (
-                    types.map((lt) => (
-                      <TableRow key={lt.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{lt.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {lt.code}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {lt.defaultQuota} hari
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {lt.isPaid ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              Ya
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                              Tidak
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {lt.isCarryOver ? (
-                            <span className="text-sm">
-                              Maks {lt.maxCarryOver} hari
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              Tidak
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {lt.requiresDoc ? (
-                            <CalendarDays className="mx-auto h-4 w-4 text-blue-600" />
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              &mdash;
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {lt.isActive ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              Aktif
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                              Nonaktif
-                            </Badge>
-                          )}
+                  </TableHeader>
+                  <TableBody>
+                    {types.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          Tidak ada tipe cuti.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
+                    ) : (
+                      types.map((lt) => (
+                        <TableRow key={lt.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">{lt.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {lt.code}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {lt.defaultQuota} hari
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {lt.isPaid ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Ya
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                                Tidak
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {lt.isCarryOver ? (
+                              <span className="text-sm">
+                                Maks {lt.maxCarryOver} hari
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                Tidak
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {lt.requiresDoc ? (
+                              <CalendarDays className="mx-auto h-4 w-4 text-blue-600" />
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                &mdash;
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {lt.isActive ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Aktif
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                                Nonaktif
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>

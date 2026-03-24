@@ -199,7 +199,7 @@ function StepIndicator({
   currentStep: number;
 }) {
   return (
-    <div className="flex items-center justify-center gap-0">
+    <div className="flex items-center justify-center gap-0 overflow-x-auto">
       {STEPS.map((step, index) => {
         const StepIcon = step.icon;
         const isCompleted = currentStep > step.number;
@@ -207,7 +207,7 @@ function StepIndicator({
 
         return (
           <div key={step.number} className="flex items-center">
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2">
               <div
                 className={`flex size-10 items-center justify-center rounded-full border-2 text-sm font-medium transition-all duration-200 ${
                   isCompleted
@@ -223,8 +223,9 @@ function StepIndicator({
                   <StepIcon className="size-4" />
                 )}
               </div>
+              {/* Hide text labels on mobile, show on sm+ */}
               <span
-                className={`text-xs font-medium whitespace-nowrap transition-colors ${
+                className={`hidden text-xs font-medium whitespace-nowrap transition-colors sm:block ${
                   isActive
                     ? "text-primary font-semibold"
                     : isCompleted
@@ -237,7 +238,7 @@ function StepIndicator({
             </div>
             {index < STEPS.length - 1 && (
               <div
-                className={`mx-4 mb-6 h-0.5 w-16 sm:w-28 rounded-full transition-colors ${
+                className={`mx-3 mb-0 h-0.5 w-10 rounded-full transition-colors sm:mx-4 sm:mb-6 sm:w-28 ${
                   currentStep > step.number
                     ? "bg-primary"
                     : "bg-muted-foreground/20"
@@ -300,13 +301,13 @@ export default function NewEmployeePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" render={<Link href="/employees" />}>
           <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-xl font-bold tracking-tight md:text-2xl">
             Tambah Karyawan Baru
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -430,7 +431,7 @@ export default function NewEmployeePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Agama</Label>
                   <Select
@@ -502,7 +503,7 @@ export default function NewEmployeePage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="city">Kota</Label>
                   <Input
@@ -540,7 +541,7 @@ export default function NewEmployeePage() {
                 description="Informasi kontak darurat karyawan"
               />
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="emergencyName">Nama</Label>
                   <Input
@@ -875,10 +876,11 @@ export default function NewEmployeePage() {
 
           <Separator className="my-6" />
 
-          {/* Navigation buttons */}
-          <div className="flex justify-between">
+          {/* Navigation buttons - full width on mobile, side-by-side on desktop */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={handlePrevious}
               disabled={currentStep === 1}
             >
@@ -886,12 +888,12 @@ export default function NewEmployeePage() {
               Sebelumnya
             </Button>
             {currentStep < 3 ? (
-              <Button onClick={handleNext}>
+              <Button className="w-full sm:w-auto" onClick={handleNext}>
                 Selanjutnya
                 <ArrowRight data-icon="inline-end" className="size-4" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit}>
+              <Button className="w-full sm:w-auto" onClick={handleSubmit}>
                 <Check data-icon="inline-start" className="size-4" />
                 Simpan Karyawan
               </Button>

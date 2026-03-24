@@ -37,11 +37,11 @@ const STATUS_MAP: Record<string, { label: string; variant: StatusVariant }> = {
 };
 
 const VARIANT_STYLES: Record<StatusVariant, string> = {
-  default: "bg-blue-50 text-blue-700 border-blue-200",
-  success: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  warning: "bg-amber-50 text-amber-700 border-amber-200",
-  destructive: "bg-red-50 text-red-700 border-red-200",
-  secondary: "bg-slate-50 text-slate-600 border-slate-200",
+  default: "bg-blue-50 text-blue-700 border-blue-200/80",
+  success: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+  warning: "bg-amber-50 text-amber-700 border-amber-200/80",
+  destructive: "bg-red-50 text-red-700 border-red-200/80",
+  secondary: "bg-slate-50 text-slate-600 border-slate-200/80",
 };
 
 const DOT_STYLES: Record<StatusVariant, string> = {
@@ -59,7 +59,7 @@ export function StatusBadge({ status }: { status: string }) {
     <Badge
       variant="outline"
       className={cn(
-        "gap-1.5 font-medium text-xs px-2.5 py-0.5",
+        "gap-1.5 font-medium text-[11px] px-2 py-0.5 rounded-full",
         VARIANT_STYLES[config.variant]
       )}
     >

@@ -79,6 +79,17 @@ const APPLICANT_STATUS_LABELS: Record<string, string> = {
   WITHDRAWN: "Mengundurkan",
 };
 
+const APPLICANT_STATUS_COLORS: Record<string, string> = {
+  NEW: "bg-blue-100 text-blue-800 border-blue-200",
+  SCREENING: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  SHORTLISTED: "bg-indigo-100 text-indigo-800 border-indigo-200",
+  INTERVIEW: "bg-purple-100 text-purple-800 border-purple-200",
+  OFFERED: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  ACCEPTED: "bg-green-100 text-green-800 border-green-200",
+  REJECTED: "bg-red-100 text-red-800 border-red-200",
+  WITHDRAWN: "bg-gray-100 text-gray-800 border-gray-200",
+};
+
 const DEPARTMENT_OPTIONS = [
   "Information Technology",
   "Human Resources",
@@ -257,14 +268,14 @@ export default function RecruitmentPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex items-center gap-3">
         <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
           <UserPlus className="size-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Rekrutmen</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Rekrutmen</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Kelola lowongan kerja dan pelamar
           </p>
         </div>
@@ -288,308 +299,445 @@ export default function RecruitmentPage() {
 
         {/* Tab 1: Lowongan Kerja */}
         <TabsContent value="lowongan">
-          <div className="space-y-6">
-            {/* Summary cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Card className="shadow-sm border-l-4 border-l-blue-500">
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
-                      <Briefcase className="size-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Lowongan</p>
-                      <p className="text-2xl font-bold">{totalJobs}</p>
-                    </div>
+          <div className="space-y-4 md:space-y-6">
+            {/* Stat Cards - 2 col mobile, 4 col desktop */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-blue-500">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100">
+                    <Briefcase className="h-4 w-4 text-blue-600" />
                   </div>
-                </CardContent>
+                  <div>
+                    <p className="text-xl sm:text-2xl font-bold">{totalJobs}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">Total Lowongan</p>
+                  </div>
+                </div>
               </Card>
-              <Card className="shadow-sm border-l-4 border-l-green-500">
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-green-100">
-                      <Eye className="size-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Dipublikasi</p>
-                      <p className="text-2xl font-bold">{publishedJobs}</p>
-                    </div>
+              <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-green-500">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-100">
+                    <Eye className="h-4 w-4 text-green-600" />
                   </div>
-                </CardContent>
+                  <div>
+                    <p className="text-xl sm:text-2xl font-bold">{publishedJobs}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">Dipublikasi</p>
+                  </div>
+                </div>
               </Card>
-              <Card className="shadow-sm border-l-4 border-l-gray-400">
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gray-100">
-                      <FileText className="size-5 text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Draft</p>
-                      <p className="text-2xl font-bold">{draftJobs}</p>
-                    </div>
+              <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-gray-400">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                    <FileText className="h-4 w-4 text-gray-500" />
                   </div>
-                </CardContent>
+                  <div>
+                    <p className="text-xl sm:text-2xl font-bold">{draftJobs}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">Draft</p>
+                  </div>
+                </div>
               </Card>
-              <Card className="shadow-sm border-l-4 border-l-red-400">
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-                      <Briefcase className="size-5 text-red-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Ditutup</p>
-                      <p className="text-2xl font-bold">{closedJobs}</p>
-                    </div>
+              <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-red-400">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
+                    <Briefcase className="h-4 w-4 text-red-500" />
                   </div>
-                </CardContent>
+                  <div>
+                    <p className="text-xl sm:text-2xl font-bold">{closedJobs}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">Ditutup</p>
+                  </div>
+                </div>
               </Card>
             </div>
 
-            {/* Job Postings Table */}
-            <Card className="shadow-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Daftar Lowongan</CardTitle>
-                  <Button onClick={openCreateJob}>
-                    <Plus className="size-4" data-icon="inline-start" />
-                    Tambah Lowongan
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Judul</TableHead>
-                      <TableHead>Departemen</TableHead>
-                      <TableHead>Tipe</TableHead>
-                      <TableHead>Lokasi</TableHead>
-                      <TableHead className="text-center">Lowongan</TableHead>
-                      <TableHead className="text-center">Pelamar</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {jobPostings.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={8}
-                          className="h-24 text-center text-muted-foreground"
+            {/* Floating action button on mobile */}
+            <div className="md:hidden flex justify-end">
+              <Button onClick={openCreateJob} size="sm">
+                <Plus className="size-4 mr-1" />
+                Tambah Lowongan
+              </Button>
+            </div>
+
+            {/* Mobile card view for job postings */}
+            <div className="md:hidden space-y-3">
+              {jobPostings.length === 0 ? (
+                <Card className="p-4">
+                  <p className="text-center text-sm text-muted-foreground">
+                    Tidak ada data lowongan.
+                  </p>
+                </Card>
+              ) : (
+                jobPostings.map((job) => (
+                  <Card key={job.id} className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-sm">{job.title}</p>
+                        <p className="text-xs text-muted-foreground">{job.departmentName}</p>
+                      </div>
+                      <StatusBadge status={job.status} />
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <Badge variant="outline" className="text-xs">
+                        {TYPE_LABELS[job.type] ?? job.type}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {job.location}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {job.applicantCount} pelamar
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleViewApplicants(job.id)}
+                      >
+                        <Eye className="size-4 mr-1" />
+                        Pelamar
+                      </Button>
+                      {job.status === "DRAFT" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handlePublishJob(job.id)}
                         >
-                          Tidak ada data lowongan.
-                        </TableCell>
+                          Publish
+                        </Button>
+                      )}
+                      {job.status === "PUBLISHED" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleCloseJob(job.id)}
+                        >
+                          Tutup
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block">
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Daftar Lowongan</CardTitle>
+                    <Button onClick={openCreateJob}>
+                      <Plus className="size-4" data-icon="inline-start" />
+                      Tambah Lowongan
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead>Judul</TableHead>
+                        <TableHead>Departemen</TableHead>
+                        <TableHead>Tipe</TableHead>
+                        <TableHead>Lokasi</TableHead>
+                        <TableHead className="text-center">Lowongan</TableHead>
+                        <TableHead className="text-center">Pelamar</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
                       </TableRow>
-                    ) : (
-                      jobPostings.map((job) => (
-                        <TableRow key={job.id} className="hover:bg-muted/50">
-                          <TableCell className="font-medium">
-                            {job.title}
-                          </TableCell>
-                          <TableCell>{job.departmentName}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {TYPE_LABELS[job.type] ?? job.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{job.location}</TableCell>
-                          <TableCell className="text-center">
-                            {job.vacancies}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {job.applicantCount}
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge status={job.status} />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon-xs"
-                                onClick={() => handleViewApplicants(job.id)}
-                                title="Lihat Pelamar"
-                              >
-                                <Eye className="size-4" />
-                                <span className="sr-only">Lihat Pelamar</span>
-                              </Button>
-                              {job.status === "DRAFT" && (
-                                <Button
-                                  variant="outline"
-                                  size="xs"
-                                  onClick={() => handlePublishJob(job.id)}
-                                >
-                                  Publish
-                                </Button>
-                              )}
-                              {job.status === "PUBLISHED" && (
-                                <Button
-                                  variant="outline"
-                                  size="xs"
-                                  onClick={() => handleCloseJob(job.id)}
-                                >
-                                  Tutup
-                                </Button>
-                              )}
-                            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {jobPostings.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={8}
+                            className="h-24 text-center text-muted-foreground"
+                          >
+                            Tidak ada data lowongan.
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      ) : (
+                        jobPostings.map((job) => (
+                          <TableRow key={job.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">
+                              {job.title}
+                            </TableCell>
+                            <TableCell>{job.departmentName}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {TYPE_LABELS[job.type] ?? job.type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{job.location}</TableCell>
+                            <TableCell className="text-center">
+                              {job.vacancies}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {job.applicantCount}
+                            </TableCell>
+                            <TableCell>
+                              <StatusBadge status={job.status} />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  onClick={() => handleViewApplicants(job.id)}
+                                  title="Lihat Pelamar"
+                                >
+                                  <Eye className="size-4" />
+                                  <span className="sr-only">Lihat Pelamar</span>
+                                </Button>
+                                {job.status === "DRAFT" && (
+                                  <Button
+                                    variant="outline"
+                                    size="xs"
+                                    onClick={() => handlePublishJob(job.id)}
+                                  >
+                                    Publish
+                                  </Button>
+                                )}
+                                {job.status === "PUBLISHED" && (
+                                  <Button
+                                    variant="outline"
+                                    size="xs"
+                                    onClick={() => handleCloseJob(job.id)}
+                                  >
+                                    Tutup
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
         {/* Tab 2: Pelamar */}
         <TabsContent value="pelamar">
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Status pipeline badges */}
             <Card className="shadow-sm">
               <CardContent>
                 <div className="flex flex-wrap items-center gap-2">
-                  {APPLICANT_STATUSES.map((status) => {
-                    const colorMap: Record<string, string> = {
-                      NEW: "bg-blue-100 text-blue-800 border-blue-200",
-                      SCREENING: "bg-yellow-100 text-yellow-800 border-yellow-200",
-                      SHORTLISTED: "bg-indigo-100 text-indigo-800 border-indigo-200",
-                      INTERVIEW: "bg-purple-100 text-purple-800 border-purple-200",
-                      OFFERED: "bg-cyan-100 text-cyan-800 border-cyan-200",
-                      ACCEPTED: "bg-green-100 text-green-800 border-green-200",
-                      REJECTED: "bg-red-100 text-red-800 border-red-200",
-                      WITHDRAWN: "bg-gray-100 text-gray-800 border-gray-200",
-                    };
-                    return (
-                      <Badge
-                        key={status}
-                        variant="outline"
-                        className={`gap-1.5 px-3 py-1.5 ${colorMap[status] ?? ""}`}
-                      >
-                        {APPLICANT_STATUS_LABELS[status]}
-                        <span className="rounded-full bg-white/60 px-1.5 py-0.5 text-xs font-bold">
-                          {applicantStatusCounts[status] ?? 0}
-                        </span>
-                      </Badge>
-                    );
-                  })}
+                  {APPLICANT_STATUSES.map((status) => (
+                    <Badge
+                      key={status}
+                      variant="outline"
+                      className={`gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-xs ${APPLICANT_STATUS_COLORS[status] ?? ""}`}
+                    >
+                      {APPLICANT_STATUS_LABELS[status]}
+                      <span className="rounded-full bg-white/60 px-1.5 py-0.5 text-xs font-bold">
+                        {applicantStatusCounts[status] ?? 0}
+                      </span>
+                    </Badge>
+                  ))}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Applicants Table */}
-            <Card className="shadow-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Daftar Pelamar</CardTitle>
-                  <Select
-                    value={applicantJobFilter}
-                    onValueChange={(val) =>
-                      setApplicantJobFilter((val as string) ?? "ALL")
-                    }
-                  >
-                    <SelectTrigger className="w-[260px]">
-                      <SelectValue placeholder="Semua Lowongan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">Semua Lowongan</SelectItem>
-                      {jobPostings.map((job) => (
-                        <SelectItem key={job.id} value={job.id}>
-                          {job.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent className="px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Nama</TableHead>
-                      <TableHead>Posisi Dilamar</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Sumber</TableHead>
-                      <TableHead className="text-center">Pengalaman</TableHead>
-                      <TableHead>Gaji Harapan</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredApplicants.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={8}
-                          className="h-24 text-center text-muted-foreground"
+            {/* Filter */}
+            <div className="flex items-center gap-3">
+              <Select
+                value={applicantJobFilter}
+                onValueChange={(val) =>
+                  setApplicantJobFilter((val as string) ?? "ALL")
+                }
+              >
+                <SelectTrigger className="w-full sm:w-[260px]">
+                  <SelectValue placeholder="Semua Lowongan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Semua Lowongan</SelectItem>
+                  {jobPostings.map((job) => (
+                    <SelectItem key={job.id} value={job.id}>
+                      {job.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Mobile card view for applicants */}
+            <div className="md:hidden space-y-3">
+              {filteredApplicants.length === 0 ? (
+                <Card className="p-4">
+                  <p className="text-center text-sm text-muted-foreground">
+                    Tidak ada data pelamar.
+                  </p>
+                </Card>
+              ) : (
+                filteredApplicants.map((applicant) => (
+                  <Card key={applicant.id} className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-sm">{applicant.name}</p>
+                        <p className="text-xs text-muted-foreground">{applicant.jobTitle}</p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`text-xs px-2 py-1 ${APPLICANT_STATUS_COLORS[applicant.status] ?? ""}`}
+                      >
+                        {APPLICANT_STATUS_LABELS[applicant.status]}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                      <div>
+                        <p className="text-[11px] text-muted-foreground">Sumber</p>
+                        <Badge variant="outline" className="text-xs">{applicant.source}</Badge>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground">Pengalaman</p>
+                        <p className="font-medium">{applicant.yearsExperience} thn</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-[11px] text-muted-foreground">Gaji Harapan</p>
+                        <p className="font-medium">
+                          {applicant.expectedSalary != null
+                            ? currencyFormat.format(applicant.expectedSalary)
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button variant="outline" size="sm" className="w-full" />
+                          }
                         >
-                          Tidak ada data pelamar.
-                        </TableCell>
+                          Ubah Status
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>
+                            Ubah Status
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {APPLICANT_STATUSES.filter(
+                            (s) => s !== applicant.status
+                          ).map((status) => (
+                            <DropdownMenuItem
+                              key={status}
+                              onClick={() =>
+                                handleApplicantStatusChange(
+                                  applicant.id,
+                                  status
+                                )
+                              }
+                            >
+                              {APPLICANT_STATUS_LABELS[status]}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block">
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <CardTitle>Daftar Pelamar</CardTitle>
+                </CardHeader>
+                <CardContent className="px-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead>Nama</TableHead>
+                        <TableHead>Posisi Dilamar</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Sumber</TableHead>
+                        <TableHead className="text-center">Pengalaman</TableHead>
+                        <TableHead>Gaji Harapan</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
                       </TableRow>
-                    ) : (
-                      filteredApplicants.map((applicant) => (
-                        <TableRow key={applicant.id} className="hover:bg-muted/50">
-                          <TableCell className="font-medium">
-                            {applicant.name}
-                          </TableCell>
-                          <TableCell>{applicant.jobTitle}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {applicant.email}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{applicant.source}</Badge>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {applicant.yearsExperience} thn
-                          </TableCell>
-                          <TableCell>
-                            {applicant.expectedSalary != null
-                              ? currencyFormat.format(applicant.expectedSalary)
-                              : "-"}
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge status={applicant.status} />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger
-                                render={
-                                  <Button variant="outline" size="xs" />
-                                }
-                              >
-                                Ubah Status
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>
-                                  Ubah Status
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                {APPLICANT_STATUSES.filter(
-                                  (s) => s !== applicant.status
-                                ).map((status) => (
-                                  <DropdownMenuItem
-                                    key={status}
-                                    onClick={() =>
-                                      handleApplicantStatusChange(
-                                        applicant.id,
-                                        status
-                                      )
-                                    }
-                                  >
-                                    {APPLICANT_STATUS_LABELS[status]}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredApplicants.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={8}
+                            className="h-24 text-center text-muted-foreground"
+                          >
+                            Tidak ada data pelamar.
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      ) : (
+                        filteredApplicants.map((applicant) => (
+                          <TableRow key={applicant.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">
+                              {applicant.name}
+                            </TableCell>
+                            <TableCell>{applicant.jobTitle}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {applicant.email}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{applicant.source}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {applicant.yearsExperience} thn
+                            </TableCell>
+                            <TableCell>
+                              {applicant.expectedSalary != null
+                                ? currencyFormat.format(applicant.expectedSalary)
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <StatusBadge status={applicant.status} />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger
+                                  render={
+                                    <Button variant="outline" size="xs" />
+                                  }
+                                >
+                                  Ubah Status
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>
+                                    Ubah Status
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  {APPLICANT_STATUSES.filter(
+                                    (s) => s !== applicant.status
+                                  ).map((status) => (
+                                    <DropdownMenuItem
+                                      key={status}
+                                      onClick={() =>
+                                        handleApplicantStatusChange(
+                                          applicant.id,
+                                          status
+                                        )
+                                      }
+                                    >
+                                      {APPLICANT_STATUS_LABELS[status]}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

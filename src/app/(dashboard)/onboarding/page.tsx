@@ -149,32 +149,32 @@ export default function OnboardingPage() {
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Total Onboarding"
+          title="Total Onboarding"
           value={summary.total}
           subtitle="karyawan"
           icon={Users}
           color="blue"
         />
         <StatCard
-          label="In Progress"
+          title="In Progress"
           value={summary.inProgress}
           subtitle="sedang berjalan"
           icon={Clock}
           color="amber"
         />
         <StatCard
-          label="Completed"
+          title="Completed"
           value={summary.completed}
           subtitle="selesai"
           icon={CheckCircle2}
           color="emerald"
         />
         <StatCard
-          label="Overdue"
+          title="Overdue"
           value={summary.overdue}
           subtitle="terlambat"
           icon={AlertTriangle}
-          color="red"
+          color="rose"
         />
       </div>
 
