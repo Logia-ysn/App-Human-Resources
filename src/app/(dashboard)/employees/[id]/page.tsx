@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { employees } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -123,10 +123,11 @@ function SectionHeader({
 
 export default function EmployeeDetailPage() {
   const params = useParams<{ id: string }>();
+  const employees = useAppStore((s) => s.employees);
 
   const employee = useMemo(
     () => employees.find((emp) => emp.id === params.id && !emp.isDeleted),
-    [params.id],
+    [employees, params.id],
   );
 
   if (!employee) {

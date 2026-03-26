@@ -4,9 +4,8 @@ import { useState, useMemo } from "react";
 import { Briefcase, Users, Plus, Eye, UserPlus, FileText } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAppStore } from "@/lib/store/app-store";
 import {
-  jobPostings as initialJobPostings,
-  applicants as initialApplicants,
   type JobPostingRecord,
   type ApplicantRecord,
 } from "@/lib/dummy-data";
@@ -137,10 +136,11 @@ const EMPTY_JOB_FORM: JobFormData = {
 };
 
 export default function RecruitmentPage() {
-  const [jobPostings, setJobPostings] =
-    useState<JobPostingRecord[]>(initialJobPostings);
-  const [applicantsList, setApplicantsList] =
-    useState<ApplicantRecord[]>(initialApplicants);
+  const jobPostings = useAppStore((s) => s.jobPostings);
+  const applicantsList = useAppStore((s) => s.applicants);
+  const storeAddJobPosting = useAppStore((s) => s.addJobPosting);
+  const storeUpdateJobPosting = useAppStore((s) => s.updateJobPosting);
+  const storeUpdateApplicant = useAppStore((s) => s.updateApplicant);
 
   const [activeTab, setActiveTab] = useState("lowongan");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -206,34 +206,21 @@ export default function RecruitmentPage() {
       createdAt: new Date().toISOString().split("T")[0],
     };
 
-    setJobPostings((prev) => [...prev, newJob]);
+    storeAddJobPosting(newJob);
     setDialogOpen(false);
     toast.success("Lowongan berhasil ditambahkan");
   }
 
   function handlePublishJob(jobId: string) {
-    setJobPostings((prev) =>
-      prev.map((j) =>
-        j.id === jobId
-          ? {
-              ...j,
-              status: "PUBLISHED" as const,
-              publishedAt: new Date().toISOString().split("T")[0],
-            }
-          : j
-      )
-    );
+    storeUpdateJobPosting(jobId, {
+      status: "PUBLISHED" as const,
+      publishedAt: new Date().toISOString().split("T")[0],
+    });
     toast.success("Lowongan berhasil dipublikasikan");
   }
 
   function handleCloseJob(jobId: string) {
-    setJobPostings((prev) =>
-      prev.map((j) =>
-        j.id === jobId
-          ? { ...j, status: "CLOSED" as const }
-          : j
-      )
-    );
+    storeUpdateJobPosting(jobId, { status: "CLOSED" as const });
     toast.success("Lowongan berhasil ditutup");
   }
 
@@ -247,11 +234,7 @@ export default function RecruitmentPage() {
     applicantId: string,
     newStatus: ApplicantRecord["status"]
   ) {
-    setApplicantsList((prev) =>
-      prev.map((a) =>
-        a.id === applicantId ? { ...a, status: newStatus } : a
-      )
-    );
+    storeUpdateApplicant(applicantId, { status: newStatus });
     toast.success(`Status pelamar berhasil diubah ke ${APPLICANT_STATUS_LABELS[newStatus]}`);
   }
 

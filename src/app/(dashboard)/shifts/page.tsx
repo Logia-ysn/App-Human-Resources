@@ -6,9 +6,8 @@ import { id as idLocale } from "date-fns/locale";
 import { RefreshCw, Plus, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAppStore } from "@/lib/store/app-store";
 import {
-  shiftTypes as initialShiftTypes,
-  shiftAssignments as initialAssignments,
   type ShiftType,
   type ShiftAssignment,
 } from "@/lib/dummy-data";
@@ -115,10 +114,10 @@ const AVAILABLE_EMPLOYEES = [
 // ---------------------------------------------------------------------------
 
 export default function ShiftsPage() {
-  const [shiftTypeList, setShiftTypeList] =
-    useState<ShiftType[]>(initialShiftTypes);
-  const [assignments, setAssignments] =
-    useState<ShiftAssignment[]>(initialAssignments);
+  const shiftTypeList = useAppStore((s) => s.shiftTypes);
+  const assignments = useAppStore((s) => s.shiftAssignments);
+  const storeAddShiftType = useAppStore((s) => s.addShiftType);
+  const storeAddShiftAssignment = useAppStore((s) => s.addShiftAssignment);
 
   // Dialogs
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
@@ -168,7 +167,7 @@ export default function ShiftsPage() {
       id: `shift-${Date.now()}`,
     };
 
-    setShiftTypeList((prev) => [...prev, created]);
+    storeAddShiftType(created);
     setNewShift(EMPTY_SHIFT);
     setShiftDialogOpen(false);
     toast.success(`Shift "${created.name}" berhasil ditambahkan`);
@@ -195,7 +194,7 @@ export default function ShiftsPage() {
       shiftName: shiftType?.name ?? "",
     };
 
-    setAssignments((prev) => [...prev, created]);
+    storeAddShiftAssignment(created);
     setNewAssignment(EMPTY_ASSIGNMENT);
     setAssignDialogOpen(false);
     toast.success(`Shift berhasil ditugaskan ke ${created.employeeName}`);

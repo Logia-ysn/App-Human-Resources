@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { Network, ChevronDown, ChevronRight, Users } from "lucide-react";
-import { employees as allEmployees, type Employee } from "@/lib/dummy-data";
+import type { Employee } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -182,9 +183,11 @@ function OrgNode({
 // ---------------------------------------------------------------------------
 
 export default function OrgChartPage() {
+  const allEmployees = useAppStore((s) => s.employees);
+
   const activeEmployees = useMemo(
     () => allEmployees.filter((emp) => !emp.isDeleted),
-    [],
+    [allEmployees],
   );
 
   const tree = useMemo(() => buildTree(activeEmployees), [activeEmployees]);

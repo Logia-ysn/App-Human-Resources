@@ -4,10 +4,8 @@ import { useState, useMemo } from "react";
 import { Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAppStore } from "@/lib/store/app-store";
 import {
-  attendanceRecords as initialAttendance,
-  overtimeRecords as initialOvertime,
-  holidays as initialHolidays,
   type AttendanceRecord,
   type OvertimeRecord,
   type HolidayRecord,
@@ -63,16 +61,20 @@ function formatOvertimeDuration(minutes: number): string {
 }
 
 export default function AttendancePage() {
-  const [overtimeList, setOvertimeList] = useState<OvertimeRecord[]>(initialOvertime);
-  const [holidayList, setHolidayList] = useState<HolidayRecord[]>(initialHolidays);
+  const attendanceRecords = useAppStore((s) => s.attendanceRecords);
+  const overtimeList = useAppStore((s) => s.overtimeRecords);
+  const holidayList = useAppStore((s) => s.holidays);
+  const updateOvertimeRecord = useAppStore((s) => s.updateOvertimeRecord);
+  const addHoliday = useAppStore((s) => s.addHoliday);
+
   const [holidayDialogOpen, setHolidayDialogOpen] = useState(false);
   const [newHolidayName, setNewHolidayName] = useState("");
   const [newHolidayDate, setNewHolidayDate] = useState("");
   const [newHolidayType, setNewHolidayType] = useState<string>("NATIONAL");
 
   const todayRecords = useMemo(
-    () => initialAttendance.filter((r) => r.date === "2026-03-23"),
-    [],
+    () => attendanceRecords.filter((r) => r.date === "2026-03-23"),
+    [attendanceRecords],
   );
 
   const summary = useMemo(() => {
@@ -91,24 +93,12 @@ export default function AttendancePage() {
   }, [todayRecords]);
 
   const handleApproveOvertime = (id: string) => {
-    setOvertimeList((prev) =>
-      prev.map((ot) =>
-        ot.id === id
-          ? { ...ot, status: "APPROVED" as const, approvedBy: "Admin" }
-          : ot,
-      ),
-    );
+    updateOvertimeRecord(id, { status: "APPROVED" as const, approvedBy: "Admin" });
     toast.success("Overtime disetujui");
   };
 
   const handleRejectOvertime = (id: string) => {
-    setOvertimeList((prev) =>
-      prev.map((ot) =>
-        ot.id === id
-          ? { ...ot, status: "REJECTED" as const, approvedBy: "Admin" }
-          : ot,
-      ),
-    );
+    updateOvertimeRecord(id, { status: "REJECTED" as const, approvedBy: "Admin" });
     toast.error("Overtime ditolak");
   };
 
@@ -122,7 +112,7 @@ export default function AttendancePage() {
       type: newHolidayType as HolidayRecord["type"],
     };
 
-    setHolidayList((prev) => [...prev, newHoliday]);
+    addHoliday(newHoliday);
     setNewHolidayName("");
     setNewHolidayDate("");
     setNewHolidayType("NATIONAL");

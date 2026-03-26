@@ -15,9 +15,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAppStore } from "@/lib/store/app-store";
 import {
-  expenseClaims as initialClaims,
-  employees,
   type ExpenseClaim,
   type ExpenseItem,
 } from "@/lib/dummy-data";
@@ -106,16 +105,6 @@ const CATEGORY_OPTIONS: { value: CategoryKey; label: string }[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Available employees
-// ---------------------------------------------------------------------------
-
-const AVAILABLE_EMPLOYEES = employees.map((e) => ({
-  id: e.id,
-  name: `${e.firstName} ${e.lastName}`,
-  department: e.departmentName,
-}));
-
-// ---------------------------------------------------------------------------
 // Form state
 // ---------------------------------------------------------------------------
 
@@ -163,7 +152,20 @@ function getPrimaryCategory(items: ExpenseItem[]): CategoryKey {
 // ---------------------------------------------------------------------------
 
 export default function ClaimsPage() {
-  const [claims, setClaims] = useState<ExpenseClaim[]>(initialClaims);
+  const claims = useAppStore((s) => s.expenseClaims);
+  const employees = useAppStore((s) => s.employees);
+  const storeAddExpenseClaim = useAppStore((s) => s.addExpenseClaim);
+  const storeUpdateExpenseClaim = useAppStore((s) => s.updateExpenseClaim);
+
+  const AVAILABLE_EMPLOYEES = useMemo(
+    () =>
+      employees.map((e) => ({
+        id: e.id,
+        name: `${e.firstName} ${e.lastName}`,
+        department: e.departmentName,
+      })),
+    [employees],
+  );
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<ClaimForm>(EMPTY_FORM);
@@ -183,34 +185,20 @@ export default function ClaimsPage() {
 
   // ----- Handlers -----
   const handleApprove = (id: string) => {
-    setClaims((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              status: "APPROVED" as const,
-              approvedBy: "Admin",
-              approvedDate: new Date().toISOString().slice(0, 10),
-            }
-          : c,
-      ),
-    );
+    storeUpdateExpenseClaim(id, {
+      status: "APPROVED" as const,
+      approvedBy: "Admin",
+      approvedDate: new Date().toISOString().slice(0, 10),
+    });
     toast.success("Klaim pengeluaran berhasil disetujui");
   };
 
   const handleReject = (id: string) => {
-    setClaims((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              status: "REJECTED" as const,
-              approvedBy: "Admin",
-              approvedDate: new Date().toISOString().slice(0, 10),
-            }
-          : c,
-      ),
-    );
+    storeUpdateExpenseClaim(id, {
+      status: "REJECTED" as const,
+      approvedBy: "Admin",
+      approvedDate: new Date().toISOString().slice(0, 10),
+    });
     toast.error("Klaim pengeluaran ditolak");
   };
 
@@ -252,7 +240,7 @@ export default function ClaimsPage() {
       approvedDate: null,
     };
 
-    setClaims((prev) => [created, ...prev]);
+    storeAddExpenseClaim(created);
     setForm(EMPTY_FORM);
     setDialogOpen(false);
     toast.success("Klaim pengeluaran berhasil diajukan");

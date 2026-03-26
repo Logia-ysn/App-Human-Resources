@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -17,7 +17,6 @@ import {
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import type { Employee } from "@/lib/dummy-data";
 import { useAppStore } from "@/lib/store/app-store";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -127,42 +126,6 @@ type FormData = {
   bankAccountName: string;
 };
 
-const INITIAL_FORM: FormData = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",
-  gender: "",
-  dateOfBirth: "",
-  placeOfBirth: "",
-  religion: "",
-  maritalStatus: "",
-  dependents: "",
-  nik: "",
-  address: "",
-  city: "",
-  province: "",
-  postalCode: "",
-  emergencyName: "",
-  emergencyPhone: "",
-  emergencyRelation: "",
-  departmentId: "",
-  positionId: "",
-  managerId: "",
-  type: "",
-  joinDate: "",
-  endDate: "",
-  basicSalary: "",
-  npwp: "",
-  ptkpStatus: "",
-  taxMethod: "",
-  bpjsKesNumber: "",
-  bpjsTkNumber: "",
-  bankName: "",
-  bankAccountNo: "",
-  bankAccountName: "",
-};
-
 function formatCurrency(value: string): string {
   const num = value.replace(/\D/g, "");
   if (!num) return "";
@@ -191,11 +154,7 @@ function SectionHeader({
   );
 }
 
-function StepIndicator({
-  currentStep,
-}: {
-  currentStep: number;
-}) {
+function StepIndicator({ currentStep }: { currentStep: number }) {
   return (
     <div className="flex items-center justify-center gap-0 overflow-x-auto">
       {STEPS.map((step, index) => {
@@ -221,7 +180,6 @@ function StepIndicator({
                   <StepIcon className="size-4" />
                 )}
               </div>
-              {/* Hide text labels on mobile, show on sm+ */}
               <span
                 className={`hidden text-xs font-medium whitespace-nowrap transition-colors sm:block ${
                   isActive
@@ -250,21 +208,68 @@ function StepIndicator({
   );
 }
 
-export default function NewEmployeePage() {
+export default function EditEmployeePage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
+
+  const employees = useAppStore((s) => s.employees);
   const departments = useAppStore((s) => s.departments);
   const positions = useAppStore((s) => s.positions);
-  const allEmployees = useAppStore((s) => s.employees);
-  const addEmployee = useAppStore((s) => s.addEmployee);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [form, setForm] = useState<FormData>(INITIAL_FORM);
+  const updateEmployee = useAppStore((s) => s.updateEmployee);
 
-  const filteredPositions = positions.filter(
-    (p) => p.departmentId === form.departmentId && p.isActive
+  const employee = useMemo(
+    () => employees.find((e) => e.id === params.id && !e.isDeleted),
+    [employees, params.id],
   );
 
-  const activeEmployees = allEmployees.filter(
-    (e) => e.status === "ACTIVE" && !e.isDeleted
+  const [currentStep, setCurrentStep] = useState(1);
+  const [form, setForm] = useState<FormData>(() => {
+    if (!employee) {
+      return {} as FormData;
+    }
+    return {
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      phone: employee.phone,
+      gender: employee.gender,
+      dateOfBirth: employee.dateOfBirth,
+      placeOfBirth: employee.placeOfBirth,
+      religion: employee.religion,
+      maritalStatus: employee.maritalStatus,
+      dependents: String(employee.dependents),
+      nik: employee.nik,
+      address: employee.address,
+      city: employee.city,
+      province: employee.province,
+      postalCode: employee.postalCode ?? "",
+      emergencyName: employee.emergencyName,
+      emergencyPhone: employee.emergencyPhone,
+      emergencyRelation: employee.emergencyRelation,
+      departmentId: employee.departmentId,
+      positionId: employee.positionId,
+      managerId: employee.managerId ?? "",
+      type: employee.type,
+      joinDate: employee.joinDate,
+      endDate: employee.endDate ?? "",
+      basicSalary: String(employee.basicSalary),
+      npwp: employee.npwp ?? "",
+      ptkpStatus: employee.ptkpStatus,
+      taxMethod: employee.taxMethod,
+      bpjsKesNumber: employee.bpjsKesNumber,
+      bpjsTkNumber: employee.bpjsTkNumber,
+      bankName: employee.bankName,
+      bankAccountNo: employee.bankAccountNo,
+      bankAccountName: employee.bankAccountName,
+    };
+  });
+
+  const filteredPositions = positions.filter(
+    (p) => p.departmentId === form.departmentId && p.isActive,
+  );
+
+  const activeEmployees = employees.filter(
+    (e) => e.status === "ACTIVE" && !e.isDeleted && e.id !== params.id,
   );
 
   const showEndDate =
@@ -286,86 +291,93 @@ export default function NewEmployeePage() {
   }
 
   function handleNext() {
-    if (currentStep < 3) {
-      setCurrentStep((prev) => prev + 1);
-    }
+    if (currentStep < 3) setCurrentStep((prev) => prev + 1);
   }
 
   function handlePrevious() {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
+    if (currentStep > 1) setCurrentStep((prev) => prev - 1);
   }
 
   function handleSubmit() {
+    if (!employee) return;
+
     const dept = departments.find((d) => d.id === form.departmentId);
     const pos = positions.find((p) => p.id === form.positionId);
-    const manager = allEmployees.find((e) => e.id === form.managerId);
+    const manager = employees.find((e) => e.id === form.managerId);
 
-    const empNumber = `EMP-${String(allEmployees.length + 1).padStart(4, "0")}`;
-
-    const newEmployee: Employee = {
-      id: `emp-${Date.now()}`,
-      employeeNumber: empNumber,
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      photoUrl: null,
-      gender: form.gender as Employee["gender"],
+    updateEmployee(employee.id, {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      email: form.email,
+      phone: form.phone,
+      gender: form.gender as "MALE" | "FEMALE",
       dateOfBirth: form.dateOfBirth,
-      placeOfBirth: form.placeOfBirth.trim(),
+      placeOfBirth: form.placeOfBirth,
       religion: form.religion,
-      maritalStatus: form.maritalStatus as Employee["maritalStatus"],
-      dependents: form.dependents ? Number(form.dependents) : 0,
-      nik: form.nik.trim(),
-      npwp: form.npwp.trim(),
-      bpjsKesNumber: form.bpjsKesNumber.trim(),
-      bpjsTkNumber: form.bpjsTkNumber.trim(),
-      bankName: form.bankName,
-      bankAccountNo: form.bankAccountNo.trim(),
-      bankAccountName: form.bankAccountName.trim(),
-      address: form.address.trim(),
-      city: form.city.trim(),
-      province: form.province.trim(),
-      postalCode: form.postalCode.trim(),
-      emergencyName: form.emergencyName.trim(),
-      emergencyPhone: form.emergencyPhone.trim(),
-      emergencyRelation: form.emergencyRelation.trim(),
+      maritalStatus: form.maritalStatus as "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED",
+      dependents: Number(form.dependents) || 0,
+      nik: form.nik,
+      address: form.address,
+      city: form.city,
+      province: form.province,
+      postalCode: form.postalCode,
+      emergencyName: form.emergencyName,
+      emergencyPhone: form.emergencyPhone,
+      emergencyRelation: form.emergencyRelation,
       departmentId: form.departmentId,
-      departmentName: dept?.name ?? "",
+      departmentName: dept?.name ?? employee.departmentName,
       positionId: form.positionId,
-      positionName: pos?.name ?? "",
+      positionName: pos?.name ?? employee.positionName,
       managerId: form.managerId || null,
       managerName: manager ? `${manager.firstName} ${manager.lastName}` : null,
-      status: "ACTIVE",
-      type: (form.type || "PERMANENT") as Employee["type"],
-      joinDate: form.joinDate || new Date().toISOString().split("T")[0],
+      type: form.type as "PERMANENT" | "CONTRACT" | "PROBATION" | "INTERNSHIP",
+      joinDate: form.joinDate,
       endDate: form.endDate || null,
-      resignDate: null,
-      ptkpStatus: form.ptkpStatus || "TK0",
-      taxMethod: (form.taxMethod || "GROSS") as Employee["taxMethod"],
-      basicSalary: form.basicSalary ? Number(form.basicSalary) : 0,
-      isDeleted: false,
-    };
+      basicSalary: Number(form.basicSalary) || 0,
+      npwp: form.npwp,
+      ptkpStatus: form.ptkpStatus,
+      taxMethod: form.taxMethod as "GROSS" | "GROSS_UP" | "NETT",
+      bpjsKesNumber: form.bpjsKesNumber,
+      bpjsTkNumber: form.bpjsTkNumber,
+      bankName: form.bankName,
+      bankAccountNo: form.bankAccountNo,
+      bankAccountName: form.bankAccountName,
+    });
 
-    addEmployee(newEmployee);
-    toast.success("Karyawan berhasil ditambahkan");
-    router.push("/employees");
+    toast.success("Data karyawan berhasil diperbarui");
+    router.push(`/employees/${employee.id}`);
+  }
+
+  if (!employee) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <h2 className="text-xl font-semibold">Karyawan tidak ditemukan</h2>
+        <p className="text-muted-foreground">
+          Data karyawan dengan ID tersebut tidak ditemukan atau telah dihapus.
+        </p>
+        <Link href="/employees" className={cn(buttonVariants({ variant: "outline" }))}>
+          <ArrowLeft data-icon="inline-start" />
+          Kembali ke Data Karyawan
+        </Link>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/employees" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
+        <Link
+          href={`/employees/${employee.id}`}
+          className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+        >
           <ArrowLeft className="size-4" />
         </Link>
         <div>
           <h1 className="text-xl font-bold tracking-tight md:text-2xl">
-            Tambah Karyawan Baru
+            Edit Karyawan
           </h1>
           <p className="text-sm text-muted-foreground">
-            Lengkapi data karyawan dalam 3 langkah
+            {employee.firstName} {employee.lastName} — {employee.employeeNumber}
           </p>
         </div>
       </div>
@@ -467,9 +479,7 @@ export default function NewEmployeePage() {
                     id="dateOfBirth"
                     type="date"
                     value={form.dateOfBirth}
-                    onChange={(e) =>
-                      handleChange("dateOfBirth", e.target.value)
-                    }
+                    onChange={(e) => handleChange("dateOfBirth", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -478,9 +488,7 @@ export default function NewEmployeePage() {
                     id="placeOfBirth"
                     placeholder="Kota tempat lahir"
                     value={form.placeOfBirth}
-                    onChange={(e) =>
-                      handleChange("placeOfBirth", e.target.value)
-                    }
+                    onChange={(e) => handleChange("placeOfBirth", e.target.value)}
                   />
                 </div>
               </div>
@@ -602,9 +610,7 @@ export default function NewEmployeePage() {
                     id="emergencyName"
                     placeholder="Nama kontak darurat"
                     value={form.emergencyName}
-                    onChange={(e) =>
-                      handleChange("emergencyName", e.target.value)
-                    }
+                    onChange={(e) => handleChange("emergencyName", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -614,9 +620,7 @@ export default function NewEmployeePage() {
                     type="tel"
                     placeholder="08xxxxxxxxxx"
                     value={form.emergencyPhone}
-                    onChange={(e) =>
-                      handleChange("emergencyPhone", e.target.value)
-                    }
+                    onChange={(e) => handleChange("emergencyPhone", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -625,9 +629,7 @@ export default function NewEmployeePage() {
                     id="emergencyRelation"
                     placeholder="Contoh: Istri, Suami, Ayah"
                     value={form.emergencyRelation}
-                    onChange={(e) =>
-                      handleChange("emergencyRelation", e.target.value)
-                    }
+                    onChange={(e) => handleChange("emergencyRelation", e.target.value)}
                   />
                 </div>
               </div>
@@ -854,9 +856,7 @@ export default function NewEmployeePage() {
                     id="bpjsKesNumber"
                     placeholder="Nomor BPJS Kesehatan"
                     value={form.bpjsKesNumber}
-                    onChange={(e) =>
-                      handleChange("bpjsKesNumber", e.target.value)
-                    }
+                    onChange={(e) => handleChange("bpjsKesNumber", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -865,9 +865,7 @@ export default function NewEmployeePage() {
                     id="bpjsTkNumber"
                     placeholder="Nomor BPJS Ketenagakerjaan"
                     value={form.bpjsTkNumber}
-                    onChange={(e) =>
-                      handleChange("bpjsTkNumber", e.target.value)
-                    }
+                    onChange={(e) => handleChange("bpjsTkNumber", e.target.value)}
                   />
                 </div>
               </div>
@@ -908,9 +906,7 @@ export default function NewEmployeePage() {
                     id="bankAccountNo"
                     placeholder="Nomor rekening"
                     value={form.bankAccountNo}
-                    onChange={(e) =>
-                      handleChange("bankAccountNo", e.target.value)
-                    }
+                    onChange={(e) => handleChange("bankAccountNo", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -919,9 +915,7 @@ export default function NewEmployeePage() {
                     id="bankAccountName"
                     placeholder="Sesuai buku tabungan"
                     value={form.bankAccountName}
-                    onChange={(e) =>
-                      handleChange("bankAccountName", e.target.value)
-                    }
+                    onChange={(e) => handleChange("bankAccountName", e.target.value)}
                   />
                 </div>
               </div>
@@ -930,7 +924,6 @@ export default function NewEmployeePage() {
 
           <Separator className="my-6" />
 
-          {/* Navigation buttons - full width on mobile, side-by-side on desktop */}
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
             <Button
               variant="outline"
@@ -949,7 +942,7 @@ export default function NewEmployeePage() {
             ) : (
               <Button className="w-full sm:w-auto" onClick={handleSubmit}>
                 <Check data-icon="inline-start" className="size-4" />
-                Simpan Karyawan
+                Simpan Perubahan
               </Button>
             )}
           </div>

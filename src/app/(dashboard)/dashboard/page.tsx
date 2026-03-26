@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Card,
   CardContent,
@@ -24,14 +26,7 @@ import {
   Activity,
   TrendingUp,
 } from "lucide-react";
-import {
-  employees,
-  departments,
-  positions,
-  attendanceTrend,
-  leaveDistribution,
-  activityFeed,
-} from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import type { ActivityItem } from "@/lib/dummy-data";
 import { format, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
@@ -47,7 +42,7 @@ function getGreeting(): string {
 }
 
 function getFormattedDate(): string {
-  const today = new Date("2026-03-24");
+  const today = new Date();
   return format(today, "EEEE, dd MMMM yyyy", { locale: id });
 }
 
@@ -89,7 +84,7 @@ const ACTIVITY_ICON_MAP: Record<
 };
 
 function formatRelativeTime(timestamp: string): string {
-  const now = new Date("2026-03-24T09:00:00");
+  const now = new Date();
   const date = new Date(timestamp);
   const diffMs = now.getTime() - date.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -110,14 +105,23 @@ const DEPT_BAR_COLORS = [
   "bg-cyan-500",
 ];
 
-export default async function DashboardPage() {
-  const today = new Date("2026-03-24");
+export default function DashboardPage() {
+  const employees = useAppStore((s) => s.employees);
+  const departments = useAppStore((s) => s.departments);
+  const positions = useAppStore((s) => s.positions);
+  const attendanceTrend = useAppStore((s) => s.attendanceTrend);
+  const leaveDistribution = useAppStore((s) => s.leaveDistribution);
+  const activityFeed = useAppStore((s) => s.activityFeed);
+
+  const today = new Date();
   const activeEmployees = employees.filter(
     (e) => e.status === "ACTIVE" && !e.isDeleted,
   );
   const activeDepartments = departments.filter((d) => d.isActive);
+  const threeMonthsLater = new Date();
+  threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
   const contractExpiring = employees.filter(
-    (e) => e.endDate && new Date(e.endDate) <= new Date("2026-06-30"),
+    (e) => e.endDate && new Date(e.endDate) <= threeMonthsLater,
   );
   const probationEmployees = employees.filter(
     (e) => e.status === "PROBATION",

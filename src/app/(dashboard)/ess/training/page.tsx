@@ -1,6 +1,7 @@
 "use client";
 
-import { trainingParticipants, CATEGORY_LABELS } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
+import { CATEGORY_LABELS } from "@/lib/dummy-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,11 @@ const PARTICIPANT_STATUS_MAP: Record<string, string> = {
 };
 
 export default function EssTrainingPage() {
-  // Demo: emp-4 (Dewi Lestari) - has multiple trainings
-  const myTrainings = trainingParticipants.filter((t) => t.employeeId === "emp-4");
+  const employees = useAppStore((s) => s.employees);
+  const trainingParticipants = useAppStore((s) => s.trainingParticipants);
+  // Demo: first non-admin employee
+  const currentEmpId = employees[1]?.id ?? "emp-4";
+  const myTrainings = trainingParticipants.filter((t) => t.employeeId === currentEmpId);
 
   return (
     <div className="space-y-6">

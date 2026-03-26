@@ -14,11 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  employeeAdvances as initialAdvances,
-  employees,
-  type EmployeeAdvance,
-} from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
+import { type EmployeeAdvance } from "@/lib/dummy-data";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -81,22 +78,24 @@ const EMPTY_FORM: AdvanceForm = {
 };
 
 // ---------------------------------------------------------------------------
-// Available employees for the select
-// ---------------------------------------------------------------------------
-
-const AVAILABLE_EMPLOYEES = employees.map((e) => ({
-  id: e.id,
-  name: `${e.firstName} ${e.lastName}`,
-  department: e.departmentName,
-}));
-
-// ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
 
 export default function AdvancesPage() {
-  const [advances, setAdvances] =
-    useState<EmployeeAdvance[]>(initialAdvances);
+  const advances = useAppStore((s) => s.employeeAdvances);
+  const employees = useAppStore((s) => s.employees);
+  const storeAddEmployeeAdvance = useAppStore((s) => s.addEmployeeAdvance);
+  const storeUpdateEmployeeAdvance = useAppStore((s) => s.updateEmployeeAdvance);
+
+  const AVAILABLE_EMPLOYEES = useMemo(
+    () =>
+      employees.map((e) => ({
+        id: e.id,
+        name: `${e.firstName} ${e.lastName}`,
+        department: e.departmentName,
+      })),
+    [employees],
+  );
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<AdvanceForm>(EMPTY_FORM);
@@ -114,34 +113,20 @@ export default function AdvancesPage() {
 
   // ----- Handlers -----
   const handleApprove = (id: string) => {
-    setAdvances((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              status: "APPROVED" as const,
-              approvedBy: "Admin",
-              approvedDate: new Date().toISOString().slice(0, 10),
-            }
-          : a,
-      ),
-    );
+    storeUpdateEmployeeAdvance(id, {
+      status: "APPROVED" as const,
+      approvedBy: "Admin",
+      approvedDate: new Date().toISOString().slice(0, 10),
+    });
     toast.success("Kasbon berhasil disetujui");
   };
 
   const handleReject = (id: string) => {
-    setAdvances((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              status: "REJECTED" as const,
-              approvedBy: "Admin",
-              approvedDate: new Date().toISOString().slice(0, 10),
-            }
-          : a,
-      ),
-    );
+    storeUpdateEmployeeAdvance(id, {
+      status: "REJECTED" as const,
+      approvedBy: "Admin",
+      approvedDate: new Date().toISOString().slice(0, 10),
+    });
     toast.error("Kasbon ditolak");
   };
 
@@ -170,7 +155,7 @@ export default function AdvancesPage() {
       notes: form.notes,
     };
 
-    setAdvances((prev) => [created, ...prev]);
+    storeAddEmployeeAdvance(created);
     setForm(EMPTY_FORM);
     setDialogOpen(false);
     toast.success("Pengajuan kasbon berhasil dibuat");

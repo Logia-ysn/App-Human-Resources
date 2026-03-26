@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { employees as allEmployees, departments } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -95,6 +95,8 @@ function activeFilterCount(
 }
 
 export default function EmployeesPage() {
+  const allEmployees = useAppStore((s) => s.employees);
+  const departments = useAppStore((s) => s.departments);
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -103,7 +105,7 @@ export default function EmployeesPage() {
 
   const activeEmployees = useMemo(
     () => allEmployees.filter((emp) => !emp.isDeleted),
-    []
+    [allEmployees]
   );
 
   const filtered = useMemo(() => {

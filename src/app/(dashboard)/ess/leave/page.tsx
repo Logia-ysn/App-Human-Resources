@@ -1,15 +1,19 @@
 "use client";
 
-import { leaveBalances, leaveRequests } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { CalendarDays } from "lucide-react";
 
 export default function EssLeavePage() {
-  // Demo: emp-2 (Sari Dewi)
-  const myBalances = leaveBalances.filter((b) => b.employeeId === "emp-2");
-  const myRequests = leaveRequests.filter((r) => r.employeeId === "emp-2");
+  const employees = useAppStore((s) => s.employees);
+  const leaveBalances = useAppStore((s) => s.leaveBalances);
+  const leaveRequests = useAppStore((s) => s.leaveRequests);
+  // Demo: first non-admin employee
+  const currentEmpId = employees[1]?.id ?? "emp-2";
+  const myBalances = leaveBalances.filter((b) => b.employeeId === currentEmpId);
+  const myRequests = leaveRequests.filter((r) => r.employeeId === currentEmpId);
 
   return (
     <div className="space-y-6">

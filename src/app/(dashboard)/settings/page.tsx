@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { companySettings, type CompanySettings } from "@/lib/dummy-data";
+import type { CompanySettings } from "@/lib/dummy-data";
 import { useAppStore } from "@/lib/store/app-store";
 import {
   Card,
@@ -94,7 +94,9 @@ function parseCurrency(value: string): number {
 }
 
 export default function SettingsPage() {
-  const [form, setForm] = useState<CompanySettings>({ ...companySettings });
+  const storeSettings = useAppStore((s) => s.companySettings);
+  const updateCompanySettings = useAppStore((s) => s.updateCompanySettings);
+  const [form, setForm] = useState<CompanySettings>({ ...storeSettings });
 
   function handleChange(field: keyof CompanySettings, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -102,6 +104,7 @@ export default function SettingsPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    updateCompanySettings(form);
     toast.success("Pengaturan berhasil disimpan");
   }
 

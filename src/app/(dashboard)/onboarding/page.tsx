@@ -17,9 +17,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAppStore } from "@/lib/store/app-store";
 import {
-  employeeOnboardings as initialOnboardings,
-  onboardingTemplates,
   type EmployeeOnboarding,
   type EmployeeOnboardingTask,
 } from "@/lib/dummy-data";
@@ -78,8 +77,10 @@ function isOverdue(onboarding: EmployeeOnboarding): boolean {
 }
 
 export default function OnboardingPage() {
-  const [onboardings, setOnboardings] =
-    useState<EmployeeOnboarding[]>(initialOnboardings);
+  const onboardings = useAppStore((s) => s.employeeOnboardings);
+  const onboardingTemplates = useAppStore((s) => s.onboardingTemplates);
+  const updateEmployeeOnboarding = useAppStore((s) => s.updateEmployeeOnboarding);
+
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const summary = useMemo(() => {
@@ -99,29 +100,24 @@ export default function OnboardingPage() {
     taskId: string,
     checked: boolean
   ) => {
-    setOnboardings((prev) =>
-      prev.map((onb) => {
-        if (onb.id !== onboardingId) return onb;
-        const updatedTasks = onb.tasks.map((task) => {
-          if (task.taskId !== taskId) return task;
-          return {
-            ...task,
-            isCompleted: checked,
-            completedAt: checked
-              ? new Date().toISOString().split("T")[0]
-              : null,
-          };
-        });
-        const allCompleted = updatedTasks.every((t) => t.isCompleted);
-        return {
-          ...onb,
-          tasks: updatedTasks,
-          status: allCompleted
-            ? ("COMPLETED" as const)
-            : ("IN_PROGRESS" as const),
-        };
-      })
-    );
+    const onb = onboardings.find((o) => o.id === onboardingId);
+    if (!onb) return;
+
+    const updatedTasks = onb.tasks.map((task) => {
+      if (task.taskId !== taskId) return task;
+      return {
+        ...task,
+        isCompleted: checked,
+        completedAt: checked
+          ? new Date().toISOString().split("T")[0]
+          : null,
+      };
+    });
+    const allCompleted = updatedTasks.every((t) => t.isCompleted);
+    updateEmployeeOnboarding(onboardingId, {
+      tasks: updatedTasks,
+      status: allCompleted ? ("COMPLETED" as const) : ("IN_PROGRESS" as const),
+    });
     toast.success(checked ? "Task selesai" : "Task dibatalkan");
   };
 

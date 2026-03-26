@@ -1,6 +1,6 @@
 "use client";
 
-import { payslips } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,11 @@ function fmt(n: number) {
 }
 
 export default function EssPayslipsPage() {
-  // Demo: show payslips for emp-2 (Sari Dewi)
-  const mySlips = payslips.filter((s) => s.employeeId === "emp-2");
+  const employees = useAppStore((s) => s.employees);
+  const payslips = useAppStore((s) => s.payslips);
+  // Demo: show payslips for the first non-admin employee
+  const currentEmpId = employees[1]?.id ?? "emp-2";
+  const mySlips = payslips.filter((s) => s.employeeId === currentEmpId);
 
   return (
     <div className="space-y-6">

@@ -15,11 +15,8 @@ import {
 import { id as idLocale } from "date-fns/locale";
 import { RefreshCw, Clock, CalendarDays, Sun } from "lucide-react";
 
-import {
-  shiftTypes,
-  shiftAssignments,
-  type ShiftType,
-} from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
+import type { ShiftType } from "@/lib/dummy-data";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -37,24 +34,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 // Constants
 // ---------------------------------------------------------------------------
 
-const DEMO_EMPLOYEE_ID = "emp-006";
-
 const DAYS_SHORT = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"] as const;
 const CALENDAR_DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"] as const;
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function getMyShift(): { assignment: typeof shiftAssignments[0] | undefined; shiftType: ShiftType | undefined } {
-  const assignment = shiftAssignments.find(
-    (a) => a.employeeId === DEMO_EMPLOYEE_ID && a.isActive,
-  );
-  const shiftType = assignment
-    ? shiftTypes.find((s) => s.id === assignment.shiftId)
-    : undefined;
-  return { assignment, shiftType };
-}
 
 function getWeekDates(): Date[] {
   const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -86,7 +67,22 @@ function isWeekend(date: Date): boolean {
 // ---------------------------------------------------------------------------
 
 export default function EssShiftsPage() {
-  const { assignment, shiftType } = useMemo(() => getMyShift(), []);
+  const employees = useAppStore((s) => s.employees);
+  const shiftTypes = useAppStore((s) => s.shiftTypes);
+  const shiftAssignments = useAppStore((s) => s.shiftAssignments);
+
+  // Demo: first non-admin employee
+  const currentEmpId = employees[1]?.id ?? "emp-006";
+
+  const { assignment, shiftType } = useMemo(() => {
+    const found = shiftAssignments.find(
+      (a) => a.employeeId === currentEmpId && a.isActive,
+    );
+    const type = found
+      ? shiftTypes.find((s) => s.id === found.shiftId)
+      : undefined;
+    return { assignment: found, shiftType: type };
+  }, [shiftAssignments, shiftTypes, currentEmpId]);
   const weekDates = useMemo(() => getWeekDates(), []);
   const now = new Date();
   const calendarDays = useMemo(() => getCalendarDays(now), []);

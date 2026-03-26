@@ -4,9 +4,8 @@ import { useState, useMemo } from "react";
 import { GraduationCap, Plus, Users, BookOpen, Clock, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAppStore } from "@/lib/store/app-store";
 import {
-  trainings as initialTrainings,
-  trainingParticipants,
   CATEGORY_LABELS,
   METHOD_LABELS,
   TRAINING_STATUS_LABELS,
@@ -79,8 +78,10 @@ function renderStars(rating: number | null) {
 }
 
 export default function TrainingPage() {
-  const [trainings, setTrainings] =
-    useState<TrainingRecord[]>(initialTrainings);
+  const trainings = useAppStore((s) => s.trainings);
+  const trainingParticipants = useAppStore((s) => s.trainingParticipants);
+  const storeAddTraining = useAppStore((s) => s.addTraining);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [participantFilter, setParticipantFilter] = useState("ALL");
 
@@ -116,7 +117,7 @@ export default function TrainingPage() {
     return trainingParticipants.filter(
       (p) => p.trainingId === participantFilter,
     );
-  }, [participantFilter]);
+  }, [trainingParticipants, participantFilter]);
 
   const resetForm = () => {
     setFormTitle("");
@@ -159,7 +160,7 @@ export default function TrainingPage() {
       createdAt: new Date().toISOString().split("T")[0],
     };
 
-    setTrainings((prev) => [...prev, newTraining]);
+    storeAddTraining(newTraining);
     resetForm();
     setDialogOpen(false);
     toast.success("Training berhasil ditambahkan");

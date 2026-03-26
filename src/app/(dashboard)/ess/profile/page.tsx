@@ -1,6 +1,6 @@
 "use client";
 
-import { employees } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ function InfoItem({ label, value }: { label: string; value: string | number | nu
 }
 
 export default function EssProfilePage() {
+  const employees = useAppStore((s) => s.employees);
   const emp = employees[1];
   const initials = `${emp.firstName[0]}${emp.lastName[0]}`;
 

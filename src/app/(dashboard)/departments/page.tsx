@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { departments as initialDepartments, type Department } from "@/lib/dummy-data";
+import type { Department } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,9 +54,10 @@ const EMPTY_FORM: DepartmentFormData = {
 };
 
 export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState<Department[]>(
-    () => [...initialDepartments],
-  );
+  const departments = useAppStore((s) => s.departments);
+  const addDepartment = useAppStore((s) => s.addDepartment);
+  const updateDepartment = useAppStore((s) => s.updateDepartment);
+  const deleteDepartment = useAppStore((s) => s.deleteDepartment);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<DepartmentFormData>(EMPTY_FORM);
@@ -82,13 +84,7 @@ export default function DepartmentsPage() {
     if (!form.name.trim() || !form.code.trim()) return;
 
     if (editingId) {
-      setDepartments((prev) =>
-        prev.map((d) =>
-          d.id === editingId
-            ? { ...d, ...form }
-            : d,
-        ),
-      );
+      updateDepartment(editingId, form);
       toast.success("Departemen berhasil diperbarui");
     } else {
       const newDept: Department = {
@@ -103,7 +99,7 @@ export default function DepartmentsPage() {
         employeeCount: 0,
         createdAt: new Date().toISOString().slice(0, 10),
       };
-      setDepartments((prev) => [...prev, newDept]);
+      addDepartment(newDept);
       toast.success("Departemen berhasil ditambahkan");
     }
 
@@ -111,7 +107,7 @@ export default function DepartmentsPage() {
   }
 
   function handleDelete(id: string) {
-    setDepartments((prev) => prev.filter((d) => d.id !== id));
+    deleteDepartment(id);
     toast.success("Departemen berhasil dihapus");
   }
 

@@ -35,11 +35,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
-import {
-  positions as initialPositions,
-  departments,
-  type Position,
-} from "@/lib/dummy-data";
+import type { Position } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 
 const LEVELS = ["STAFF", "SUPERVISOR", "MANAGER", "DIRECTOR"] as const;
 
@@ -93,7 +90,11 @@ function formFromPosition(p: Position): FormData {
 }
 
 export default function PositionsPage() {
-  const [positions, setPositions] = useState<Position[]>(initialPositions);
+  const positions = useAppStore((s) => s.positions);
+  const departments = useAppStore((s) => s.departments);
+  const addPosition = useAppStore((s) => s.addPosition);
+  const updatePosition = useAppStore((s) => s.updatePosition);
+  const deletePosition = useAppStore((s) => s.deletePosition);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
@@ -117,7 +118,7 @@ export default function PositionsPage() {
   }
 
   function handleDelete(id: string) {
-    setPositions((prev) => prev.filter((p) => p.id !== id));
+    deletePosition(id);
     toast.success("Jabatan berhasil dihapus");
   }
 
@@ -130,24 +131,17 @@ export default function PositionsPage() {
     const dept = departments.find((d) => d.id === form.departmentId);
 
     if (editingId) {
-      setPositions((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                name: form.name.trim(),
-                code: form.code.trim(),
-                departmentId: form.departmentId,
-                departmentName: dept?.name ?? "",
-                level: form.level,
-                minSalary: form.minSalary ? Number(form.minSalary) : null,
-                maxSalary: form.maxSalary ? Number(form.maxSalary) : null,
-                description: form.description.trim(),
-                isActive: form.isActive,
-              }
-            : p
-        )
-      );
+      updatePosition(editingId, {
+        name: form.name.trim(),
+        code: form.code.trim(),
+        departmentId: form.departmentId,
+        departmentName: dept?.name ?? "",
+        level: form.level,
+        minSalary: form.minSalary ? Number(form.minSalary) : null,
+        maxSalary: form.maxSalary ? Number(form.maxSalary) : null,
+        description: form.description.trim(),
+        isActive: form.isActive,
+      });
       toast.success("Jabatan berhasil diperbarui");
     } else {
       const newPosition: Position = {
@@ -164,7 +158,7 @@ export default function PositionsPage() {
         employeeCount: 0,
         createdAt: new Date().toISOString().split("T")[0],
       };
-      setPositions((prev) => [...prev, newPosition]);
+      addPosition(newPosition);
       toast.success("Jabatan berhasil ditambahkan");
     }
 

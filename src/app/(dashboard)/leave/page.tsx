@@ -13,10 +13,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAppStore } from "@/lib/store/app-store";
 import {
-  leaveTypes as initialLeaveTypes,
-  leaveBalances,
-  leaveRequests as initialLeaveRequests,
   type LeaveTypeRecord,
   type LeaveRequestRecord,
 } from "@/lib/dummy-data";
@@ -87,12 +85,12 @@ const EMPTY_LEAVE_TYPE: Omit<LeaveTypeRecord, "id"> = {
 // ---------------------------------------------------------------------------
 
 export default function LeavePage() {
-  // ----- Leave requests (mutable copy for approve / reject) -----
-  const [requests, setRequests] =
-    useState<LeaveRequestRecord[]>(initialLeaveRequests);
-
-  // ----- Leave types (mutable copy for adding new types) -----
-  const [types, setTypes] = useState<LeaveTypeRecord[]>(initialLeaveTypes);
+  // ----- Store selectors & actions -----
+  const requests = useAppStore((s) => s.leaveRequests);
+  const types = useAppStore((s) => s.leaveTypes);
+  const leaveBalances = useAppStore((s) => s.leaveBalances);
+  const updateLeaveRequest = useAppStore((s) => s.updateLeaveRequest);
+  const addLeaveType = useAppStore((s) => s.addLeaveType);
 
   // ----- Status filter -----
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -123,20 +121,12 @@ export default function LeavePage() {
   };
 
   const handleApprove = (id: string) => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status: "APPROVED" as const, approvedBy: "Admin" } : r
-      )
-    );
+    updateLeaveRequest(id, { status: "APPROVED" as const, approvedBy: "Admin" });
     toast.success("Pengajuan cuti berhasil disetujui");
   };
 
   const handleReject = (id: string) => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status: "REJECTED" as const, approvedBy: "Admin" } : r
-      )
-    );
+    updateLeaveRequest(id, { status: "REJECTED" as const, approvedBy: "Admin" });
     toast.error("Pengajuan cuti ditolak");
   };
 
@@ -151,7 +141,7 @@ export default function LeavePage() {
       id: `lt-${Date.now()}`,
     };
 
-    setTypes((prev) => [...prev, created]);
+    addLeaveType(created);
     setNewType(EMPTY_LEAVE_TYPE);
     setDialogOpen(false);
     toast.success(`Tipe cuti "${created.name}" berhasil ditambahkan`);

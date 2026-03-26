@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Wallet, FileText, Download, CheckCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 
-import { payrollPeriods, payslips } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +74,10 @@ function formatPeriodLabel(month: number, year: number): string {
 }
 
 export default function PayrollPage() {
+  const payrollPeriods = useAppStore((s) => s.payrollPeriods);
+  const payslips = useAppStore((s) => s.payslips);
+  const updatePayrollPeriod = useAppStore((s) => s.updatePayrollPeriod);
+
   const [activeTab, setActiveTab] = useState("periode");
   const [processDialogOpen, setProcessDialogOpen] = useState(false);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
@@ -85,7 +89,7 @@ export default function PayrollPage() {
       return b.month - a.month;
     });
     return sorted[0] ?? null;
-  }, []);
+  }, [payrollPeriods]);
 
   const [slipPeriodId, setSlipPeriodId] = useState(latestPeriod?.id ?? "");
 
@@ -97,24 +101,25 @@ export default function PayrollPage() {
       (p) => p.status === "CALCULATED" || p.status === "PROCESSING"
     ).length;
     return { totalPeriode, sudahDibayar, menungguApproval };
-  }, []);
+  }, [payrollPeriods]);
 
   // Filtered payslips based on selected period
   const filteredPayslips = useMemo(
     () => payslips.filter((ps) => ps.periodId === slipPeriodId),
-    [slipPeriodId]
+    [payslips, slipPeriodId]
   );
 
   // Selected period for payslip tab header
   const selectedSlipPeriod = useMemo(
     () => payrollPeriods.find((p) => p.id === slipPeriodId) ?? null,
-    [slipPeriodId]
+    [payrollPeriods, slipPeriodId]
   );
 
   const handleProcessPayroll = () => {
     if (selectedPeriodId) {
       const period = payrollPeriods.find((p) => p.id === selectedPeriodId);
       if (period) {
+        updatePayrollPeriod(selectedPeriodId, { status: "PAID" as const });
         toast.success(
           `Payroll ${formatPeriodLabel(period.month, period.year)} berhasil diproses`
         );

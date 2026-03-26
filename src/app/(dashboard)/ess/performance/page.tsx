@@ -1,6 +1,7 @@
 "use client";
 
-import { performanceReviews, RATING_LABELS, REVIEW_STATUS_LABELS } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
+import { RATING_LABELS, REVIEW_STATUS_LABELS } from "@/lib/dummy-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,11 @@ const RATING_COLORS: Record<string, string> = {
 };
 
 export default function EssPerformancePage() {
-  // Demo: emp-2 (Sari Dewi)
-  const myReviews = performanceReviews.filter((r) => r.employeeId === "emp-2");
+  const employees = useAppStore((s) => s.employees);
+  const performanceReviews = useAppStore((s) => s.performanceReviews);
+  // Demo: first non-admin employee
+  const currentEmpId = employees[1]?.id ?? "emp-2";
+  const myReviews = performanceReviews.filter((r) => r.employeeId === currentEmpId);
 
   return (
     <div className="space-y-6">

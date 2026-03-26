@@ -11,7 +11,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { lifecycleEvents, type LifecycleEvent } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
+import { type LifecycleEvent } from "@/lib/dummy-data";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -94,6 +95,8 @@ const formatDate = (dateStr: string) => {
 };
 
 export default function LifecyclePage() {
+  const lifecycleEvents = useAppStore((s) => s.lifecycleEvents);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
 
@@ -126,7 +129,7 @@ export default function LifecyclePage() {
       (e) => e.type === "CONFIRMATION"
     ).length;
     return { total, promotions, transfers, confirmations };
-  }, []);
+  }, [lifecycleEvents]);
 
   return (
     <div className="space-y-6">

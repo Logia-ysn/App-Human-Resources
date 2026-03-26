@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { attendanceRecords } from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,11 @@ import { Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function EssAttendancePage() {
-  // Demo: emp-2 (Sari Dewi)
-  const myAttendance = attendanceRecords.filter((a) => a.employeeId === "emp-2");
+  const employees = useAppStore((s) => s.employees);
+  const attendanceRecords = useAppStore((s) => s.attendanceRecords);
+  // Demo: first non-admin employee
+  const currentEmpId = employees[1]?.id ?? "emp-2";
+  const myAttendance = attendanceRecords.filter((a) => a.employeeId === currentEmpId);
   const [clockedIn, setClockedIn] = useState(myAttendance.some((a) => a.checkIn && !a.checkOut));
 
   const todayRecord = myAttendance.find((a) => a.date === "2026-03-23");

@@ -6,9 +6,8 @@ import { id as idLocale } from "date-fns/locale";
 import { BarChart3, TrendingUp, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAppStore } from "@/lib/store/app-store";
 import {
-  reviewCycles,
-  performanceReviews,
   RATING_LABELS,
   REVIEW_STATUS_LABELS,
   type ReviewCycleRecord,
@@ -102,7 +101,10 @@ function getScoreBarColor(score: number | null): string {
 }
 
 export default function PerformancePage() {
-  const [cycles, setCycles] = useState<ReviewCycleRecord[]>([...reviewCycles]);
+  const cycles = useAppStore((s) => s.reviewCycles);
+  const performanceReviews = useAppStore((s) => s.performanceReviews);
+  const storeAddReviewCycle = useAppStore((s) => s.addReviewCycle);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cycleForm, setCycleForm] = useState<CycleFormData>(EMPTY_CYCLE_FORM);
   const [selectedCycleId, setSelectedCycleId] = useState<string>("ALL");
@@ -139,7 +141,7 @@ export default function PerformancePage() {
       completedReviews: 0,
     };
 
-    setCycles((prev) => [...prev, newCycle]);
+    storeAddReviewCycle(newCycle);
     setDialogOpen(false);
     toast.success("Siklus review berhasil ditambahkan");
   }
@@ -149,7 +151,7 @@ export default function PerformancePage() {
   const filteredReviews = useMemo(() => {
     if (selectedCycleId === "ALL") return performanceReviews;
     return performanceReviews.filter((r) => r.cycleId === selectedCycleId);
-  }, [selectedCycleId]);
+  }, [performanceReviews, selectedCycleId]);
 
   const completedReviews = useMemo(
     () => filteredReviews.filter((r) => r.finalScore !== null),
@@ -356,7 +358,7 @@ export default function PerformancePage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">Semua Siklus</SelectItem>
-                      {reviewCycles.map((cycle) => (
+                      {cycles.map((cycle) => (
                         <SelectItem key={cycle.id} value={cycle.id}>
                           {cycle.name}
                         </SelectItem>

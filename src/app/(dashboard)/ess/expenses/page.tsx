@@ -13,12 +13,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  employeeAdvances as initialAdvances,
-  expenseClaims as initialClaims,
-  type EmployeeAdvance,
-  type ExpenseClaim,
-} from "@/lib/dummy-data";
+import { useAppStore } from "@/lib/store/app-store";
+import type { EmployeeAdvance, ExpenseClaim } from "@/lib/dummy-data";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,9 +79,17 @@ function formatCurrency(amount: number): string {
 // ---------------------------------------------------------------------------
 
 export default function EssExpensesPage() {
-  const [advances, setAdvances] =
-    useState<EmployeeAdvance[]>(initialAdvances);
-  const [claims, setClaims] = useState<ExpenseClaim[]>(initialClaims);
+  const employees = useAppStore((s) => s.employees);
+  const advances = useAppStore((s) => s.employeeAdvances);
+  const claims = useAppStore((s) => s.expenseClaims);
+  const addEmployeeAdvance = useAppStore((s) => s.addEmployeeAdvance);
+  const addExpenseClaim = useAppStore((s) => s.addExpenseClaim);
+
+  // Demo: derive employee info from store
+  const currentEmp = employees[1];
+  const demoEmployeeId = currentEmp?.id ?? DEMO_EMPLOYEE_ID;
+  const demoEmployeeName = currentEmp ? `${currentEmp.firstName} ${currentEmp.lastName}` : DEMO_EMPLOYEE_NAME;
+  const demoDepartment = currentEmp?.departmentName ?? DEMO_DEPARTMENT;
 
   // Dialogs
   const [advanceDialogOpen, setAdvanceDialogOpen] = useState(false);
@@ -106,25 +110,25 @@ export default function EssExpensesPage() {
   const myAdvances = useMemo(
     () =>
       advances
-        .filter((a) => a.employeeId === DEMO_EMPLOYEE_ID)
+        .filter((a) => a.employeeId === demoEmployeeId)
         .sort(
           (a, b) =>
             new Date(b.requestDate).getTime() -
             new Date(a.requestDate).getTime(),
         ),
-    [advances],
+    [advances, demoEmployeeId],
   );
 
   const myClaims = useMemo(
     () =>
       claims
-        .filter((c) => c.employeeId === DEMO_EMPLOYEE_ID)
+        .filter((c) => c.employeeId === demoEmployeeId)
         .sort(
           (a, b) =>
             new Date(b.submittedDate).getTime() -
             new Date(a.submittedDate).getTime(),
         ),
-    [claims],
+    [claims, demoEmployeeId],
   );
 
   // Stats
@@ -150,9 +154,9 @@ export default function EssExpensesPage() {
 
     const created: EmployeeAdvance = {
       id: `adv-${Date.now()}`,
-      employeeId: DEMO_EMPLOYEE_ID,
-      employeeName: DEMO_EMPLOYEE_NAME,
-      departmentName: DEMO_DEPARTMENT,
+      employeeId: demoEmployeeId,
+      employeeName: demoEmployeeName,
+      departmentName: demoDepartment,
       amount,
       purpose: newAdvancePurpose.trim(),
       requestDate: format(new Date(), "yyyy-MM-dd"),
@@ -163,7 +167,7 @@ export default function EssExpensesPage() {
       notes: newAdvanceNotes.trim(),
     };
 
-    setAdvances((prev) => [...prev, created]);
+    addEmployeeAdvance(created);
     setNewAdvanceAmount("");
     setNewAdvancePurpose("");
     setNewAdvanceNotes("");
@@ -180,9 +184,9 @@ export default function EssExpensesPage() {
 
     const created: ExpenseClaim = {
       id: `exp-${Date.now()}`,
-      employeeId: DEMO_EMPLOYEE_ID,
-      employeeName: DEMO_EMPLOYEE_NAME,
-      departmentName: DEMO_DEPARTMENT,
+      employeeId: demoEmployeeId,
+      employeeName: demoEmployeeName,
+      departmentName: demoDepartment,
       title: newClaimTitle.trim(),
       totalAmount: amount,
       items: [
@@ -200,7 +204,7 @@ export default function EssExpensesPage() {
       approvedDate: null,
     };
 
-    setClaims((prev) => [...prev, created]);
+    addExpenseClaim(created);
     setNewClaimTitle("");
     setNewClaimAmount("");
     setNewClaimCategory("TRANSPORT");
