@@ -85,8 +85,8 @@ export default function EssShiftsPage() {
     return { assignment: found, shiftType: type };
   }, [shiftAssignments, shiftTypes, currentEmpId]);
   const weekDates = useMemo(() => getWeekDates(), []);
-  const now = new Date();
-  const calendarDays = useMemo(() => getCalendarDays(now), []);
+  const now = useMemo(() => new Date(), []);
+  const calendarDays = useMemo(() => getCalendarDays(now), [now]);
 
   // Next shift: find the next weekday from today
   const nextShiftDate = useMemo(() => {

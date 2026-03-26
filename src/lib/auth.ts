@@ -32,21 +32,21 @@ const DEMO_USERS = [
     email: "hr@company.co.id",
     password: "hr123",
     role: "HR_ADMIN" as Role,
-    employeeId: "emp-001",
+    employeeId: "emp-2",
   },
   {
     id: "usr-manager",
     email: "manager@company.co.id",
     password: "manager123",
     role: "MANAGER" as Role,
-    employeeId: "emp-002",
+    employeeId: "emp-3",
   },
   {
     id: "usr-employee",
     email: "karyawan@company.co.id",
     password: "karyawan123",
     role: "EMPLOYEE" as Role,
-    employeeId: "emp-003",
+    employeeId: "emp-4",
   },
 ];
 
