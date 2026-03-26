@@ -179,9 +179,9 @@ export default function PositionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
             Manajemen Jabatan
           </h1>
           <p className="text-muted-foreground">
@@ -190,7 +190,8 @@ export default function PositionsPage() {
         </div>
         <Button onClick={openCreate}>
           <Plus className="size-4" data-icon="inline-start" />
-          Tambah Jabatan
+          <span className="hidden sm:inline">Tambah Jabatan</span>
+          <span className="sm:hidden">Tambah</span>
         </Button>
       </div>
 
@@ -202,7 +203,7 @@ export default function PositionsPage() {
               value={filterDept}
               onValueChange={(val) => setFilterDept(val as string)}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Semua Departemen" />
               </SelectTrigger>
               <SelectContent>
@@ -217,6 +218,42 @@ export default function PositionsPage() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="space-y-3 md:hidden">
+            {filtered.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Tidak ada data jabatan.</div>
+            ) : (
+              filtered.map((pos) => (
+                <div key={pos.id} className="rounded-lg border p-4 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium">{pos.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{pos.code}</p>
+                    </div>
+                    <StatusBadge status={pos.isActive ? "ACTIVE" : "RESIGNED"} />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={LEVEL_VARIANT[pos.level] ?? "default"}>{pos.level}</Badge>
+                    <Badge variant="outline">{pos.departmentName}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">{formatSalaryRange(pos.minSalary, pos.maxSalary)}</p>
+                      <p className="text-muted-foreground">Karyawan: <span className="font-medium text-foreground">{pos.employeeCount}</span></p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon-sm" onClick={() => openEdit(pos)}>
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(pos)}>
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="hidden md:block">
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -288,6 +325,7 @@ export default function PositionsPage() {
               </TableBody>
             </Table>
           </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -305,7 +343,7 @@ export default function PositionsPage() {
           </DialogHeader>
 
           <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="pos-name">Nama Jabatan</Label>
                 <Input
@@ -330,7 +368,7 @@ export default function PositionsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Departemen</Label>
                 <Select
@@ -379,7 +417,7 @@ export default function PositionsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="pos-min-salary">Gaji Minimum</Label>
                 <Input

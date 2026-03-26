@@ -123,13 +123,14 @@ export default function DepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
           Manajemen Departemen
         </h1>
-        <Button onClick={openAddDialog}>
+        <Button onClick={openAddDialog} size="sm" className="sm:size-default">
           <Plus className="mr-1 h-4 w-4" />
-          Tambah Departemen
+          <span className="hidden sm:inline">Tambah Departemen</span>
+          <span className="sm:hidden">Tambah</span>
         </Button>
       </div>
 
@@ -138,6 +139,41 @@ export default function DepartmentsPage() {
           <CardTitle>Daftar Departemen</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Mobile card view */}
+          <div className="space-y-3 md:hidden">
+            {departments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Belum ada departemen</div>
+            ) : (
+              departments.map((dept) => (
+                <div key={dept.id} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium">{dept.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{dept.code}</p>
+                    </div>
+                    <StatusBadge status={dept.isActive ? "ACTIVE" : "RESIGNED"} />
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">Kepala: <span className="text-foreground">{dept.headEmployeeName ?? "-"}</span></p>
+                      <p className="text-muted-foreground">Karyawan: <span className="font-medium text-foreground">{dept.employeeCount}</span></p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(dept)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(dept)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -194,6 +230,7 @@ export default function DepartmentsPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

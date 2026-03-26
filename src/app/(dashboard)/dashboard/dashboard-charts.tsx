@@ -31,7 +31,8 @@ type AttendanceChartProps = {
 
 export function AttendanceChart({ data }: AttendanceChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <div className="h-[220px] sm:h-[280px]">
+    <ResponsiveContainer width="100%" height="100%">
       <AreaChart
         data={[...data]}
         margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
@@ -114,6 +115,7 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
         />
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -126,14 +128,15 @@ export function LeaveChart({ data }: LeaveChartProps) {
 
   return (
     <div className="flex flex-col items-center">
-      <ResponsiveContainer width="100%" height={220}>
+      <div className="h-[180px] w-full sm:h-[220px]">
+      <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={[...data]}
             cx="50%"
             cy="50%"
-            innerRadius={55}
-            outerRadius={85}
+            innerRadius="40%"
+            outerRadius="65%"
             paddingAngle={3}
             dataKey="value"
             stroke="none"
@@ -154,6 +157,7 @@ export function LeaveChart({ data }: LeaveChartProps) {
           />
         </PieChart>
       </ResponsiveContainer>
+      </div>
       <div className="mt-1 grid w-full grid-cols-2 gap-x-4 gap-y-1.5 px-2">
         {data.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2 text-xs">

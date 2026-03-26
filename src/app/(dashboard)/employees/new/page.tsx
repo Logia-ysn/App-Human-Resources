@@ -1025,8 +1025,8 @@ export default function NewEmployeePage() {
 
           <Separator className="my-6" />
 
-          {/* Navigation buttons - full width on mobile, side-by-side on desktop */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+          {/* Navigation buttons - sticky on mobile for easy access */}
+          <div className="sticky bottom-0 bg-card pb-safe flex flex-col gap-3 sm:relative sm:flex-row sm:justify-between">
             <Button
               variant="outline"
               className="w-full sm:w-auto"

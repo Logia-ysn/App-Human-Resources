@@ -125,15 +125,15 @@ export default function EssLeavePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Cuti Saya</h1>
+      <div className="flex flex-wrap items-center justify-between">
+        <h1 className="text-lg sm:text-2xl font-bold tracking-tight">Cuti Saya</h1>
         <Button onClick={handleOpenDialog}>
           <Plus className="mr-1 h-4 w-4" />
           Ajukan Cuti
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
         {myBalances.map((b) => (
           <Card key={b.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -153,32 +153,51 @@ export default function EssLeavePage() {
       <Card>
         <CardHeader><CardTitle>Riwayat Pengajuan Cuti</CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tipe Cuti</TableHead>
-                <TableHead>Tanggal</TableHead>
-                <TableHead>Jumlah Hari</TableHead>
-                <TableHead>Alasan</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {myRequests.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada pengajuan cuti.</TableCell></TableRow>
-              ) : (
-                myRequests.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{r.leaveTypeName}</TableCell>
-                    <TableCell>{r.startDate} — {r.endDate}</TableCell>
-                    <TableCell>{r.totalDays} hari</TableCell>
-                    <TableCell>{r.reason}</TableCell>
-                    <TableCell><StatusBadge status={r.status} /></TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          {/* Mobile card view */}
+          <div className="space-y-3 md:hidden">
+            {myRequests.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Belum ada pengajuan cuti.</div>
+            ) : (
+              myRequests.map((r) => (
+                <div key={r.id} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm">{r.leaveTypeName}</p>
+                    <StatusBadge status={r.status} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{r.startDate} — {r.endDate} ({r.totalDays} hari)</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{r.reason}</p>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipe Cuti</TableHead>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead>Jumlah Hari</TableHead>
+                  <TableHead>Alasan</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myRequests.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada pengajuan cuti.</TableCell></TableRow>
+                ) : (
+                  myRequests.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{r.leaveTypeName}</TableCell>
+                      <TableCell>{r.startDate} — {r.endDate}</TableCell>
+                      <TableCell>{r.totalDays} hari</TableCell>
+                      <TableCell>{r.reason}</TableCell>
+                      <TableCell><StatusBadge status={r.status} /></TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

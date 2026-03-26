@@ -209,7 +209,7 @@ export default function ShiftsPage() {
           <RefreshCw className="size-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
             Manajemen Shift
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -219,7 +219,7 @@ export default function ShiftsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         <Card className="shadow-sm border-l-4 border-l-blue-500">
           <CardContent>
             <div className="flex items-center gap-3">
@@ -389,82 +389,110 @@ export default function ShiftsPage() {
             </CardHeader>
 
             <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Nama Shift</TableHead>
-                    <TableHead>Jam Kerja</TableHead>
-                    <TableHead className="text-center">
-                      Istirahat
-                    </TableHead>
-                    <TableHead className="text-center">Warna</TableHead>
-                    <TableHead className="text-center">
-                      Jumlah Karyawan
-                    </TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shiftTypeList.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        Tidak ada tipe shift.
-                      </TableCell>
+              {/* Mobile card view */}
+              <div className="space-y-3 px-4 md:hidden">
+                {shiftTypeList.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    Tidak ada tipe shift.
+                  </p>
+                ) : (
+                  shiftTypeList.map((shift) => (
+                    <div key={shift.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: shift.color }} />
+                          <p className="font-medium text-sm">{shift.name}</p>
+                        </div>
+                        <StatusBadge status={shift.isActive ? "ACTIVE" : "RESIGNED"} />
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>Jam: {shift.startTime} - {shift.endTime}</p>
+                        <p>Istirahat: {shift.breakDuration} menit</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Nama Shift</TableHead>
+                      <TableHead>Jam Kerja</TableHead>
+                      <TableHead className="text-center">
+                        Istirahat
+                      </TableHead>
+                      <TableHead className="text-center">Warna</TableHead>
+                      <TableHead className="text-center">
+                        Jumlah Karyawan
+                      </TableHead>
+                      <TableHead className="text-center">Status</TableHead>
                     </TableRow>
-                  ) : (
-                    shiftTypeList.map((shift) => (
-                      <TableRow key={shift.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          {shift.name}
-                        </TableCell>
-                        <TableCell>
-                          {shift.startTime} &ndash; {shift.endTime}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {shift.breakDuration} menit
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <span
-                              className="inline-block h-4 w-4 rounded-full border"
-                              style={{ backgroundColor: shift.color }}
-                            />
-                            <span className="text-xs text-muted-foreground font-mono">
-                              {shift.color}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline">
-                            {getEmployeeCountForShift(assignments, shift.id)}{" "}
-                            orang
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {shift.isActive ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-green-50 text-green-700 border-green-200"
-                            >
-                              Aktif
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="bg-gray-50 text-gray-600 border-gray-200"
-                            >
-                              Nonaktif
-                            </Badge>
-                          )}
+                  </TableHeader>
+                  <TableBody>
+                    {shiftTypeList.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          Tidak ada tipe shift.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      shiftTypeList.map((shift) => (
+                        <TableRow key={shift.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">
+                            {shift.name}
+                          </TableCell>
+                          <TableCell>
+                            {shift.startTime} &ndash; {shift.endTime}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {shift.breakDuration} menit
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <span
+                                className="inline-block h-4 w-4 rounded-full border"
+                                style={{ backgroundColor: shift.color }}
+                              />
+                              <span className="text-xs text-muted-foreground font-mono">
+                                {shift.color}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline">
+                              {getEmployeeCountForShift(assignments, shift.id)}{" "}
+                              orang
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {shift.isActive ? (
+                              <Badge
+                                variant="outline"
+                                className="bg-green-50 text-green-700 border-green-200"
+                              >
+                                Aktif
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="bg-gray-50 text-gray-600 border-gray-200"
+                              >
+                                Nonaktif
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -591,76 +619,125 @@ export default function ShiftsPage() {
             </CardHeader>
 
             <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Karyawan</TableHead>
-                    <TableHead>Departemen</TableHead>
-                    <TableHead>Tipe Shift</TableHead>
-                    <TableHead>Tanggal Efektif</TableHead>
-                    <TableHead>Tanggal Berakhir</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {assignments.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        Tidak ada penugasan shift.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    assignments.map((sa) => (
-                      <TableRow key={sa.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          {sa.employeeName}
-                        </TableCell>
-                        <TableCell>{sa.departmentName}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="inline-block h-3 w-3 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  shiftTypeList.find(
-                                    (s) => s.id === sa.shiftId,
-                                  )?.color ?? "#94A3B8",
-                              }}
-                            />
-                            {sa.shiftName}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {format(
-                            new Date(sa.startDate),
-                            "dd MMM yyyy",
-                            { locale: idLocale },
-                          )}
-                        </TableCell>
-                        <TableCell>
+              {/* Mobile card view */}
+              <div className="space-y-3 px-4 md:hidden">
+                {assignments.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    Tidak ada penugasan shift.
+                  </p>
+                ) : (
+                  assignments.map((sa) => (
+                    <div key={sa.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{sa.employeeName}</p>
+                          <p className="text-xs text-muted-foreground">{sa.departmentName}</p>
+                        </div>
+                        {sa.isActive ? (
+                          <StatusBadge status="ACTIVE" />
+                        ) : (
+                          <StatusBadge status="CANCELLED" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-3 w-3 rounded-full"
+                          style={{
+                            backgroundColor:
+                              shiftTypeList.find((s) => s.id === sa.shiftId)?.color ?? "#94A3B8",
+                          }}
+                        />
+                        <span className="text-sm">{sa.shiftName}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>
+                          Mulai: {format(new Date(sa.startDate), "dd MMM yyyy", { locale: idLocale })}
+                        </p>
+                        <p>
+                          Berakhir:{" "}
                           {sa.endDate
-                            ? format(
-                                new Date(sa.endDate),
-                                "dd MMM yyyy",
-                                { locale: idLocale },
-                              )
+                            ? format(new Date(sa.endDate), "dd MMM yyyy", { locale: idLocale })
                             : "\u2014"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {sa.isActive ? (
-                            <StatusBadge status="ACTIVE" />
-                          ) : (
-                            <StatusBadge status="CANCELLED" />
-                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Karyawan</TableHead>
+                      <TableHead>Departemen</TableHead>
+                      <TableHead>Tipe Shift</TableHead>
+                      <TableHead>Tanggal Efektif</TableHead>
+                      <TableHead>Tanggal Berakhir</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignments.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          Tidak ada penugasan shift.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      assignments.map((sa) => (
+                        <TableRow key={sa.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">
+                            {sa.employeeName}
+                          </TableCell>
+                          <TableCell>{sa.departmentName}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="inline-block h-3 w-3 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    shiftTypeList.find(
+                                      (s) => s.id === sa.shiftId,
+                                    )?.color ?? "#94A3B8",
+                                }}
+                              />
+                              {sa.shiftName}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {format(
+                              new Date(sa.startDate),
+                              "dd MMM yyyy",
+                              { locale: idLocale },
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {sa.endDate
+                              ? format(
+                                  new Date(sa.endDate),
+                                  "dd MMM yyyy",
+                                  { locale: idLocale },
+                                )
+                              : "\u2014"}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {sa.isActive ? (
+                              <StatusBadge status="ACTIVE" />
+                            ) : (
+                              <StatusBadge status="CANCELLED" />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -678,6 +755,7 @@ export default function ShiftsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="px-0">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
@@ -754,6 +832,7 @@ export default function ShiftsPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
 

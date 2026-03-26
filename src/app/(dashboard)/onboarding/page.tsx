@@ -133,7 +133,7 @@ export default function OnboardingPage() {
           <UserCheck className="size-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
             Onboarding Karyawan
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -143,7 +143,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Onboarding"
           value={summary.total}
@@ -191,56 +191,159 @@ export default function OnboardingPage() {
         <TabsContent value="proses">
           <Card className="shadow-sm">
             <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="w-8" />
-                    <TableHead>Karyawan</TableHead>
-                    <TableHead>Departemen</TableHead>
-                    <TableHead>Tanggal Mulai</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Template</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {onboardings.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        Tidak ada data onboarding.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    onboardings.map((onb) => {
-                      const progress = computeProgress(onb.tasks);
-                      const isExpanded = expandedRow === onb.id;
-                      const overdue = isOverdue(onb);
+              {/* Mobile card view */}
+              <div className="space-y-3 px-4 md:hidden">
+                {onboardings.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    Tidak ada data onboarding.
+                  </p>
+                ) : (
+                  onboardings.map((onb) => {
+                    const progress = computeProgress(onb.tasks);
+                    const overdue = isOverdue(onb);
+                    const isExpanded = expandedRow === onb.id;
 
-                      return (
-                        <OnboardingRow
-                          key={onb.id}
-                          onboarding={onb}
-                          progress={progress}
-                          isExpanded={isExpanded}
-                          isOverdue={overdue}
-                          onToggleExpand={() => toggleExpand(onb.id)}
-                          onToggleTask={handleToggleTask}
-                        />
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                    return (
+                      <div key={onb.id} className="rounded-lg border space-y-2">
+                        <button
+                          type="button"
+                          className="w-full p-3 text-left space-y-2"
+                          onClick={() => toggleExpand(onb.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{onb.employeeName}</p>
+                              <p className="text-xs text-muted-foreground">{onb.positionName}</p>
+                            </div>
+                            {overdue ? (
+                              <Badge
+                                variant="outline"
+                                className="border-red-200 bg-red-50 text-red-700 gap-1"
+                              >
+                                <AlertTriangle className="size-3" />
+                                Overdue
+                              </Badge>
+                            ) : (
+                              <StatusBadge
+                                status={ONBOARDING_STATUS_MAP[onb.status] ?? onb.status}
+                              />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 flex-1 rounded-full bg-muted">
+                              <div
+                                className={`h-2 rounded-full transition-all ${
+                                  progress === 100
+                                    ? "bg-emerald-500"
+                                    : overdue
+                                      ? "bg-red-500"
+                                      : "bg-blue-500"
+                                }`}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-medium tabular-nums">
+                              {progress}%
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <p>Mulai: {onb.startDate}</p>
+                            {isExpanded ? (
+                              <ChevronDown className="size-4" />
+                            ) : (
+                              <ChevronRight className="size-4" />
+                            )}
+                          </div>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="border-t px-3 pb-3 pt-2 space-y-2">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Checklist
+                            </p>
+                            {onb.tasks.map((task) => (
+                              <label
+                                key={task.taskId}
+                                className="flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-sm"
+                              >
+                                <Checkbox
+                                  checked={task.isCompleted}
+                                  onCheckedChange={(checked: boolean) =>
+                                    handleToggleTask(onb.id, task.taskId, checked)
+                                  }
+                                />
+                                <span
+                                  className={
+                                    task.isCompleted
+                                      ? "text-muted-foreground line-through text-xs"
+                                      : "text-xs"
+                                  }
+                                >
+                                  {task.title}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-8" />
+                      <TableHead>Karyawan</TableHead>
+                      <TableHead>Departemen</TableHead>
+                      <TableHead>Tanggal Mulai</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Template</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {onboardings.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          Tidak ada data onboarding.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      onboardings.map((onb) => {
+                        const progress = computeProgress(onb.tasks);
+                        const isExpanded = expandedRow === onb.id;
+                        const overdue = isOverdue(onb);
+
+                        return (
+                          <OnboardingRow
+                            key={onb.id}
+                            onboarding={onb}
+                            progress={progress}
+                            isExpanded={isExpanded}
+                            isOverdue={overdue}
+                            onToggleExpand={() => toggleExpand(onb.id)}
+                            onToggleTask={handleToggleTask}
+                          />
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Tab 2: Template Checklist */}
         <TabsContent value="template">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 overflow-x-auto">
             {onboardingTemplates.map((template) => {
               const grouped = template.tasks.reduce<
                 Record<string, typeof template.tasks>

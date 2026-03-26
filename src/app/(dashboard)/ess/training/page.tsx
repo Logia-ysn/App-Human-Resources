@@ -39,7 +39,7 @@ export default function EssTrainingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Training Saya</h1>
+      <h1 className="text-lg sm:text-2xl font-bold tracking-tight">Training Saya</h1>
 
       {myTrainings.length === 0 ? (
         <Card>
@@ -54,36 +54,61 @@ export default function EssTrainingPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Training</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Skor</TableHead>
-                  <TableHead>Lulus</TableHead>
-                  <TableHead>Rating</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {myTrainings.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-medium">{t.trainingTitle}</TableCell>
-                    <TableCell><StatusBadge status={PARTICIPANT_STATUS_MAP[t.status] || t.status} /></TableCell>
-                    <TableCell>{t.score ?? "-"}</TableCell>
-                    <TableCell>{t.isPassed === null ? "-" : t.isPassed ? <Badge className="bg-green-100 text-green-800 border-0">Lulus</Badge> : <Badge className="bg-red-100 text-red-800 border-0">Tidak Lulus</Badge>}</TableCell>
-                    <TableCell>
-                      {t.rating ? (
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} className={`h-3 w-3 ${i < t.rating! ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`} />
-                          ))}
-                        </div>
-                      ) : "-"}
-                    </TableCell>
+            <div className="space-y-3 md:hidden">
+              {myTrainings.map((t) => (
+                <div key={t.id} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm">{t.trainingTitle}</p>
+                    <StatusBadge status={PARTICIPANT_STATUS_MAP[t.status] || t.status} />
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>Skor: {t.score ?? "-"}</span>
+                    {t.isPassed !== null && (
+                      t.isPassed ? <Badge className="bg-green-100 text-green-800 border-0 text-xs">Lulus</Badge> : <Badge className="bg-red-100 text-red-800 border-0 text-xs">Tidak Lulus</Badge>
+                    )}
+                    {t.rating && (
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className={`h-3 w-3 ${i < t.rating! ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Training</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Skor</TableHead>
+                    <TableHead>Lulus</TableHead>
+                    <TableHead>Rating</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {myTrainings.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-medium">{t.trainingTitle}</TableCell>
+                      <TableCell><StatusBadge status={PARTICIPANT_STATUS_MAP[t.status] || t.status} /></TableCell>
+                      <TableCell>{t.score ?? "-"}</TableCell>
+                      <TableCell>{t.isPassed === null ? "-" : t.isPassed ? <Badge className="bg-green-100 text-green-800 border-0">Lulus</Badge> : <Badge className="bg-red-100 text-red-800 border-0">Tidak Lulus</Badge>}</TableCell>
+                      <TableCell>
+                        {t.rating ? (
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star key={i} className={`h-3 w-3 ${i < t.rating! ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`} />
+                            ))}
+                          </div>
+                        ) : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

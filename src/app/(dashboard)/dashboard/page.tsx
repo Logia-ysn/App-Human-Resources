@@ -275,7 +275,7 @@ function EmployeeDashboard() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {quickLinks.map((action) => {
           const Icon = action.icon;
           return (
@@ -518,7 +518,7 @@ function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {quickActions.map((action) => {
           const Icon = action.icon;
           return (
@@ -576,7 +576,7 @@ function AdminDashboard() {
             {contractExpiring.length === 0 ? (
               <p className="text-sm text-muted-foreground">Tidak ada kontrak yang segera berakhir</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 overflow-x-auto">
                 {contractExpiring.map((emp) => {
                   const endDate = new Date(emp.endDate!);
                   const daysLeft = differenceInDays(endDate, today);
@@ -668,7 +668,7 @@ function AdminDashboard() {
           <CardTitle className="text-sm font-semibold sm:text-base">Aktivitas Terbaru</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-x-auto">
             {activityFeed.map((item) => {
               const config = ACTIVITY_ICON_MAP[item.type];
               const borderClass = ACTIVITY_BORDER_MAP[item.type];

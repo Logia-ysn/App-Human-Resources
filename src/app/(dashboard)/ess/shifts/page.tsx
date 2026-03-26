@@ -121,7 +121,7 @@ export default function EssShiftsPage() {
           <RefreshCw className="size-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
             Jadwal Shift Saya
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -211,7 +211,7 @@ export default function EssShiftsPage() {
       {assignment && (
         <Card className="shadow-sm">
           <CardContent className="pt-5">
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Berlaku mulai:</span>
                 <Badge variant="outline">
@@ -258,6 +258,7 @@ export default function EssShiftsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="px-0">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
@@ -324,6 +325,7 @@ export default function EssShiftsPage() {
                   </TableRow>
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -403,7 +405,7 @@ export default function EssShiftsPage() {
               </div>
 
               {/* Legend */}
-              <div className="flex items-center gap-4 mt-4 pt-3 border-t">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-4 pt-3 border-t">
                 <p className="text-xs text-muted-foreground">Keterangan:</p>
                 {shiftType && (
                   <div className="flex items-center gap-1.5">

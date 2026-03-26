@@ -248,13 +248,13 @@ export default function LifecyclePage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
             <TrendingUp className="size-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
               Riwayat Karir Karyawan
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -269,7 +269,7 @@ export default function LifecyclePage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-t-2 border-t-blue-500 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
           <CardContent className="pt-5">
             <div className="flex items-center justify-between">
@@ -416,7 +416,7 @@ export default function LifecyclePage() {
 
                     {/* Content */}
                     <div className="flex-1 -mt-1">
-                      <div className="rounded-lg border bg-background p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors hover:bg-muted/30">
+                      <div className="rounded-lg border bg-background p-3 sm:p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors hover:bg-muted/30">
                         {/* Header */}
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold">

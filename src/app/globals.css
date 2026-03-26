@@ -136,7 +136,7 @@
     letter-spacing: -0.02em;
   }
   h1 {
-    @apply text-2xl font-bold tracking-tight sm:text-3xl;
+    @apply font-bold tracking-tight;
   }
   h2 {
     @apply text-xl font-semibold tracking-tight sm:text-2xl;
@@ -171,5 +171,15 @@
   .font-display {
     font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
     letter-spacing: -0.02em;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }

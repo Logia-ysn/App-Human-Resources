@@ -250,13 +250,13 @@ export default function ClaimsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
             <Receipt className="size-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
               Klaim Pengeluaran
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -384,7 +384,7 @@ export default function ClaimsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm border-l-4 border-l-blue-500">
           <CardContent>
             <div className="flex items-center gap-3">
@@ -446,8 +446,50 @@ export default function ClaimsPage() {
         </Card>
       </div>
 
+      {/* Mobile card view */}
+      <div className="space-y-3 md:hidden px-4">
+        {claims.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Tidak ada data klaim pengeluaran.</div>
+        ) : (
+          claims.map((claim) => {
+            const primaryCat = getPrimaryCategory(claim.items);
+            const catConfig = CATEGORY_CONFIG[primaryCat];
+            return (
+              <div key={claim.id} className="rounded-lg border p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">{claim.employeeName}</p>
+                    <p className="text-xs text-muted-foreground">{claim.departmentName}</p>
+                  </div>
+                  <StatusBadge status={claim.status} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={catConfig.className}>{catConfig.label}</Badge>
+                  <span className="text-xs text-muted-foreground">{claim.items.length} item</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="font-mono text-sm font-semibold">{formatCurrency(claim.totalAmount)}</p>
+                  <p className="text-xs text-muted-foreground">{format(new Date(claim.submittedDate), "dd MMM yyyy", { locale: idLocale })}</p>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-1">{claim.title}</p>
+                {claim.status === "PENDING" && (
+                  <div className="flex gap-2 pt-1">
+                    <Button size="xs" variant="outline" className="flex-1 border-green-300 bg-green-50 text-green-700" onClick={() => handleApprove(claim.id)}>
+                      <CheckCircle2 className="h-3 w-3 mr-1" />Setujui
+                    </Button>
+                    <Button size="xs" variant="outline" className="flex-1 border-red-300 bg-red-50 text-red-700" onClick={() => handleReject(claim.id)}>
+                      <XCircle className="h-3 w-3 mr-1" />Tolak
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
       {/* Table */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm hidden md:block">
         <CardContent className="px-0">
           <Table>
             <TableHeader>

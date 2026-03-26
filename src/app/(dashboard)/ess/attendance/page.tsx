@@ -36,12 +36,12 @@ export default function EssAttendancePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Absensi Saya</h1>
+      <h1 className="text-lg sm:text-2xl font-bold tracking-tight">Absensi Saya</h1>
 
       <Card>
         <CardHeader><CardTitle>Clock In / Clock Out</CardTitle></CardHeader>
         <CardContent>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-3">
               <Clock className="h-8 w-8 text-muted-foreground" />
               <div>
@@ -55,7 +55,7 @@ export default function EssAttendancePage() {
                 )}
               </div>
             </div>
-            <div className="ml-auto">
+            <div className="sm:ml-auto">
               {!clockedIn ? (
                 <Button onClick={() => { setClockedIn(true); toast.success("Clock In berhasil — 08:00"); }}>
                   Clock In
@@ -73,32 +73,50 @@ export default function EssAttendancePage() {
       <Card>
         <CardHeader><CardTitle>Riwayat Kehadiran</CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tanggal</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead>Terlambat</TableHead>
-                <TableHead>Jam Kerja</TableHead>
-                <TableHead>Lembur</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {myAttendance.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>{a.date}</TableCell>
-                  <TableCell>{a.checkIn || "-"}</TableCell>
-                  <TableCell>{a.checkOut || "-"}</TableCell>
-                  <TableCell>{a.lateMinutes > 0 ? `${a.lateMinutes} menit` : "-"}</TableCell>
-                  <TableCell>{a.workMinutes > 0 ? `${Math.floor(a.workMinutes / 60)}j ${a.workMinutes % 60}m` : "-"}</TableCell>
-                  <TableCell>{a.overtimeMinutes > 0 ? `${a.overtimeMinutes} menit` : "-"}</TableCell>
-                  <TableCell><StatusBadge status={a.status} /></TableCell>
+          <div className="space-y-3 md:hidden">
+            {myAttendance.map((a) => (
+              <div key={a.id} className="rounded-lg border p-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-sm">{a.date}</p>
+                  <StatusBadge status={a.status} />
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                  <span>Masuk: {a.checkIn || "-"}</span>
+                  <span>Keluar: {a.checkOut || "-"}</span>
+                  <span>Kerja: {a.workMinutes > 0 ? `${Math.floor(a.workMinutes / 60)}j ${a.workMinutes % 60}m` : "-"}</span>
+                  <span>Lembur: {a.overtimeMinutes > 0 ? `${a.overtimeMinutes}m` : "-"}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead>Check In</TableHead>
+                  <TableHead>Check Out</TableHead>
+                  <TableHead>Terlambat</TableHead>
+                  <TableHead>Jam Kerja</TableHead>
+                  <TableHead>Lembur</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {myAttendance.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell>{a.date}</TableCell>
+                    <TableCell>{a.checkIn || "-"}</TableCell>
+                    <TableCell>{a.checkOut || "-"}</TableCell>
+                    <TableCell>{a.lateMinutes > 0 ? `${a.lateMinutes} menit` : "-"}</TableCell>
+                    <TableCell>{a.workMinutes > 0 ? `${Math.floor(a.workMinutes / 60)}j ${a.workMinutes % 60}m` : "-"}</TableCell>
+                    <TableCell>{a.overtimeMinutes > 0 ? `${a.overtimeMinutes} menit` : "-"}</TableCell>
+                    <TableCell><StatusBadge status={a.status} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
