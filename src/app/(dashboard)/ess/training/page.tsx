@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/lib/store/app-store";
+import { useAuth } from "@/components/providers/auth-context";
 import { CATEGORY_LABELS } from "@/lib/dummy-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,9 +19,23 @@ const PARTICIPANT_STATUS_MAP: Record<string, string> = {
 export default function EssTrainingPage() {
   const employees = useAppStore((s) => s.employees);
   const trainingParticipants = useAppStore((s) => s.trainingParticipants);
-  // Demo: first non-admin employee
-  const currentEmpId = employees[1]?.id ?? "emp-4";
-  const myTrainings = trainingParticipants.filter((t) => t.employeeId === currentEmpId);
+  const { employeeId } = useAuth();
+  const currentEmployee = employees.find((e) => e.id === employeeId);
+  const myTrainings = trainingParticipants.filter((t) => t.employeeId === currentEmployee?.id);
+
+  if (!currentEmployee) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-2">
+          <GraduationCap className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg font-medium">Data karyawan tidak ditemukan</p>
+          <p className="text-sm text-muted-foreground">
+            Akun Anda belum terhubung dengan data karyawan.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

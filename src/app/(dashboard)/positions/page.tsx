@@ -99,6 +99,7 @@ export default function PositionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [filterDept, setFilterDept] = useState<string>("all");
+  const [deleteTarget, setDeleteTarget] = useState<Position | null>(null);
 
   const filtered =
     filterDept === "all"
@@ -117,9 +118,11 @@ export default function PositionsPage() {
     setDialogOpen(true);
   }
 
-  function handleDelete(id: string) {
-    deletePosition(id);
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    deletePosition(deleteTarget.id);
     toast.success("Jabatan berhasil dihapus");
+    setDeleteTarget(null);
   }
 
   function handleSubmit() {
@@ -273,7 +276,7 @@ export default function PositionsPage() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => handleDelete(pos.id)}
+                            onClick={() => setDeleteTarget(pos)}
                           >
                             <Trash2 className="size-4 text-destructive" />
                           </Button>
@@ -441,6 +444,35 @@ export default function PositionsPage() {
             </Button>
             <Button onClick={handleSubmit}>
               {editingId ? "Simpan Perubahan" : "Tambah"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Hapus Jabatan</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus jabatan{" "}
+              <span className="font-semibold text-foreground">
+                {deleteTarget?.name}
+              </span>
+              ? Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Hapus
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { useAppStore } from "@/lib/store/app-store";
+import { useAuth } from "@/components/providers/auth-context";
 import type { EmployeeAdvance, ExpenseClaim } from "@/lib/dummy-data";
 import { StatusBadge } from "@/components/shared/status-badge";
 
@@ -44,10 +45,6 @@ import {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const DEMO_EMPLOYEE_ID = "emp-003";
-const DEMO_EMPLOYEE_NAME = "Joko Widodo";
-const DEMO_DEPARTMENT = "Finance & Accounting";
 
 const CATEGORY_LABELS: Record<string, string> = {
   TRANSPORT: "Transportasi",
@@ -84,12 +81,12 @@ export default function EssExpensesPage() {
   const claims = useAppStore((s) => s.expenseClaims);
   const addEmployeeAdvance = useAppStore((s) => s.addEmployeeAdvance);
   const addExpenseClaim = useAppStore((s) => s.addExpenseClaim);
+  const { employeeId } = useAuth();
 
-  // Demo: derive employee info from store
-  const currentEmp = employees[1];
-  const demoEmployeeId = currentEmp?.id ?? DEMO_EMPLOYEE_ID;
-  const demoEmployeeName = currentEmp ? `${currentEmp.firstName} ${currentEmp.lastName}` : DEMO_EMPLOYEE_NAME;
-  const demoDepartment = currentEmp?.departmentName ?? DEMO_DEPARTMENT;
+  const currentEmployee = employees.find((e) => e.id === employeeId);
+  const currentEmployeeId = currentEmployee?.id ?? "";
+  const currentEmployeeName = currentEmployee ? `${currentEmployee.firstName} ${currentEmployee.lastName}` : "";
+  const currentDepartment = currentEmployee?.departmentName ?? "";
 
   // Dialogs
   const [advanceDialogOpen, setAdvanceDialogOpen] = useState(false);
@@ -110,25 +107,25 @@ export default function EssExpensesPage() {
   const myAdvances = useMemo(
     () =>
       advances
-        .filter((a) => a.employeeId === demoEmployeeId)
+        .filter((a) => a.employeeId === currentEmployeeId)
         .sort(
           (a, b) =>
             new Date(b.requestDate).getTime() -
             new Date(a.requestDate).getTime(),
         ),
-    [advances, demoEmployeeId],
+    [advances, currentEmployeeId],
   );
 
   const myClaims = useMemo(
     () =>
       claims
-        .filter((c) => c.employeeId === demoEmployeeId)
+        .filter((c) => c.employeeId === currentEmployeeId)
         .sort(
           (a, b) =>
             new Date(b.submittedDate).getTime() -
             new Date(a.submittedDate).getTime(),
         ),
-    [claims, demoEmployeeId],
+    [claims, currentEmployeeId],
   );
 
   // Stats
@@ -154,9 +151,9 @@ export default function EssExpensesPage() {
 
     const created: EmployeeAdvance = {
       id: `adv-${Date.now()}`,
-      employeeId: demoEmployeeId,
-      employeeName: demoEmployeeName,
-      departmentName: demoDepartment,
+      employeeId: currentEmployeeId,
+      employeeName: currentEmployeeName,
+      departmentName: currentDepartment,
       amount,
       purpose: newAdvancePurpose.trim(),
       requestDate: format(new Date(), "yyyy-MM-dd"),
@@ -184,9 +181,9 @@ export default function EssExpensesPage() {
 
     const created: ExpenseClaim = {
       id: `exp-${Date.now()}`,
-      employeeId: demoEmployeeId,
-      employeeName: demoEmployeeName,
-      departmentName: demoDepartment,
+      employeeId: currentEmployeeId,
+      employeeName: currentEmployeeName,
+      departmentName: currentDepartment,
       title: newClaimTitle.trim(),
       totalAmount: amount,
       items: [
@@ -214,6 +211,20 @@ export default function EssExpensesPage() {
   };
 
   // -----------------------------------------------------------------------
+  if (!currentEmployee) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-2">
+          <Banknote className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg font-medium">Data karyawan tidak ditemukan</p>
+          <p className="text-sm text-muted-foreground">
+            Akun Anda belum terhubung dengan data karyawan.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

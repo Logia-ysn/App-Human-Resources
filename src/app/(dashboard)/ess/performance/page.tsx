@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/lib/store/app-store";
+import { useAuth } from "@/components/providers/auth-context";
 import { RATING_LABELS, REVIEW_STATUS_LABELS } from "@/lib/dummy-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,9 +19,23 @@ const RATING_COLORS: Record<string, string> = {
 export default function EssPerformancePage() {
   const employees = useAppStore((s) => s.employees);
   const performanceReviews = useAppStore((s) => s.performanceReviews);
-  // Demo: first non-admin employee
-  const currentEmpId = employees[1]?.id ?? "emp-2";
-  const myReviews = performanceReviews.filter((r) => r.employeeId === currentEmpId);
+  const { employeeId } = useAuth();
+  const currentEmployee = employees.find((e) => e.id === employeeId);
+  const myReviews = performanceReviews.filter((r) => r.employeeId === currentEmployee?.id);
+
+  if (!currentEmployee) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-2">
+          <BarChart3 className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg font-medium">Data karyawan tidak ditemukan</p>
+          <p className="text-sm text-muted-foreground">
+            Akun Anda belum terhubung dengan data karyawan.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

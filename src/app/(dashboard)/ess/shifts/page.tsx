@@ -16,6 +16,7 @@ import { id as idLocale } from "date-fns/locale";
 import { RefreshCw, Clock, CalendarDays, Sun } from "lucide-react";
 
 import { useAppStore } from "@/lib/store/app-store";
+import { useAuth } from "@/components/providers/auth-context";
 import type { ShiftType } from "@/lib/dummy-data";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,9 +71,9 @@ export default function EssShiftsPage() {
   const employees = useAppStore((s) => s.employees);
   const shiftTypes = useAppStore((s) => s.shiftTypes);
   const shiftAssignments = useAppStore((s) => s.shiftAssignments);
-
-  // Demo: first non-admin employee
-  const currentEmpId = employees[1]?.id ?? "emp-006";
+  const { employeeId } = useAuth();
+  const currentEmployee = employees.find((e) => e.id === employeeId);
+  const currentEmpId = currentEmployee?.id ?? "";
 
   const { assignment, shiftType } = useMemo(() => {
     const found = shiftAssignments.find(
@@ -98,6 +99,20 @@ export default function EssShiftsPage() {
   }, []);
 
   // -----------------------------------------------------------------------
+  if (!currentEmployee) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-2">
+          <RefreshCw className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg font-medium">Data karyawan tidak ditemukan</p>
+          <p className="text-sm text-muted-foreground">
+            Akun Anda belum terhubung dengan data karyawan.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

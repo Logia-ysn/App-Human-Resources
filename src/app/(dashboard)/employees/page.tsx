@@ -12,6 +12,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Trash2,
   Users,
 } from "lucide-react";
 
@@ -51,6 +52,17 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+
+import type { Employee } from "@/lib/dummy-data";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -97,11 +109,20 @@ function activeFilterCount(
 export default function EmployeesPage() {
   const allEmployees = useAppStore((s) => s.employees);
   const departments = useAppStore((s) => s.departments);
+  const deleteEmployee = useAppStore((s) => s.deleteEmployee);
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    deleteEmployee(deleteTarget.id);
+    toast.success("Karyawan berhasil dihapus");
+    setDeleteTarget(null);
+  }
 
   const activeEmployees = useMemo(
     () => allEmployees.filter((emp) => !emp.isDeleted),
@@ -470,6 +491,14 @@ export default function EmployeesPage() {
                           <Pencil className="size-4" />
                           <span className="sr-only">Edit</span>
                         </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => setDeleteTarget(emp)}
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                          <span className="sr-only">Hapus</span>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -577,6 +606,37 @@ export default function EmployeesPage() {
         <Plus />
         <span className="sr-only">Tambah Karyawan</span>
       </Link>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Hapus Karyawan</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus karyawan{" "}
+              <span className="font-semibold text-foreground">
+                {deleteTarget
+                  ? `${deleteTarget.firstName} ${deleteTarget.lastName}`
+                  : ""}
+              </span>
+              ? Data karyawan akan ditandai sebagai dihapus.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

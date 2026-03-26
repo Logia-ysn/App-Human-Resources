@@ -1,23 +1,137 @@
 "use client";
 
+import { useState } from "react";
 import { useAppStore } from "@/lib/store/app-store";
+import { useAuth } from "@/components/providers/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { CalendarDays } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CalendarDays, Plus } from "lucide-react";
+import { toast } from "sonner";
+
+type LeaveFormData = {
+  leaveTypeId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+};
+
+const EMPTY_LEAVE_FORM: LeaveFormData = {
+  leaveTypeId: "",
+  startDate: "",
+  endDate: "",
+  reason: "",
+};
+
+function calculateDays(start: string, end: string): number {
+  if (!start || !end) return 0;
+  const startMs = new Date(start).getTime();
+  const endMs = new Date(end).getTime();
+  if (endMs < startMs) return 0;
+  return Math.round((endMs - startMs) / (1000 * 60 * 60 * 24)) + 1;
+}
 
 export default function EssLeavePage() {
+  const { employeeId } = useAuth();
   const employees = useAppStore((s) => s.employees);
   const leaveBalances = useAppStore((s) => s.leaveBalances);
   const leaveRequests = useAppStore((s) => s.leaveRequests);
-  // Demo: first non-admin employee
-  const currentEmpId = employees[1]?.id ?? "emp-2";
-  const myBalances = leaveBalances.filter((b) => b.employeeId === currentEmpId);
-  const myRequests = leaveRequests.filter((r) => r.employeeId === currentEmpId);
+  const leaveTypes = useAppStore((s) => s.leaveTypes);
+  const addLeaveRequest = useAppStore((s) => s.addLeaveRequest);
+
+  const currentEmployee = employees.find((e) => e.id === employeeId);
+  const myBalances = leaveBalances.filter((b) => b.employeeId === currentEmployee?.id);
+  const myRequests = leaveRequests.filter((r) => r.employeeId === currentEmployee?.id);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState<LeaveFormData>(EMPTY_LEAVE_FORM);
+
+  const activeLeaveTypes = leaveTypes.filter((lt) => lt.isActive);
+
+  function handleOpenDialog() {
+    setForm(EMPTY_LEAVE_FORM);
+    setDialogOpen(true);
+  }
+
+  function handleSubmit() {
+    if (!form.leaveTypeId || !form.startDate || !form.endDate || !form.reason.trim()) {
+      toast.error("Semua field wajib diisi");
+      return;
+    }
+
+    const totalDays = calculateDays(form.startDate, form.endDate);
+    if (totalDays <= 0) {
+      toast.error("Tanggal selesai harus setelah atau sama dengan tanggal mulai");
+      return;
+    }
+
+    const leaveType = leaveTypes.find((lt) => lt.id === form.leaveTypeId);
+    const empName = currentEmployee
+      ? `${currentEmployee.firstName} ${currentEmployee.lastName}`
+      : "Karyawan";
+
+    addLeaveRequest({
+      id: `lr-${Date.now()}`,
+      employeeId: currentEmployee?.id ?? "",
+      employeeName: empName,
+      departmentName: currentEmployee?.departmentName ?? "",
+      leaveTypeId: form.leaveTypeId,
+      leaveTypeName: leaveType?.name ?? "",
+      startDate: form.startDate,
+      endDate: form.endDate,
+      totalDays,
+      reason: form.reason.trim(),
+      status: "PENDING",
+      createdAt: new Date().toISOString().slice(0, 10),
+      approvedBy: null,
+    });
+
+    toast.success("Pengajuan cuti berhasil dikirim");
+    setDialogOpen(false);
+  }
+
+  if (!currentEmployee) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-2">
+          <CalendarDays className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg font-medium">Data karyawan tidak ditemukan</p>
+          <p className="text-sm text-muted-foreground">
+            Akun Anda belum terhubung dengan data karyawan.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Cuti Saya</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Cuti Saya</h1>
+        <Button onClick={handleOpenDialog}>
+          <Plus className="mr-1 h-4 w-4" />
+          Ajukan Cuti
+        </Button>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         {myBalances.map((b) => (
@@ -67,6 +181,91 @@ export default function EssLeavePage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Dialog Ajukan Cuti */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajukan Cuti</DialogTitle>
+            <DialogDescription>
+              Isi form di bawah untuk mengajukan cuti baru.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>Tipe Cuti</Label>
+              <Select
+                value={form.leaveTypeId || undefined}
+                onValueChange={(val) =>
+                  setForm((prev) => ({ ...prev, leaveTypeId: val as string }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih tipe cuti" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeLeaveTypes.map((lt) => (
+                    <SelectItem key={lt.id} value={lt.id}>
+                      {lt.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="leave-start">Tanggal Mulai</Label>
+                <Input
+                  id="leave-start"
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, startDate: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="leave-end">Tanggal Selesai</Label>
+                <Input
+                  id="leave-end"
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, endDate: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            {form.startDate && form.endDate && calculateDays(form.startDate, form.endDate) > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Total: {calculateDays(form.startDate, form.endDate)} hari
+              </p>
+            )}
+
+            <div className="grid gap-2">
+              <Label htmlFor="leave-reason">Alasan</Label>
+              <Textarea
+                id="leave-reason"
+                placeholder="Tuliskan alasan pengajuan cuti..."
+                value={form.reason}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, reason: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit}>Ajukan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

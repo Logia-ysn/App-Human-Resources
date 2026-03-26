@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAppStore } from "@/lib/store/app-store";
+import { useAuth } from "@/components/providers/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,26 @@ import { toast } from "sonner";
 export default function EssAttendancePage() {
   const employees = useAppStore((s) => s.employees);
   const attendanceRecords = useAppStore((s) => s.attendanceRecords);
-  // Demo: first non-admin employee
-  const currentEmpId = employees[1]?.id ?? "emp-2";
-  const myAttendance = attendanceRecords.filter((a) => a.employeeId === currentEmpId);
+  const { employeeId } = useAuth();
+  const currentEmployee = employees.find((e) => e.id === employeeId);
+  const myAttendance = attendanceRecords.filter((a) => a.employeeId === currentEmployee?.id);
   const [clockedIn, setClockedIn] = useState(myAttendance.some((a) => a.checkIn && !a.checkOut));
 
   const todayRecord = myAttendance.find((a) => a.date === "2026-03-23");
+
+  if (!currentEmployee) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-2">
+          <Clock className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg font-medium">Data karyawan tidak ditemukan</p>
+          <p className="text-sm text-muted-foreground">
+            Akun Anda belum terhubung dengan data karyawan.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

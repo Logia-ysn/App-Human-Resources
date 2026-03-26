@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/lib/store/app-store";
+import { useAuth } from "@/components/providers/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,23 @@ function InfoItem({ label, value }: { label: string; value: string | number | nu
 
 export default function EssProfilePage() {
   const employees = useAppStore((s) => s.employees);
-  const emp = employees[1];
+  const { employeeId } = useAuth();
+  const emp = employees.find((e) => e.id === employeeId);
+
+  if (!emp) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-2">
+          <UserCircle className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+          <p className="text-lg font-medium">Data karyawan tidak ditemukan</p>
+          <p className="text-sm text-muted-foreground">
+            Akun Anda belum terhubung dengan data karyawan.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const initials = `${emp.firstName[0]}${emp.lastName[0]}`;
 
   return (

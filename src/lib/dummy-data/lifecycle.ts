@@ -2,7 +2,7 @@ export type LifecycleEvent = {
   id: string;
   employeeId: string;
   employeeName: string;
-  type: "PROMOTION" | "TRANSFER" | "DEMOTION" | "CONFIRMATION";
+  type: "PROMOTION" | "TRANSFER" | "DEMOTION" | "CONFIRMATION" | "CONTRACT_RENEWAL" | "RESIGNATION" | "TERMINATION" | "RETIREMENT";
   fromDepartment: string | null;
   toDepartment: string | null;
   fromPosition: string | null;

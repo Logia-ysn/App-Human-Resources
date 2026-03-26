@@ -7,9 +7,15 @@ import {
   ArrowRightCircle,
   ArrowDownCircle,
   ShieldCheck,
+  RefreshCw,
+  LogOut,
+  XCircle,
+  Clock,
   Search,
   ArrowRight,
+  Plus,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { useAppStore } from "@/lib/store/app-store";
 import { type LifecycleEvent } from "@/lib/dummy-data";
@@ -17,6 +23,9 @@ import { type LifecycleEvent } from "@/lib/dummy-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -24,6 +33,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const TYPE_CONFIG: Record<
   LifecycleEvent["type"],
@@ -68,6 +85,38 @@ const TYPE_CONFIG: Record<
     lineClass: "bg-amber-200",
     icon: ShieldCheck,
   },
+  CONTRACT_RENEWAL: {
+    label: "Perpanjangan Kontrak",
+    color: "indigo",
+    badgeClass: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    dotClass: "bg-indigo-500 ring-indigo-100",
+    lineClass: "bg-indigo-200",
+    icon: RefreshCw,
+  },
+  RESIGNATION: {
+    label: "Pengunduran Diri",
+    color: "orange",
+    badgeClass: "border-orange-200 bg-orange-50 text-orange-700",
+    dotClass: "bg-orange-500 ring-orange-100",
+    lineClass: "bg-orange-200",
+    icon: LogOut,
+  },
+  TERMINATION: {
+    label: "Pemutusan Hubungan Kerja",
+    color: "red",
+    badgeClass: "border-red-200 bg-red-50 text-red-700",
+    dotClass: "bg-red-600 ring-red-100",
+    lineClass: "bg-red-300",
+    icon: XCircle,
+  },
+  RETIREMENT: {
+    label: "Pensiun",
+    color: "slate",
+    badgeClass: "border-slate-200 bg-slate-50 text-slate-700",
+    dotClass: "bg-slate-500 ring-slate-100",
+    lineClass: "bg-slate-200",
+    icon: Clock,
+  },
 };
 
 const ALL_TYPES: LifecycleEvent["type"][] = [
@@ -75,6 +124,10 @@ const ALL_TYPES: LifecycleEvent["type"][] = [
   "TRANSFER",
   "DEMOTION",
   "CONFIRMATION",
+  "CONTRACT_RENEWAL",
+  "RESIGNATION",
+  "TERMINATION",
+  "RETIREMENT",
 ];
 
 const formatCurrency = (n: number) =>
@@ -94,11 +147,72 @@ const formatDate = (dateStr: string) => {
   });
 };
 
+type LifecycleFormData = {
+  type: LifecycleEvent["type"] | "";
+  employeeId: string;
+  effectiveDate: string;
+  notes: string;
+};
+
+const EMPTY_LIFECYCLE_FORM: LifecycleFormData = {
+  type: "",
+  employeeId: "",
+  effectiveDate: "",
+  notes: "",
+};
+
 export default function LifecyclePage() {
   const lifecycleEvents = useAppStore((s) => s.lifecycleEvents);
+  const addLifecycleEvent = useAppStore((s) => s.addLifecycleEvent);
+  const employees = useAppStore((s) => s.employees);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState<LifecycleFormData>(EMPTY_LIFECYCLE_FORM);
+
+  const activeEmployees = useMemo(
+    () => employees.filter((e) => !e.isDeleted),
+    [employees]
+  );
+
+  function handleOpenDialog() {
+    setForm(EMPTY_LIFECYCLE_FORM);
+    setDialogOpen(true);
+  }
+
+  function handleSubmit() {
+    if (!form.type || !form.employeeId || !form.effectiveDate) {
+      toast.error("Tipe, karyawan, dan tanggal efektif wajib diisi");
+      return;
+    }
+
+    const emp = employees.find((e) => e.id === form.employeeId);
+    const empName = emp
+      ? `${emp.firstName} ${emp.lastName}`
+      : "Karyawan";
+
+    const newEvent: LifecycleEvent = {
+      id: `lc-${Date.now()}`,
+      employeeId: form.employeeId,
+      employeeName: empName,
+      type: form.type as LifecycleEvent["type"],
+      fromDepartment: emp?.departmentName ?? null,
+      toDepartment: emp?.departmentName ?? null,
+      fromPosition: emp?.positionName ?? null,
+      toPosition: emp?.positionName ?? null,
+      fromSalary: null,
+      toSalary: null,
+      effectiveDate: form.effectiveDate,
+      reason: form.notes.trim() || "-",
+      approvedBy: "-",
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+
+    addLifecycleEvent(newEvent);
+    toast.success("Event lifecycle berhasil ditambahkan");
+    setDialogOpen(false);
+  }
 
   const filteredEvents = useMemo(() => {
     const sorted = [...lifecycleEvents].sort(
@@ -115,7 +229,7 @@ export default function LifecyclePage() {
         typeFilter === "ALL" || event.type === typeFilter;
       return matchesSearch && matchesType;
     });
-  }, [searchQuery, typeFilter]);
+  }, [lifecycleEvents, searchQuery, typeFilter]);
 
   const summary = useMemo(() => {
     const total = lifecycleEvents.length;
@@ -134,18 +248,24 @@ export default function LifecyclePage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-          <TrendingUp className="size-5 text-primary" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+            <TrendingUp className="size-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Riwayat Karir Karyawan
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Lacak promosi, transfer, demosi, dan konfirmasi karyawan
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Riwayat Karir Karyawan
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Lacak promosi, transfer, demosi, dan konfirmasi karyawan
-          </p>
-        </div>
+        <Button onClick={handleOpenDialog}>
+          <Plus className="mr-1 h-4 w-4" />
+          Tambah Event
+        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -396,6 +516,102 @@ export default function LifecyclePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog Tambah Event */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Event Lifecycle</DialogTitle>
+            <DialogDescription>
+              Catat peristiwa karir baru untuk karyawan.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>Tipe Event</Label>
+              <Select
+                value={form.type || undefined}
+                onValueChange={(val) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    type: val as LifecycleEvent["type"],
+                  }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih tipe event" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {TYPE_CONFIG[type].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Karyawan</Label>
+              <Select
+                value={form.employeeId || undefined}
+                onValueChange={(val) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    employeeId: val as string,
+                  }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih karyawan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeEmployees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.firstName} {emp.lastName} — {emp.positionName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="lc-date">Tanggal Efektif</Label>
+              <Input
+                id="lc-date"
+                type="date"
+                value={form.effectiveDate}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    effectiveDate: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="lc-notes">Catatan / Alasan</Label>
+              <Textarea
+                id="lc-notes"
+                placeholder="Deskripsi atau catatan tentang event ini..."
+                value={form.notes}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, notes: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit}>Tambah</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
