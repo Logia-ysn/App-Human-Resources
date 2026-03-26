@@ -36,6 +36,8 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { pattern: /^\/onboarding/, minRole: "HR_ADMIN" },
   { pattern: /^\/lifecycle/, minRole: "HR_ADMIN" },
   // Manager+
+  { pattern: /^\/employees/, minRole: "MANAGER" },
+  { pattern: /^\/org-chart/, minRole: "MANAGER" },
   { pattern: /^\/attendance/, minRole: "MANAGER" },
   { pattern: /^\/leave/, minRole: "MANAGER" },
   { pattern: /^\/payroll/, minRole: "MANAGER" },
@@ -47,8 +49,6 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   // All authenticated
   { pattern: /^\/ess/, minRole: "EMPLOYEE" },
   { pattern: /^\/dashboard/, minRole: "EMPLOYEE" },
-  { pattern: /^\/employees/, minRole: "EMPLOYEE" },
-  { pattern: /^\/org-chart/, minRole: "EMPLOYEE" },
 ];
 
 export function canAccessRoute(role: Role, pathname: string): boolean {

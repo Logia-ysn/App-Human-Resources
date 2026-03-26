@@ -29,7 +29,9 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { pattern: /^\/onboarding/, minRole: "HR_ADMIN" },
   { pattern: /^\/lifecycle/, minRole: "HR_ADMIN" },
 
-  // Manager+ — admin operational pages (view all data, approve/reject)
+  // Manager+ — employee list, org chart, admin operational pages
+  { pattern: /^\/employees/, minRole: "MANAGER" },
+  { pattern: /^\/org-chart/, minRole: "MANAGER" },
   { pattern: /^\/attendance/, minRole: "MANAGER" },
   { pattern: /^\/leave/, minRole: "MANAGER" },
   { pattern: /^\/payroll/, minRole: "MANAGER" },

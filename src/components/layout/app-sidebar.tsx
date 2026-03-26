@@ -56,10 +56,10 @@ const ROLE_HIERARCHY: Record<Role, number> = {
 
 const mainNav: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Karyawan", url: "/employees", icon: Users },
+  { title: "Karyawan", url: "/employees", icon: Users, minRole: "MANAGER" },
   { title: "Departemen", url: "/departments", icon: Building, minRole: "HR_ADMIN" },
   { title: "Jabatan", url: "/positions", icon: Briefcase, minRole: "HR_ADMIN" },
-  { title: "Bagan Organisasi", url: "/org-chart", icon: Network },
+  { title: "Bagan Organisasi", url: "/org-chart", icon: Network, minRole: "MANAGER" },
 ];
 
 const hrNav: NavItem[] = [
