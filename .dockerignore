@@ -2,7 +2,14 @@ node_modules
 .next
 .git
 .gitignore
-*.md
 .env
 .env.local
+.env.*.local
 docker-compose.yml
+audit-screenshots
+docs
+test-results
+*.md
+!README.md
+.claude
+.vscode
