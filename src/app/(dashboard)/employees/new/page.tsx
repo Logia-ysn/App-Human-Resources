@@ -117,6 +117,10 @@ type FormData = {
   joinDate: string;
   endDate: string;
   basicSalary: string;
+  allowanceTransport: string;
+  allowanceMeal: string;
+  allowancePosition: string;
+  allowanceOther: string;
   npwp: string;
   ptkpStatus: string;
   taxMethod: string;
@@ -153,6 +157,10 @@ const INITIAL_FORM: FormData = {
   joinDate: "",
   endDate: "",
   basicSalary: "",
+  allowanceTransport: "",
+  allowanceMeal: "",
+  allowancePosition: "",
+  allowanceOther: "",
   npwp: "",
   ptkpStatus: "",
   taxMethod: "",
@@ -346,6 +354,10 @@ export default function NewEmployeePage() {
       ptkpStatus: form.ptkpStatus || "TK0",
       taxMethod: (form.taxMethod || "GROSS") as Employee["taxMethod"],
       basicSalary: form.basicSalary ? Number(form.basicSalary) : 0,
+      allowanceTransport: form.allowanceTransport ? Number(form.allowanceTransport) : 0,
+      allowanceMeal: form.allowanceMeal ? Number(form.allowanceMeal) : 0,
+      allowancePosition: form.allowancePosition ? Number(form.allowancePosition) : 0,
+      allowanceOther: form.allowanceOther ? Number(form.allowanceOther) : 0,
       isDeleted: false,
     };
 
@@ -779,6 +791,89 @@ export default function NewEmployeePage() {
                       handleChange("basicSalary", raw);
                     }}
                   />
+                </div>
+              </div>
+
+              <Separator />
+
+              <SectionHeader
+                icon={CreditCard}
+                title="Tunjangan"
+                description="Tunjangan bulanan karyawan"
+              />
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="allowanceTransport">Tunjangan Transport</Label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      Rp
+                    </span>
+                    <Input
+                      id="allowanceTransport"
+                      className="pl-8"
+                      placeholder="0"
+                      value={formatCurrency(form.allowanceTransport)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        handleChange("allowanceTransport", raw);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="allowanceMeal">Tunjangan Makan</Label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      Rp
+                    </span>
+                    <Input
+                      id="allowanceMeal"
+                      className="pl-8"
+                      placeholder="0"
+                      value={formatCurrency(form.allowanceMeal)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        handleChange("allowanceMeal", raw);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="allowancePosition">Tunjangan Jabatan</Label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      Rp
+                    </span>
+                    <Input
+                      id="allowancePosition"
+                      className="pl-8"
+                      placeholder="0"
+                      value={formatCurrency(form.allowancePosition)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        handleChange("allowancePosition", raw);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="allowanceOther">Tunjangan Lainnya</Label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      Rp
+                    </span>
+                    <Input
+                      id="allowanceOther"
+                      className="pl-8"
+                      placeholder="0"
+                      value={formatCurrency(form.allowanceOther)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        handleChange("allowanceOther", raw);
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

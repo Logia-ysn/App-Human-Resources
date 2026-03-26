@@ -14,3 +14,4 @@ export * from "./onboarding";
 export * from "./lifecycle";
 export * from "./expenses";
 export * from "./shifts";
+export { defaultPayrollConfig, type PayrollConfig } from "./payroll-config";

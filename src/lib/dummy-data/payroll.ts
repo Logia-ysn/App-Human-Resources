@@ -1,4 +1,5 @@
 import { employees } from "./employees";
+import { defaultPayrollConfig, type PayrollConfig } from "./payroll-config";
 
 export type PayrollPeriodRecord = {
   id: string;
@@ -50,41 +51,73 @@ const MONTH_NAMES: Record<number, string> = {
 };
 
 /**
- * Calculate PPh 21 using simplified progressive rate on monthly taxable income.
- * Taxable income = totalEarnings - (54_000_000 / 12)
- * Brackets: 0-5jt -> 5%, 5-20jt -> 15%, >20jt -> 25%
+ * Calculate PPh 21 using progressive rate on monthly taxable income.
+ * Uses annual brackets from config, applied on a monthly basis.
  */
-export function calculatePph21(totalEarnings: number): number {
-  const monthlyNonTaxable = 54_000_000 / 12; // 4_500_000
+export function calculatePph21(
+  totalEarnings: number,
+  config: PayrollConfig = defaultPayrollConfig,
+): number {
+  const monthlyNonTaxable = config.pph21NonTaxableIncome / 12;
   const taxableIncome = totalEarnings - monthlyNonTaxable;
 
   if (taxableIncome <= 0) return 0;
 
-  let tax = 0;
+  // Convert annual brackets to monthly
+  const annualTaxable = taxableIncome * 12;
+  let annualTax = 0;
+  let remaining = annualTaxable;
+  let prevLimit = 0;
 
-  if (taxableIncome <= 5_000_000) {
-    tax = taxableIncome * 0.05;
-  } else if (taxableIncome <= 20_000_000) {
-    tax = 5_000_000 * 0.05 + (taxableIncome - 5_000_000) * 0.15;
-  } else {
-    tax = 5_000_000 * 0.05 + 15_000_000 * 0.15 + (taxableIncome - 20_000_000) * 0.25;
+  for (const bracket of config.pph21Brackets) {
+    const bracketSize = bracket.limit === Infinity ? remaining : bracket.limit - prevLimit;
+    const taxableInBracket = Math.min(remaining, bracketSize);
+    annualTax += taxableInBracket * bracket.rate;
+    remaining -= taxableInBracket;
+    prevLimit = bracket.limit;
+    if (remaining <= 0) break;
   }
 
-  return Math.round(tax);
+  return Math.round(annualTax / 12);
 }
+
+type EmployeeAllowances = {
+  allowanceTransport: number;
+  allowanceMeal: number;
+  allowancePosition: number;
+  allowanceOther: number;
+};
 
 /**
  * Calculate salary components for an employee.
+ * Uses payroll config for BPJS/PPh rates and employee allowances for tunjangan.
  */
-export function calculateSalaryComponents(basicSalary: number, overtimeHours: number) {
-  const tunjangan = Math.round(basicSalary * 0.1);
+export function calculateSalaryComponents(
+  basicSalary: number,
+  overtimeHours: number,
+  allowances?: EmployeeAllowances,
+  config: PayrollConfig = defaultPayrollConfig,
+) {
+  // Use per-employee allowances if provided, otherwise fallback to 10% of basic
+  const tunjangan = allowances
+    ? allowances.allowanceTransport + allowances.allowanceMeal + allowances.allowancePosition + allowances.allowanceOther
+    : Math.round(basicSalary * 0.1);
+
   const hourlyRate = Math.round(basicSalary / 173); // standard monthly hours
   const overtimePay = Math.round(overtimeHours * hourlyRate * 1.5);
   const totalEarnings = basicSalary + tunjangan + overtimePay;
 
-  const bpjsKes = Math.min(Math.round(basicSalary * 0.04), 480_000);
-  const bpjsTk = Math.round(basicSalary * 0.02);
-  const pph21 = calculatePph21(totalEarnings);
+  // BPJS Kesehatan: employee portion, capped at config.bpjsKesCap
+  const bpjsKesSalary = Math.min(basicSalary, config.bpjsKesCap);
+  const bpjsKes = Math.round(bpjsKesSalary * config.bpjsKesEmployeeRate);
+
+  // BPJS Ketenagakerjaan: JHT (employee) + JP (employee, capped)
+  const bpjsTkJht = Math.round(basicSalary * config.bpjsTkJhtRate);
+  const bpjsTkJpSalary = Math.min(basicSalary, config.bpjsTkJpCap);
+  const bpjsTkJp = Math.round(bpjsTkJpSalary * config.bpjsTkJpRate);
+  const bpjsTk = bpjsTkJht + bpjsTkJp;
+
+  const pph21 = calculatePph21(totalEarnings, config);
   const totalDeductions = bpjsKes + bpjsTk + pph21;
   const netSalary = totalEarnings - totalDeductions;
 
@@ -147,7 +180,12 @@ function generateAllPayslips(): { periods: PayrollPeriodRecord[]; slips: Payslip
       const presentDays = 20 + Math.floor(rng() * 3); // 20, 21, or 22
       const overtimeHours = Math.floor(rng() * 6); // 0-5
 
-      const calc = calculateSalaryComponents(emp.basicSalary, overtimeHours);
+      const calc = calculateSalaryComponents(emp.basicSalary, overtimeHours, {
+        allowanceTransport: emp.allowanceTransport ?? 0,
+        allowanceMeal: emp.allowanceMeal ?? 0,
+        allowancePosition: emp.allowancePosition ?? 0,
+        allowanceOther: emp.allowanceOther ?? 0,
+      });
 
       const slipId = `ps-${spec.id.replace("pp-", "")}-${emp.id.replace("emp-", "")}`;
 

@@ -312,6 +312,10 @@ export default function EmployeeDetailPage() {
                 <InfoItem label="Status PTKP" value={PTKP_LABELS[employee.ptkpStatus] ?? employee.ptkpStatus} />
                 <InfoItem label="Metode Pajak" value={TAX_METHOD_LABELS[employee.taxMethod] ?? employee.taxMethod} />
                 <InfoItem label="Gaji Pokok" value={formatCurrency(employee.basicSalary)} />
+                <InfoItem label="Tunj. Transport" value={formatCurrency(employee.allowanceTransport ?? 0)} />
+                <InfoItem label="Tunj. Makan" value={formatCurrency(employee.allowanceMeal ?? 0)} />
+                <InfoItem label="Tunj. Jabatan" value={formatCurrency(employee.allowancePosition ?? 0)} />
+                <InfoItem label="Tunj. Lainnya" value={formatCurrency(employee.allowanceOther ?? 0)} />
               </div>
             </CardContent>
           </Card>

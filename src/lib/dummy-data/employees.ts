@@ -40,6 +40,10 @@ export type Employee = {
   ptkpStatus: string;
   taxMethod: "GROSS" | "GROSS_UP" | "NETT";
   basicSalary: number;
+  allowanceTransport: number;
+  allowanceMeal: number;
+  allowancePosition: number;
+  allowanceOther: number;
   isDeleted: boolean;
 };
 
@@ -58,7 +62,9 @@ export const employees: Employee[] = [
     positionId: "pos-1", positionName: "Direktur Utama",
     managerId: null, managerName: null,
     status: "ACTIVE", type: "PERMANENT", joinDate: "2018-01-02", endDate: null, resignDate: null,
-    ptkpStatus: "K2", taxMethod: "GROSS", basicSalary: 75000000, isDeleted: false,
+    ptkpStatus: "K2", taxMethod: "GROSS", basicSalary: 75000000,
+    allowanceTransport: 2000000, allowanceMeal: 1000000, allowancePosition: 5000000, allowanceOther: 1000000,
+    isDeleted: false,
   },
   {
     id: "emp-2", employeeNumber: "EMP-0002", firstName: "Sari", lastName: "Dewi",
@@ -74,7 +80,9 @@ export const employees: Employee[] = [
     positionId: "pos-2", positionName: "HR Manager",
     managerId: "emp-1", managerName: "Budi Santoso",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2020-01-02", endDate: null, resignDate: null,
-    ptkpStatus: "K1", taxMethod: "GROSS", basicSalary: 18000000, isDeleted: false,
+    ptkpStatus: "K1", taxMethod: "GROSS", basicSalary: 18000000,
+    allowanceTransport: 1500000, allowanceMeal: 750000, allowancePosition: 3000000, allowanceOther: 500000,
+    isDeleted: false,
   },
   {
     id: "emp-3", employeeNumber: "EMP-0003", firstName: "Andi", lastName: "Wijaya",
@@ -90,7 +98,9 @@ export const employees: Employee[] = [
     positionId: "pos-4", positionName: "IT Manager",
     managerId: "emp-1", managerName: "Budi Santoso",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2019-03-15", endDate: null, resignDate: null,
-    ptkpStatus: "K2", taxMethod: "GROSS", basicSalary: 22000000, isDeleted: false,
+    ptkpStatus: "K2", taxMethod: "GROSS", basicSalary: 22000000,
+    allowanceTransport: 1500000, allowanceMeal: 750000, allowancePosition: 3500000, allowanceOther: 500000,
+    isDeleted: false,
   },
   {
     id: "emp-4", employeeNumber: "EMP-0004", firstName: "Dewi", lastName: "Lestari",
@@ -106,7 +116,9 @@ export const employees: Employee[] = [
     positionId: "pos-5", positionName: "Software Developer",
     managerId: "emp-3", managerName: "Andi Wijaya",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2021-06-01", endDate: null, resignDate: null,
-    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 12000000, isDeleted: false,
+    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 12000000,
+    allowanceTransport: 750000, allowanceMeal: 500000, allowancePosition: 1500000, allowanceOther: 250000,
+    isDeleted: false,
   },
   {
     id: "emp-5", employeeNumber: "EMP-0005", firstName: "Rizky", lastName: "Ramadhan",
@@ -122,7 +134,9 @@ export const employees: Employee[] = [
     positionId: "pos-5", positionName: "Software Developer",
     managerId: "emp-3", managerName: "Andi Wijaya",
     status: "ACTIVE", type: "CONTRACT", joinDate: "2023-02-01", endDate: "2026-01-31", resignDate: null,
-    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 10000000, isDeleted: false,
+    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 10000000,
+    allowanceTransport: 750000, allowanceMeal: 500000, allowancePosition: 1000000, allowanceOther: 250000,
+    isDeleted: false,
   },
   {
     id: "emp-6", employeeNumber: "EMP-0006", firstName: "Fitri", lastName: "Handayani",
@@ -138,7 +152,9 @@ export const employees: Employee[] = [
     positionId: "pos-3", positionName: "HR Staff",
     managerId: "emp-2", managerName: "Sari Dewi",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2022-04-01", endDate: null, resignDate: null,
-    ptkpStatus: "K1", taxMethod: "GROSS", basicSalary: 8000000, isDeleted: false,
+    ptkpStatus: "K1", taxMethod: "GROSS", basicSalary: 8000000,
+    allowanceTransport: 750000, allowanceMeal: 500000, allowancePosition: 1000000, allowanceOther: 250000,
+    isDeleted: false,
   },
   {
     id: "emp-7", employeeNumber: "EMP-0007", firstName: "Agus", lastName: "Prabowo",
@@ -153,7 +169,9 @@ export const employees: Employee[] = [
     positionId: "pos-6", positionName: "UI/UX Designer",
     managerId: "emp-3", managerName: "Andi Wijaya",
     status: "PROBATION", type: "PROBATION", joinDate: "2026-01-15", endDate: "2026-04-15", resignDate: null,
-    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 9000000, isDeleted: false,
+    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 9000000,
+    allowanceTransport: 500000, allowanceMeal: 300000, allowancePosition: 0, allowanceOther: 0,
+    isDeleted: false,
   },
   {
     id: "emp-8", employeeNumber: "EMP-0008", firstName: "Rini", lastName: "Susanti",
@@ -169,7 +187,9 @@ export const employees: Employee[] = [
     positionId: "pos-7", positionName: "Finance Manager",
     managerId: "emp-1", managerName: "Budi Santoso",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2019-07-01", endDate: null, resignDate: null,
-    ptkpStatus: "K3", taxMethod: "GROSS", basicSalary: 20000000, isDeleted: false,
+    ptkpStatus: "K3", taxMethod: "GROSS", basicSalary: 20000000,
+    allowanceTransport: 1500000, allowanceMeal: 750000, allowancePosition: 3500000, allowanceOther: 500000,
+    isDeleted: false,
   },
   {
     id: "emp-9", employeeNumber: "EMP-0009", firstName: "Maya", lastName: "Putri",
@@ -185,7 +205,9 @@ export const employees: Employee[] = [
     positionId: "pos-9", positionName: "Marketing Manager",
     managerId: "emp-1", managerName: "Budi Santoso",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2020-08-15", endDate: null, resignDate: null,
-    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 17000000, isDeleted: false,
+    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 17000000,
+    allowanceTransport: 1500000, allowanceMeal: 750000, allowancePosition: 3000000, allowanceOther: 500000,
+    isDeleted: false,
   },
   {
     id: "emp-10", employeeNumber: "EMP-0010", firstName: "Deni", lastName: "Pratama",
@@ -201,7 +223,9 @@ export const employees: Employee[] = [
     positionId: "pos-11", positionName: "Sales Manager",
     managerId: "emp-1", managerName: "Budi Santoso",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2019-11-01", endDate: null, resignDate: null,
-    ptkpStatus: "K2", taxMethod: "GROSS", basicSalary: 18000000, isDeleted: false,
+    ptkpStatus: "K2", taxMethod: "GROSS", basicSalary: 18000000,
+    allowanceTransport: 1500000, allowanceMeal: 750000, allowancePosition: 3000000, allowanceOther: 500000,
+    isDeleted: false,
   },
   {
     id: "emp-11", employeeNumber: "EMP-0011", firstName: "Fajar", lastName: "Nugroho",
@@ -216,7 +240,9 @@ export const employees: Employee[] = [
     positionId: "pos-5", positionName: "Software Developer",
     managerId: "emp-3", managerName: "Andi Wijaya",
     status: "ACTIVE", type: "CONTRACT", joinDate: "2024-06-01", endDate: "2026-05-31", resignDate: null,
-    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 9500000, isDeleted: false,
+    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 9500000,
+    allowanceTransport: 750000, allowanceMeal: 500000, allowancePosition: 1000000, allowanceOther: 250000,
+    isDeleted: false,
   },
   {
     id: "emp-12", employeeNumber: "EMP-0012", firstName: "Nadia", lastName: "Kartika",
@@ -232,7 +258,9 @@ export const employees: Employee[] = [
     positionId: "pos-8", positionName: "Accountant",
     managerId: "emp-8", managerName: "Rini Susanti",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2022-09-01", endDate: null, resignDate: null,
-    ptkpStatus: "K0", taxMethod: "GROSS", basicSalary: 8500000, isDeleted: false,
+    ptkpStatus: "K0", taxMethod: "GROSS", basicSalary: 8500000,
+    allowanceTransport: 750000, allowanceMeal: 500000, allowancePosition: 1000000, allowanceOther: 250000,
+    isDeleted: false,
   },
   {
     id: "emp-13", employeeNumber: "EMP-0013", firstName: "Hendra", lastName: "Saputra",
@@ -248,7 +276,9 @@ export const employees: Employee[] = [
     positionId: "pos-12", positionName: "Sales Executive",
     managerId: "emp-10", managerName: "Deni Pratama",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2021-03-15", endDate: null, resignDate: null,
-    ptkpStatus: "K1", taxMethod: "GROSS", basicSalary: 8000000, isDeleted: false,
+    ptkpStatus: "K1", taxMethod: "GROSS", basicSalary: 8000000,
+    allowanceTransport: 750000, allowanceMeal: 500000, allowancePosition: 1000000, allowanceOther: 250000,
+    isDeleted: false,
   },
   {
     id: "emp-14", employeeNumber: "EMP-0014", firstName: "Putri", lastName: "Rahayu",
@@ -263,7 +293,9 @@ export const employees: Employee[] = [
     positionId: "pos-10", positionName: "Marketing Staff",
     managerId: "emp-9", managerName: "Maya Putri",
     status: "ACTIVE", type: "INTERNSHIP", joinDate: "2025-12-01", endDate: "2026-05-31", resignDate: null,
-    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 4000000, isDeleted: false,
+    ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 4000000,
+    allowanceTransport: 500000, allowanceMeal: 300000, allowancePosition: 0, allowanceOther: 0,
+    isDeleted: false,
   },
   {
     id: "emp-15", employeeNumber: "EMP-0015", firstName: "Wahyu", lastName: "Hidayat",
@@ -279,6 +311,8 @@ export const employees: Employee[] = [
     positionId: "pos-13", positionName: "Operations Supervisor",
     managerId: "emp-1", managerName: "Budi Santoso",
     status: "ACTIVE", type: "PERMANENT", joinDate: "2020-02-01", endDate: null, resignDate: null,
-    ptkpStatus: "TK1", taxMethod: "GROSS", basicSalary: 11000000, isDeleted: false,
+    ptkpStatus: "TK1", taxMethod: "GROSS", basicSalary: 11000000,
+    allowanceTransport: 1000000, allowanceMeal: 500000, allowancePosition: 2000000, allowanceOther: 250000,
+    isDeleted: false,
   },
 ];

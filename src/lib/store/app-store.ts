@@ -77,6 +77,11 @@ import {
   type ShiftAssignment,
 } from "@/lib/dummy-data/shifts";
 
+import {
+  defaultPayrollConfig,
+  type PayrollConfig,
+} from "@/lib/dummy-data/payroll-config";
+
 // ---------- Empty company settings default ----------
 const emptyCompanySettings: CompanySettings = {
   id: "",
@@ -128,6 +133,7 @@ type AppState = {
   expenseClaims: ExpenseClaim[];
   shiftTypes: ShiftType[];
   shiftAssignments: ShiftAssignment[];
+  payrollConfig: PayrollConfig;
 
   // Flags
   isUsingDemoData: boolean;
@@ -222,6 +228,9 @@ type AppState = {
   // Company settings
   updateCompanySettings: (data: Partial<CompanySettings>) => void;
 
+  // Payroll config
+  updatePayrollConfig: (data: Partial<PayrollConfig>) => void;
+
   // Activity feed
   addActivityItem: (item: ActivityItem) => void;
 };
@@ -257,6 +266,7 @@ function getDemoSnapshot() {
     expenseClaims: [...demoExpenseClaims],
     shiftTypes: [...demoShiftTypes],
     shiftAssignments: [...demoShiftAssignments],
+    payrollConfig: { ...defaultPayrollConfig },
   };
 }
 
@@ -290,6 +300,7 @@ function getEmptyData() {
     expenseClaims: [] as ExpenseClaim[],
     shiftTypes: [] as ShiftType[],
     shiftAssignments: [] as ShiftAssignment[],
+    payrollConfig: { ...defaultPayrollConfig },
   };
 }
 
@@ -471,6 +482,10 @@ export const useAppStore = create<AppState>()(
       // Company settings
       updateCompanySettings: (data) =>
         set((s) => ({ companySettings: { ...s.companySettings, ...data } })),
+
+      // Payroll config
+      updatePayrollConfig: (data) =>
+        set((s) => ({ payrollConfig: { ...s.payrollConfig, ...data } })),
 
       // Activity feed
       addActivityItem: (item) =>

@@ -83,6 +83,7 @@ export default function PayrollPage() {
   const updatePayrollPeriod = useAppStore((s) => s.updatePayrollPeriod);
   const addPayrollPeriod = useAppStore((s) => s.addPayrollPeriod);
   const addPayslip = useAppStore((s) => s.addPayslip);
+  const payrollConfig = useAppStore((s) => s.payrollConfig);
 
   const [activeTab, setActiveTab] = useState("periode");
   const [processDialogOpen, setProcessDialogOpen] = useState(false);
@@ -160,7 +161,17 @@ export default function PayrollPage() {
       const presentDays = 20 + (i % 3); // 20, 21, or 22
       const overtimeHours = i % 6; // 0-5
 
-      const calc = calculateSalaryComponents(emp.basicSalary, overtimeHours);
+      const calc = calculateSalaryComponents(
+        emp.basicSalary,
+        overtimeHours,
+        {
+          allowanceTransport: emp.allowanceTransport ?? 0,
+          allowanceMeal: emp.allowanceMeal ?? 0,
+          allowancePosition: emp.allowancePosition ?? 0,
+          allowanceOther: emp.allowanceOther ?? 0,
+        },
+        payrollConfig,
+      );
 
       const slipId = `ps-${selectedPeriodId.replace("pp-", "")}-${emp.id.replace("emp-", "")}-${Date.now()}`;
 
@@ -208,7 +219,7 @@ export default function PayrollPage() {
     );
     setCalculateDialogOpen(false);
     setSelectedPeriodId(null);
-  }, [selectedPeriodId, payrollPeriods, payslips, activeEmployees, addPayslip, updatePayrollPeriod]);
+  }, [selectedPeriodId, payrollPeriods, payslips, activeEmployees, addPayslip, updatePayrollPeriod, payrollConfig]);
 
   // Process payroll (CALCULATED -> PAID)
   const handleProcessPayroll = useCallback(() => {

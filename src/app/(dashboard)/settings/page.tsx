@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { CompanySettings } from "@/lib/dummy-data";
+import type { PayrollConfig } from "@/lib/dummy-data/payroll-config";
 import { useAppStore } from "@/lib/store/app-store";
 import {
   Card,
@@ -93,18 +94,68 @@ function parseCurrency(value: string): number {
   return cleaned === "" ? 0 : parseInt(cleaned, 10);
 }
 
+type PayrollConfigForm = {
+  bpjsKesCompanyRate: string;
+  bpjsKesEmployeeRate: string;
+  bpjsKesCap: number;
+  bpjsTkJhtRate: string;
+  bpjsTkJkkRate: string;
+  bpjsTkJkmRate: string;
+  bpjsTkJpRate: string;
+  bpjsTkJpCap: number;
+  pph21NonTaxableIncome: number;
+};
+
+function configToForm(config: PayrollConfig): PayrollConfigForm {
+  return {
+    bpjsKesCompanyRate: String(config.bpjsKesCompanyRate * 100),
+    bpjsKesEmployeeRate: String(config.bpjsKesEmployeeRate * 100),
+    bpjsKesCap: config.bpjsKesCap,
+    bpjsTkJhtRate: String(config.bpjsTkJhtRate * 100),
+    bpjsTkJkkRate: String(config.bpjsTkJkkRate * 100),
+    bpjsTkJkmRate: String(config.bpjsTkJkmRate * 100),
+    bpjsTkJpRate: String(config.bpjsTkJpRate * 100),
+    bpjsTkJpCap: config.bpjsTkJpCap,
+    pph21NonTaxableIncome: config.pph21NonTaxableIncome,
+  };
+}
+
+function formToConfig(formData: PayrollConfigForm): Partial<PayrollConfig> {
+  return {
+    bpjsKesCompanyRate: parseFloat(formData.bpjsKesCompanyRate) / 100 || 0,
+    bpjsKesEmployeeRate: parseFloat(formData.bpjsKesEmployeeRate) / 100 || 0,
+    bpjsKesCap: formData.bpjsKesCap,
+    bpjsTkJhtRate: parseFloat(formData.bpjsTkJhtRate) / 100 || 0,
+    bpjsTkJkkRate: parseFloat(formData.bpjsTkJkkRate) / 100 || 0,
+    bpjsTkJkmRate: parseFloat(formData.bpjsTkJkmRate) / 100 || 0,
+    bpjsTkJpRate: parseFloat(formData.bpjsTkJpRate) / 100 || 0,
+    bpjsTkJpCap: formData.bpjsTkJpCap,
+    pph21NonTaxableIncome: formData.pph21NonTaxableIncome,
+  };
+}
+
 export default function SettingsPage() {
   const storeSettings = useAppStore((s) => s.companySettings);
   const updateCompanySettings = useAppStore((s) => s.updateCompanySettings);
+  const payrollConfig = useAppStore((s) => s.payrollConfig);
+  const updatePayrollConfig = useAppStore((s) => s.updatePayrollConfig);
   const [form, setForm] = useState<CompanySettings>({ ...storeSettings });
+  const [configForm, setConfigForm] = useState<PayrollConfigForm>(() =>
+    configToForm(payrollConfig),
+  );
 
   function handleChange(field: keyof CompanySettings, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  function handleConfigChange(field: keyof PayrollConfigForm, value: string | number) {
+    setConfigForm((prev) => ({ ...prev, [field]: value }));
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     updateCompanySettings(form);
+    updatePayrollConfig(formToConfig(configForm));
     toast.success("Pengaturan berhasil disimpan");
   }
 
@@ -310,6 +361,232 @@ export default function SettingsPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tarif BPJS & PPh 21 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tarif BPJS & PPh 21</CardTitle>
+            <CardDescription>
+              Atur tarif potongan BPJS dan pajak penghasilan.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* BPJS Kesehatan */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">BPJS Kesehatan</h4>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="bpjsKesCompanyRate">Tarif Perusahaan (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="bpjsKesCompanyRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={configForm.bpjsKesCompanyRate}
+                      onChange={(e) =>
+                        handleConfigChange("bpjsKesCompanyRate", e.target.value)
+                      }
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bpjsKesEmployeeRate">Tarif Karyawan (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="bpjsKesEmployeeRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={configForm.bpjsKesEmployeeRate}
+                      onChange={(e) =>
+                        handleConfigChange("bpjsKesEmployeeRate", e.target.value)
+                      }
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bpjsKesCap">Batas Gaji Maksimum</Label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      Rp
+                    </span>
+                    <Input
+                      id="bpjsKesCap"
+                      className="pl-8"
+                      value={formatCurrency(configForm.bpjsKesCap)}
+                      onChange={(e) =>
+                        handleConfigChange("bpjsKesCap", parseCurrency(e.target.value))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* BPJS Ketenagakerjaan */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">BPJS Ketenagakerjaan</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="bpjsTkJhtRate">JHT Karyawan (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="bpjsTkJhtRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={configForm.bpjsTkJhtRate}
+                      onChange={(e) =>
+                        handleConfigChange("bpjsTkJhtRate", e.target.value)
+                      }
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bpjsTkJkkRate">JKK Perusahaan (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="bpjsTkJkkRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={configForm.bpjsTkJkkRate}
+                      onChange={(e) =>
+                        handleConfigChange("bpjsTkJkkRate", e.target.value)
+                      }
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bpjsTkJkmRate">JKM Perusahaan (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="bpjsTkJkmRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={configForm.bpjsTkJkmRate}
+                      onChange={(e) =>
+                        handleConfigChange("bpjsTkJkmRate", e.target.value)
+                      }
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bpjsTkJpRate">JP Karyawan (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="bpjsTkJpRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={configForm.bpjsTkJpRate}
+                      onChange={(e) =>
+                        handleConfigChange("bpjsTkJpRate", e.target.value)
+                      }
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bpjsTkJpCap">Batas Gaji JP</Label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      Rp
+                    </span>
+                    <Input
+                      id="bpjsTkJpCap"
+                      className="pl-8"
+                      value={formatCurrency(configForm.bpjsTkJpCap)}
+                      onChange={(e) =>
+                        handleConfigChange("bpjsTkJpCap", parseCurrency(e.target.value))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* PPh 21 */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">PPh 21</h4>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pph21NonTaxableIncome">PTKP (TK/0) per Tahun</Label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      Rp
+                    </span>
+                    <Input
+                      id="pph21NonTaxableIncome"
+                      className="pl-8"
+                      value={formatCurrency(configForm.pph21NonTaxableIncome)}
+                      onChange={(e) =>
+                        handleConfigChange(
+                          "pph21NonTaxableIncome",
+                          parseCurrency(e.target.value),
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Lapisan Tarif PPh 21 (Tahunan)</Label>
+                  <div className="rounded-md border">
+                    <div className="grid grid-cols-2 gap-0 text-sm">
+                      <div className="border-b border-r bg-muted/50 px-3 py-2 font-medium">
+                        Penghasilan Kena Pajak
+                      </div>
+                      <div className="border-b bg-muted/50 px-3 py-2 font-medium">
+                        Tarif
+                      </div>
+                      <div className="border-b border-r px-3 py-2 text-muted-foreground">
+                        s.d. Rp 60.000.000
+                      </div>
+                      <div className="border-b px-3 py-2">5%</div>
+                      <div className="border-b border-r px-3 py-2 text-muted-foreground">
+                        Rp 60jt - Rp 250jt
+                      </div>
+                      <div className="border-b px-3 py-2">15%</div>
+                      <div className="border-b border-r px-3 py-2 text-muted-foreground">
+                        Rp 250jt - Rp 500jt
+                      </div>
+                      <div className="border-b px-3 py-2">25%</div>
+                      <div className="border-r px-3 py-2 text-muted-foreground">
+                        Di atas Rp 500jt
+                      </div>
+                      <div className="px-3 py-2">30%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
