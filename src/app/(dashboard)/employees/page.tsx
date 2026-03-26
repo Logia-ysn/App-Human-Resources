@@ -63,6 +63,8 @@ import {
 import { toast } from "sonner";
 
 import type { Employee } from "@/lib/dummy-data";
+import { useAuth } from "@/components/providers/auth-context";
+import { hasMinRole } from "@/lib/utils/permissions";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -107,6 +109,8 @@ function activeFilterCount(
 }
 
 export default function EmployeesPage() {
+  const { role } = useAuth();
+  const canEdit = hasMinRole(role, "HR_ADMIN");
   const allEmployees = useAppStore((s) => s.employees);
   const departments = useAppStore((s) => s.departments);
   const deleteEmployee = useAppStore((s) => s.deleteEmployee);
@@ -259,10 +263,12 @@ export default function EmployeesPage() {
           </div>
         </div>
         {/* Desktop add button */}
-        <Link href="/employees/new" className={cn(buttonVariants(), "hidden md:inline-flex")}>
-          <Plus data-icon="inline-start" />
-          Tambah Karyawan
-        </Link>
+        {canEdit && (
+          <Link href="/employees/new" className={cn(buttonVariants(), "hidden md:inline-flex")}>
+            <Plus data-icon="inline-start" />
+            Tambah Karyawan
+          </Link>
+        )}
       </div>
 
       {/* Filter bar */}
@@ -484,21 +490,25 @@ export default function EmployeesPage() {
                           <Eye className="size-4" />
                           <span className="sr-only">Lihat</span>
                         </Link>
-                        <Link
-                          href={`/employees/${emp.id}/edit`}
-                          className={cn(buttonVariants({ variant: "ghost", size: "icon-xs" }))}
-                        >
-                          <Pencil className="size-4" />
-                          <span className="sr-only">Edit</span>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => setDeleteTarget(emp)}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                          <span className="sr-only">Hapus</span>
-                        </Button>
+                        {canEdit && (
+                          <>
+                            <Link
+                              href={`/employees/${emp.id}/edit`}
+                              className={cn(buttonVariants({ variant: "ghost", size: "icon-xs" }))}
+                            >
+                              <Pencil className="size-4" />
+                              <span className="sr-only">Edit</span>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => setDeleteTarget(emp)}
+                            >
+                              <Trash2 className="size-4 text-destructive" />
+                              <span className="sr-only">Hapus</span>
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -596,16 +606,18 @@ export default function EmployeesPage() {
       </Card>
 
       {/* Mobile FAB: add employee */}
-      <Link
-        href="/employees/new"
-        className={cn(
-          buttonVariants(),
-          "fixed bottom-6 right-6 z-40 size-14 rounded-full shadow-lg md:hidden [&_svg]:size-6"
-        )}
-      >
-        <Plus />
-        <span className="sr-only">Tambah Karyawan</span>
-      </Link>
+      {canEdit && (
+        <Link
+          href="/employees/new"
+          className={cn(
+            buttonVariants(),
+            "fixed bottom-6 right-6 z-40 size-14 rounded-full shadow-lg md:hidden [&_svg]:size-6"
+          )}
+        >
+          <Plus />
+          <span className="sr-only">Tambah Karyawan</span>
+        </Link>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog

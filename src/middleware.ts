@@ -17,14 +17,27 @@ type RoutePermission = {
 };
 
 const ROUTE_PERMISSIONS: RoutePermission[] = [
+  // Super Admin only
   { pattern: /^\/settings/, minRole: "SUPER_ADMIN" },
+
+  // HR Admin only — admin CRUD pages
   { pattern: /^\/employees\/new/, minRole: "HR_ADMIN" },
   { pattern: /^\/employees\/.*\/edit/, minRole: "HR_ADMIN" },
-  { pattern: /^\/payroll\/run/, minRole: "HR_ADMIN" },
-  { pattern: /^\/payroll\/components/, minRole: "HR_ADMIN" },
-  { pattern: /^\/recruitment/, minRole: "HR_ADMIN" },
   { pattern: /^\/departments/, minRole: "HR_ADMIN" },
   { pattern: /^\/positions/, minRole: "HR_ADMIN" },
+  { pattern: /^\/recruitment/, minRole: "HR_ADMIN" },
+  { pattern: /^\/onboarding/, minRole: "HR_ADMIN" },
+  { pattern: /^\/lifecycle/, minRole: "HR_ADMIN" },
+
+  // Manager+ — admin operational pages (view all data, approve/reject)
+  { pattern: /^\/attendance/, minRole: "MANAGER" },
+  { pattern: /^\/leave/, minRole: "MANAGER" },
+  { pattern: /^\/payroll/, minRole: "MANAGER" },
+  { pattern: /^\/performance/, minRole: "MANAGER" },
+  { pattern: /^\/training/, minRole: "MANAGER" },
+  { pattern: /^\/shifts/, minRole: "MANAGER" },
+  { pattern: /^\/expenses\/advances$/, minRole: "MANAGER" },
+  { pattern: /^\/expenses\/claims$/, minRole: "MANAGER" },
 ];
 
 export default auth((req) => {

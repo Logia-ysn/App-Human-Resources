@@ -63,13 +63,13 @@ const mainNav: NavItem[] = [
 ];
 
 const hrNav: NavItem[] = [
-  { title: "Absensi", url: "/attendance", icon: Clock },
-  { title: "Cuti", url: "/leave", icon: CalendarDays },
-  { title: "Penggajian", url: "/payroll", icon: Wallet },
+  { title: "Absensi", url: "/attendance", icon: Clock, minRole: "MANAGER" },
+  { title: "Cuti", url: "/leave", icon: CalendarDays, minRole: "MANAGER" },
+  { title: "Penggajian", url: "/payroll", icon: Wallet, minRole: "MANAGER" },
   { title: "Rekrutmen", url: "/recruitment", icon: UserPlus, minRole: "HR_ADMIN" },
-  { title: "Penilaian Kinerja", url: "/performance", icon: BarChart3 },
-  { title: "Training", url: "/training", icon: GraduationCap },
-  { title: "Shift", url: "/shifts", icon: RefreshCw, minRole: "HR_ADMIN" },
+  { title: "Penilaian Kinerja", url: "/performance", icon: BarChart3, minRole: "MANAGER" },
+  { title: "Training", url: "/training", icon: GraduationCap, minRole: "MANAGER" },
+  { title: "Shift", url: "/shifts", icon: RefreshCw, minRole: "MANAGER" },
 ];
 
 const lifecycleNav: NavItem[] = [
@@ -78,8 +78,8 @@ const lifecycleNav: NavItem[] = [
 ];
 
 const financeNav: NavItem[] = [
-  { title: "Kasbon", url: "/expenses/advances", icon: Banknote },
-  { title: "Klaim Pengeluaran", url: "/expenses/claims", icon: Receipt },
+  { title: "Kasbon", url: "/expenses/advances", icon: Banknote, minRole: "MANAGER" },
+  { title: "Klaim Pengeluaran", url: "/expenses/claims", icon: Receipt, minRole: "MANAGER" },
 ];
 
 const essNav: NavItem[] = [
