@@ -133,7 +133,7 @@ export const employees: Employee[] = [
     departmentId: "dept-4", departmentName: "Information Technology",
     positionId: "pos-5", positionName: "Software Developer",
     managerId: "emp-3", managerName: "Andi Wijaya",
-    status: "ACTIVE", type: "CONTRACT", joinDate: "2023-02-01", endDate: "2026-01-31", resignDate: null,
+    status: "RESIGNED", type: "CONTRACT", joinDate: "2023-02-01", endDate: "2026-01-31", resignDate: "2026-01-31",
     ptkpStatus: "TK0", taxMethod: "GROSS", basicSalary: 10000000,
     allowanceTransport: 750000, allowanceMeal: 500000, allowancePosition: 1000000, allowanceOther: 250000,
     isDeleted: false,

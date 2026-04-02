@@ -89,25 +89,19 @@ function getWeekDates(): Date[] {
 function getShiftForDay(
   assignments: ShiftAssignment[],
   employeeId: string,
-  _day: Date,
+  day: Date,
 ): ShiftAssignment | undefined {
+  const dateStr = day.toISOString().split("T")[0];
   return assignments.find(
-    (a) => a.employeeId === employeeId && a.isActive,
+    (a) =>
+      a.employeeId === employeeId &&
+      a.isActive &&
+      a.startDate <= dateStr &&
+      (!a.endDate || a.endDate >= dateStr),
   );
 }
 
-// ---------------------------------------------------------------------------
-// Employee list for assignment dialog
-// ---------------------------------------------------------------------------
-const AVAILABLE_EMPLOYEES = [
-  { id: "emp-005", name: "Andi Prasetyo", department: "Information Technology" },
-  { id: "emp-006", name: "Lina Marlina", department: "Operations" },
-  { id: "emp-007", name: "Rina Wulandari", department: "Marketing" },
-  { id: "emp-008", name: "Bambang Gunawan", department: "Operations" },
-  { id: "emp-009", name: "Agus Setiawan", department: "Sales" },
-  { id: "emp-012", name: "Wati Susanto", department: "Operations" },
-  { id: "emp-013", name: "Hendra Wijaya", department: "Operations" },
-];
+// Employee list is now dynamically loaded from store in the component
 
 // ---------------------------------------------------------------------------
 // Page component
@@ -116,8 +110,17 @@ const AVAILABLE_EMPLOYEES = [
 export default function ShiftsPage() {
   const shiftTypeList = useAppStore((s) => s.shiftTypes);
   const assignments = useAppStore((s) => s.shiftAssignments);
+  const allEmployees = useAppStore((s) => s.employees);
   const storeAddShiftType = useAppStore((s) => s.addShiftType);
   const storeAddShiftAssignment = useAppStore((s) => s.addShiftAssignment);
+
+  const availableEmployees = useMemo(
+    () =>
+      allEmployees
+        .filter((e) => !e.isDeleted && (e.status === "ACTIVE" || e.status === "PROBATION"))
+        .map((e) => ({ id: e.id, name: `${e.firstName} ${e.lastName}`, department: e.departmentName })),
+    [allEmployees],
+  );
 
   // Dialogs
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
@@ -179,7 +182,7 @@ export default function ShiftsPage() {
       return;
     }
 
-    const employee = AVAILABLE_EMPLOYEES.find(
+    const employee = availableEmployees.find(
       (e) => e.id === newAssignment.employeeId,
     );
     const shiftType = shiftTypeList.find(
@@ -536,7 +539,7 @@ export default function ShiftsPage() {
                           <SelectValue placeholder="Pilih karyawan" />
                         </SelectTrigger>
                         <SelectContent>
-                          {AVAILABLE_EMPLOYEES.map((emp) => (
+                          {availableEmployees.map((emp) => (
                             <SelectItem key={emp.id} value={emp.id}>
                               {emp.name} - {emp.department}
                             </SelectItem>

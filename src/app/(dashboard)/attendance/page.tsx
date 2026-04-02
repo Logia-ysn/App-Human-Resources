@@ -10,6 +10,7 @@ import {
   type OvertimeRecord,
   type HolidayRecord,
 } from "@/lib/dummy-data";
+import { useAuth } from "@/components/providers/auth-context";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,14 +68,17 @@ export default function AttendancePage() {
   const updateOvertimeRecord = useAppStore((s) => s.updateOvertimeRecord);
   const addHoliday = useAppStore((s) => s.addHoliday);
 
+  const { email } = useAuth();
   const [holidayDialogOpen, setHolidayDialogOpen] = useState(false);
   const [newHolidayName, setNewHolidayName] = useState("");
   const [newHolidayDate, setNewHolidayDate] = useState("");
   const [newHolidayType, setNewHolidayType] = useState<string>("NATIONAL");
 
+  const today = new Date().toISOString().split("T")[0];
+
   const todayRecords = useMemo(
-    () => attendanceRecords.filter((r) => r.date === "2026-03-23"),
-    [attendanceRecords],
+    () => attendanceRecords.filter((r) => r.date === today),
+    [attendanceRecords, today],
   );
 
   const summary = useMemo(() => {
@@ -93,12 +97,12 @@ export default function AttendancePage() {
   }, [todayRecords]);
 
   const handleApproveOvertime = (id: string) => {
-    updateOvertimeRecord(id, { status: "APPROVED" as const, approvedBy: "Admin" });
+    updateOvertimeRecord(id, { status: "APPROVED" as const, approvedBy: email });
     toast.success("Overtime disetujui");
   };
 
   const handleRejectOvertime = (id: string) => {
-    updateOvertimeRecord(id, { status: "REJECTED" as const, approvedBy: "Admin" });
+    updateOvertimeRecord(id, { status: "REJECTED" as const, approvedBy: email });
     toast.error("Overtime ditolak");
   };
 

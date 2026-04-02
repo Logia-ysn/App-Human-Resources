@@ -12,6 +12,7 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/components/providers/auth-context";
 
 import { useAppStore } from "@/lib/store/app-store";
 import {
@@ -85,11 +86,13 @@ const EMPTY_LEAVE_TYPE: Omit<LeaveTypeRecord, "id"> = {
 // ---------------------------------------------------------------------------
 
 export default function LeavePage() {
+  const { email } = useAuth();
   // ----- Store selectors & actions -----
   const requests = useAppStore((s) => s.leaveRequests);
   const types = useAppStore((s) => s.leaveTypes);
   const leaveBalances = useAppStore((s) => s.leaveBalances);
-  const updateLeaveRequest = useAppStore((s) => s.updateLeaveRequest);
+  const approveLeaveRequest = useAppStore((s) => s.approveLeaveRequest);
+  const rejectLeaveRequest = useAppStore((s) => s.rejectLeaveRequest);
   const addLeaveType = useAppStore((s) => s.addLeaveType);
 
   // ----- Status filter -----
@@ -121,12 +124,12 @@ export default function LeavePage() {
   };
 
   const handleApprove = (id: string) => {
-    updateLeaveRequest(id, { status: "APPROVED" as const, approvedBy: "Admin" });
+    approveLeaveRequest(id, email);
     toast.success("Pengajuan cuti berhasil disetujui");
   };
 
   const handleReject = (id: string) => {
-    updateLeaveRequest(id, { status: "REJECTED" as const, approvedBy: "Admin" });
+    rejectLeaveRequest(id, email);
     toast.error("Pengajuan cuti ditolak");
   };
 
@@ -149,7 +152,7 @@ export default function LeavePage() {
 
   // ----- Balance helpers -----
   const computeRemaining = (b: { entitlement: number; carried: number; used: number; pending: number }) =>
-    b.entitlement + b.carried - b.used - b.pending;
+    Math.max(0, b.entitlement + b.carried - b.used - b.pending);
 
   // -----------------------------------------------------------------------
   return (

@@ -14,6 +14,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/components/providers/auth-context";
 
 import { useAppStore } from "@/lib/store/app-store";
 import {
@@ -152,6 +153,7 @@ function getPrimaryCategory(items: ExpenseItem[]): CategoryKey {
 // ---------------------------------------------------------------------------
 
 export default function ClaimsPage() {
+  const { email } = useAuth();
   const claims = useAppStore((s) => s.expenseClaims);
   const employees = useAppStore((s) => s.employees);
   const storeAddExpenseClaim = useAppStore((s) => s.addExpenseClaim);
@@ -187,7 +189,7 @@ export default function ClaimsPage() {
   const handleApprove = (id: string) => {
     storeUpdateExpenseClaim(id, {
       status: "APPROVED" as const,
-      approvedBy: "Admin",
+      approvedBy: email,
       approvedDate: new Date().toISOString().slice(0, 10),
     });
     toast.success("Klaim pengeluaran berhasil disetujui");
@@ -196,7 +198,7 @@ export default function ClaimsPage() {
   const handleReject = (id: string) => {
     storeUpdateExpenseClaim(id, {
       status: "REJECTED" as const,
-      approvedBy: "Admin",
+      approvedBy: email,
       approvedDate: new Date().toISOString().slice(0, 10),
     });
     toast.error("Klaim pengeluaran ditolak");
@@ -213,10 +215,21 @@ export default function ClaimsPage() {
       return;
     }
 
+    const amount = Number(form.amount);
+
+    if (!amount || amount <= 0) {
+      toast.error("Nominal harus lebih besar dari 0");
+      return;
+    }
+
+    if (!form.description.trim()) {
+      toast.error("Minimal satu item pengeluaran harus diisi");
+      return;
+    }
+
     const employee = AVAILABLE_EMPLOYEES.find(
       (e) => e.id === form.employeeId,
     );
-    const amount = Number(form.amount);
 
     const created: ExpenseClaim = {
       id: `exp-${Date.now()}`,

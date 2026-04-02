@@ -16,9 +16,11 @@ export default function EssAttendancePage() {
   const { employeeId } = useAuth();
   const currentEmployee = employees.find((e) => e.id === employeeId);
   const myAttendance = attendanceRecords.filter((a) => a.employeeId === currentEmployee?.id);
-  const [clockedIn, setClockedIn] = useState(myAttendance.some((a) => a.checkIn && !a.checkOut));
+  const today = new Date().toISOString().split("T")[0];
+  const todayStr = new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const [clockedIn, setClockedIn] = useState(myAttendance.some((a) => a.date === today && a.checkIn && !a.checkOut));
 
-  const todayRecord = myAttendance.find((a) => a.date === "2026-03-23");
+  const todayRecord = myAttendance.find((a) => a.date === today);
 
   if (!currentEmployee) {
     return (
@@ -45,7 +47,7 @@ export default function EssAttendancePage() {
             <div className="flex items-center gap-3">
               <Clock className="h-8 w-8 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Hari ini, 23 Maret 2026</p>
+                <p className="text-sm text-muted-foreground">Hari ini, {todayStr}</p>
                 {todayRecord ? (
                   <p className="text-lg font-semibold">
                     Check In: {todayRecord.checkIn || "-"} | Check Out: {todayRecord.checkOut || "-"}
@@ -57,11 +59,11 @@ export default function EssAttendancePage() {
             </div>
             <div className="sm:ml-auto">
               {!clockedIn ? (
-                <Button onClick={() => { setClockedIn(true); toast.success("Clock In berhasil — 08:00"); }}>
+                <Button onClick={() => { setClockedIn(true); toast.success(`Clock In berhasil — ${new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`); }}>
                   Clock In
                 </Button>
               ) : (
-                <Button variant="outline" onClick={() => { setClockedIn(false); toast.success("Clock Out berhasil — 17:00"); }}>
+                <Button variant="outline" onClick={() => { setClockedIn(false); toast.success(`Clock Out berhasil — ${new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`); }}>
                   Clock Out
                 </Button>
               )}

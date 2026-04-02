@@ -132,6 +132,10 @@ export default function PositionsPage() {
     }
 
     const dept = departments.find((d) => d.id === form.departmentId);
+    if (!dept) {
+      toast.error("Departemen tidak ditemukan. Pilih departemen yang valid.");
+      return;
+    }
 
     if (editingId) {
       updatePosition(editingId, {

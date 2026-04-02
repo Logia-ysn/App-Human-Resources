@@ -188,6 +188,13 @@ export default function LifecyclePage() {
     }
 
     const emp = employees.find((e) => e.id === form.employeeId);
+
+    if (emp && emp.joinDate && form.effectiveDate < emp.joinDate) {
+      toast.error(
+        `Tanggal efektif tidak boleh sebelum tanggal bergabung karyawan (${emp.joinDate})`
+      );
+      return;
+    }
     const empName = emp
       ? `${emp.firstName} ${emp.lastName}`
       : "Karyawan";

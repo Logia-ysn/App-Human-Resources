@@ -143,6 +143,11 @@ export default function EssExpensesPage() {
 
   // Handlers
   const handleAddAdvance = () => {
+    if (!currentEmployee) {
+      toast.error("Data karyawan tidak ditemukan. Tidak dapat mengajukan kasbon.");
+      return;
+    }
+
     const amount = Number(newAdvanceAmount);
     if (!amount || amount <= 0 || !newAdvancePurpose.trim()) {
       toast.error("Jumlah dan tujuan wajib diisi");
@@ -151,9 +156,9 @@ export default function EssExpensesPage() {
 
     const created: EmployeeAdvance = {
       id: `adv-${Date.now()}`,
-      employeeId: currentEmployeeId,
-      employeeName: currentEmployeeName,
-      departmentName: currentDepartment,
+      employeeId: currentEmployee.id,
+      employeeName: `${currentEmployee.firstName} ${currentEmployee.lastName}`,
+      departmentName: currentEmployee.departmentName ?? "",
       amount,
       purpose: newAdvancePurpose.trim(),
       requestDate: format(new Date(), "yyyy-MM-dd"),
@@ -173,6 +178,11 @@ export default function EssExpensesPage() {
   };
 
   const handleAddClaim = () => {
+    if (!currentEmployee) {
+      toast.error("Data karyawan tidak ditemukan. Tidak dapat mengajukan klaim.");
+      return;
+    }
+
     const amount = Number(newClaimAmount);
     if (!amount || amount <= 0 || !newClaimTitle.trim()) {
       toast.error("Judul dan jumlah wajib diisi");
@@ -181,9 +191,9 @@ export default function EssExpensesPage() {
 
     const created: ExpenseClaim = {
       id: `exp-${Date.now()}`,
-      employeeId: currentEmployeeId,
-      employeeName: currentEmployeeName,
-      departmentName: currentDepartment,
+      employeeId: currentEmployee.id,
+      employeeName: `${currentEmployee.firstName} ${currentEmployee.lastName}`,
+      departmentName: currentEmployee.departmentName ?? "",
       title: newClaimTitle.trim(),
       totalAmount: amount,
       items: [

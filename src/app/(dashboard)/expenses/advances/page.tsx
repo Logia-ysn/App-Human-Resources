@@ -13,6 +13,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/components/providers/auth-context";
 
 import { useAppStore } from "@/lib/store/app-store";
 import { type EmployeeAdvance } from "@/lib/dummy-data";
@@ -82,6 +83,7 @@ const EMPTY_FORM: AdvanceForm = {
 // ---------------------------------------------------------------------------
 
 export default function AdvancesPage() {
+  const { email } = useAuth();
   const advances = useAppStore((s) => s.employeeAdvances);
   const employees = useAppStore((s) => s.employees);
   const storeAddEmployeeAdvance = useAppStore((s) => s.addEmployeeAdvance);
@@ -115,7 +117,7 @@ export default function AdvancesPage() {
   const handleApprove = (id: string) => {
     storeUpdateEmployeeAdvance(id, {
       status: "APPROVED" as const,
-      approvedBy: "Admin",
+      approvedBy: email,
       approvedDate: new Date().toISOString().slice(0, 10),
     });
     toast.success("Kasbon berhasil disetujui");
@@ -124,7 +126,7 @@ export default function AdvancesPage() {
   const handleReject = (id: string) => {
     storeUpdateEmployeeAdvance(id, {
       status: "REJECTED" as const,
-      approvedBy: "Admin",
+      approvedBy: email,
       approvedDate: new Date().toISOString().slice(0, 10),
     });
     toast.error("Kasbon ditolak");
@@ -133,6 +135,11 @@ export default function AdvancesPage() {
   const handleCreate = () => {
     if (!form.employeeId || !form.amount || !form.purpose) {
       toast.error("Karyawan, nominal, dan alasan wajib diisi");
+      return;
+    }
+
+    if (Number(form.amount) <= 0) {
+      toast.error("Nominal harus lebih dari 0");
       return;
     }
 

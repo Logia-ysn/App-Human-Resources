@@ -38,6 +38,7 @@ export type LeaveRequestRecord = {
   status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
   createdAt: string;
   approvedBy: string | null;
+  approverNote: string | null;
 };
 
 export const leaveTypes: LeaveTypeRecord[] = [
@@ -61,11 +62,11 @@ export const leaveBalances: LeaveBalanceRecord[] = [
 ];
 
 export const leaveRequests: LeaveRequestRecord[] = [
-  { id: "lr-1", employeeId: "emp-9", employeeName: "Maya Putri", departmentName: "Marketing", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-03-23", endDate: "2026-03-24", totalDays: 2, reason: "Urusan keluarga", status: "APPROVED", createdAt: "2026-03-18", approvedBy: "Budi Santoso" },
-  { id: "lr-2", employeeId: "emp-4", employeeName: "Dewi Lestari", departmentName: "Information Technology", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-03-25", endDate: "2026-03-26", totalDays: 2, reason: "Liburan keluarga", status: "PENDING", createdAt: "2026-03-20", approvedBy: null },
-  { id: "lr-3", employeeId: "emp-6", employeeName: "Fitri Handayani", departmentName: "Human Resources", leaveTypeId: "lt-2", leaveTypeName: "Cuti Sakit", startDate: "2026-03-23", endDate: "2026-03-23", totalDays: 1, reason: "Sakit demam", status: "APPROVED", createdAt: "2026-03-23", approvedBy: "Sari Dewi" },
-  { id: "lr-4", employeeId: "emp-12", employeeName: "Nadia Kartika", departmentName: "Finance & Accounting", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-04-01", endDate: "2026-04-03", totalDays: 3, reason: "Wisuda adik", status: "PENDING", createdAt: "2026-03-21", approvedBy: null },
-  { id: "lr-5", employeeId: "emp-13", employeeName: "Hendra Saputra", departmentName: "Sales", leaveTypeId: "lt-5", leaveTypeName: "Cuti Menikah", startDate: "2026-04-10", endDate: "2026-04-12", totalDays: 3, reason: "Pernikahan", status: "PENDING", createdAt: "2026-03-15", approvedBy: null },
-  { id: "lr-6", employeeId: "emp-2", employeeName: "Sari Dewi", departmentName: "Human Resources", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-02-14", endDate: "2026-02-14", totalDays: 1, reason: "Acara keluarga", status: "APPROVED", createdAt: "2026-02-10", approvedBy: "Budi Santoso" },
-  { id: "lr-7", employeeId: "emp-15", employeeName: "Wahyu Hidayat", departmentName: "Operations", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-03-10", endDate: "2026-03-11", totalDays: 2, reason: "Mengurus surat-surat", status: "REJECTED", createdAt: "2026-03-05", approvedBy: "Budi Santoso" },
+  { id: "lr-1", employeeId: "emp-9", employeeName: "Maya Putri", departmentName: "Marketing", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-03-23", endDate: "2026-03-24", totalDays: 2, reason: "Urusan keluarga", status: "APPROVED", createdAt: "2026-03-18", approvedBy: "Budi Santoso", approverNote: null },
+  { id: "lr-2", employeeId: "emp-4", employeeName: "Dewi Lestari", departmentName: "Information Technology", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-03-25", endDate: "2026-03-26", totalDays: 2, reason: "Liburan keluarga", status: "PENDING", createdAt: "2026-03-20", approvedBy: null, approverNote: null },
+  { id: "lr-3", employeeId: "emp-6", employeeName: "Fitri Handayani", departmentName: "Human Resources", leaveTypeId: "lt-2", leaveTypeName: "Cuti Sakit", startDate: "2026-03-23", endDate: "2026-03-23", totalDays: 1, reason: "Sakit demam", status: "APPROVED", createdAt: "2026-03-23", approvedBy: "Sari Dewi", approverNote: null },
+  { id: "lr-4", employeeId: "emp-12", employeeName: "Nadia Kartika", departmentName: "Finance & Accounting", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-04-01", endDate: "2026-04-03", totalDays: 3, reason: "Wisuda adik", status: "PENDING", createdAt: "2026-03-21", approvedBy: null, approverNote: null },
+  { id: "lr-5", employeeId: "emp-13", employeeName: "Hendra Saputra", departmentName: "Sales", leaveTypeId: "lt-5", leaveTypeName: "Cuti Menikah", startDate: "2026-04-10", endDate: "2026-04-12", totalDays: 3, reason: "Pernikahan", status: "PENDING", createdAt: "2026-03-15", approvedBy: null, approverNote: null },
+  { id: "lr-6", employeeId: "emp-2", employeeName: "Sari Dewi", departmentName: "Human Resources", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-02-14", endDate: "2026-02-14", totalDays: 1, reason: "Acara keluarga", status: "APPROVED", createdAt: "2026-02-10", approvedBy: "Budi Santoso", approverNote: null },
+  { id: "lr-7", employeeId: "emp-15", employeeName: "Wahyu Hidayat", departmentName: "Operations", leaveTypeId: "lt-1", leaveTypeName: "Cuti Tahunan", startDate: "2026-03-10", endDate: "2026-03-11", totalDays: 2, reason: "Mengurus surat-surat", status: "REJECTED", createdAt: "2026-03-05", approvedBy: "Budi Santoso", approverNote: "Tidak bisa, deadline project" },
 ];

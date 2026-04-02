@@ -52,7 +52,7 @@ export default function EssPayslipsPage() {
                   <Wallet className="h-5 w-5 text-muted-foreground" />
                   <CardTitle className="text-base">Slip Gaji — {slip.periodLabel}</CardTitle>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => toast.success("Slip gaji berhasil diunduh")}>
+                <Button variant="outline" size="sm" onClick={() => toast.info("Fitur download PDF akan segera tersedia")}>
                   <Download className="mr-2 h-4 w-4" /> Download PDF
                 </Button>
               </CardHeader>

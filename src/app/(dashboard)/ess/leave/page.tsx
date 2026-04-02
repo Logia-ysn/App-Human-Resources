@@ -73,6 +73,11 @@ export default function EssLeavePage() {
   }
 
   function handleSubmit() {
+    if (!currentEmployee) {
+      toast.error("Data karyawan tidak ditemukan. Tidak dapat mengajukan cuti.");
+      return;
+    }
+
     if (!form.leaveTypeId || !form.startDate || !form.endDate || !form.reason.trim()) {
       toast.error("Semua field wajib diisi");
       return;
@@ -85,15 +90,13 @@ export default function EssLeavePage() {
     }
 
     const leaveType = leaveTypes.find((lt) => lt.id === form.leaveTypeId);
-    const empName = currentEmployee
-      ? `${currentEmployee.firstName} ${currentEmployee.lastName}`
-      : "Karyawan";
+    const empName = `${currentEmployee.firstName} ${currentEmployee.lastName}`;
 
     addLeaveRequest({
       id: `lr-${Date.now()}`,
-      employeeId: currentEmployee?.id ?? "",
+      employeeId: currentEmployee.id,
       employeeName: empName,
-      departmentName: currentEmployee?.departmentName ?? "",
+      departmentName: currentEmployee.departmentName ?? "",
       leaveTypeId: form.leaveTypeId,
       leaveTypeName: leaveType?.name ?? "",
       startDate: form.startDate,
@@ -103,6 +106,7 @@ export default function EssLeavePage() {
       status: "PENDING",
       createdAt: new Date().toISOString().slice(0, 10),
       approvedBy: null,
+      approverNote: null,
     });
 
     toast.success("Pengajuan cuti berhasil dikirim");

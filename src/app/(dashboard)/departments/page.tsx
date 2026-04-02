@@ -84,6 +84,12 @@ export default function DepartmentsPage() {
   function handleSave() {
     if (!form.name.trim() || !form.code.trim()) return;
 
+    // Prevent circular parent assignment
+    if (editingId && form.parentId === editingId) {
+      toast.error("Departemen tidak bisa menjadi parent dirinya sendiri");
+      return;
+    }
+
     if (editingId) {
       updateDepartment(editingId, form);
       toast.success("Departemen berhasil diperbarui");

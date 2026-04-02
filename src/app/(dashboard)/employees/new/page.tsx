@@ -306,11 +306,39 @@ export default function NewEmployeePage() {
   }
 
   function handleSubmit() {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      toast.error("Format email tidak valid");
+      return;
+    }
+
+    const duplicateEmail = allEmployees.find(
+      (e) => e.email.toLowerCase() === form.email.trim().toLowerCase() && !e.isDeleted
+    );
+    if (duplicateEmail) {
+      toast.error("Email sudah digunakan oleh karyawan lain");
+      return;
+    }
+
     const dept = departments.find((d) => d.id === form.departmentId);
     const pos = positions.find((p) => p.id === form.positionId);
+
+    if (!dept) {
+      toast.error("Departemen yang dipilih tidak valid");
+      return;
+    }
+    if (!pos) {
+      toast.error("Jabatan yang dipilih tidak valid");
+      return;
+    }
+
     const manager = allEmployees.find((e) => e.id === form.managerId);
 
-    const empNumber = `EMP-${String(allEmployees.length + 1).padStart(4, "0")}`;
+    const maxNum = allEmployees.reduce((max, e) => {
+      const match = e.employeeNumber?.match(/EMP-(\d+)/);
+      return match ? Math.max(max, parseInt(match[1], 10)) : max;
+    }, 0);
+    const empNumber = `EMP-${String(maxNum + 1).padStart(4, "0")}`;
 
     const newEmployee: Employee = {
       id: `emp-${Date.now()}`,
