@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import type { CompanySettings } from "@/lib/dummy-data";
 import type { PayrollConfig } from "@/lib/dummy-data/payroll-config";
@@ -55,6 +55,10 @@ import {
   CalendarDays,
   ClipboardList,
   Settings,
+  Download,
+  Upload,
+  FileJson,
+  ShieldCheck,
 } from "lucide-react";
 
 // ---------- Constants ----------
@@ -1264,12 +1268,78 @@ function AttendanceTab() {
 // Tab 6: Sistem (Data Management)
 // =================================================================
 
+// ---------- Backup/Restore helpers ----------
+
+const BACKUP_VERSION = 1;
+const STORE_KEY = "hris-app-store";
+
+type BackupFile = {
+  _meta: {
+    version: number;
+    appName: string;
+    createdAt: string;
+    description: string;
+  };
+  state: Record<string, unknown>;
+};
+
+function createBackupPayload(description: string): BackupFile {
+  const raw = localStorage.getItem(STORE_KEY);
+  if (!raw) throw new Error("Store data tidak ditemukan di localStorage");
+  const parsed = JSON.parse(raw);
+  return {
+    _meta: {
+      version: BACKUP_VERSION,
+      appName: "HRIS",
+      createdAt: new Date().toISOString(),
+      description,
+    },
+    state: parsed.state ?? parsed,
+  };
+}
+
+function validateBackupFile(data: unknown): data is BackupFile {
+  if (typeof data !== "object" || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  if (typeof obj._meta !== "object" || obj._meta === null) return false;
+  const meta = obj._meta as Record<string, unknown>;
+  if (meta.appName !== "HRIS") return false;
+  if (typeof meta.version !== "number") return false;
+  if (typeof obj.state !== "object" || obj.state === null) return false;
+  return true;
+}
+
+function downloadJson(payload: BackupFile) {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const timeStr = new Date().toTimeString().slice(0, 5).replace(":", "");
+  const filename = `hris-backup-${dateStr}-${timeStr}.json`;
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ---------- DataManagementSection ----------
+
 function DataManagementSection() {
   const isUsingDemoData = useAppStore((s) => s.isUsingDemoData);
   const resetAllData = useAppStore((s) => s.resetAllData);
   const restoreDemoData = useAppStore((s) => s.restoreDemoData);
+  const employees = useAppStore((s) => s.employees);
+  const departments = useAppStore((s) => s.departments);
+
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [restoreBackupDialogOpen, setRestoreBackupDialogOpen] = useState(false);
+  const [backupDesc, setBackupDesc] = useState("");
+  const [restorePreview, setRestorePreview] = useState<BackupFile | null>(null);
+  const [restoreError, setRestoreError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleReset() {
     resetAllData();
@@ -1283,101 +1353,329 @@ function DataManagementSection() {
     toast.success("Data demo berhasil dimuat");
   }
 
+  const handleBackup = useCallback(() => {
+    try {
+      const payload = createBackupPayload(backupDesc || "Manual backup");
+      downloadJson(payload);
+      setBackupDesc("");
+      toast.success("Backup berhasil diunduh");
+    } catch {
+      toast.error("Gagal membuat backup");
+    }
+  }, [backupDesc]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setRestoreError("");
+    setRestorePreview(null);
+
+    if (!file.name.endsWith(".json")) {
+      setRestoreError("File harus berformat JSON");
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      setRestoreError("Ukuran file terlalu besar (maks 50MB)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (!validateBackupFile(parsed)) {
+          setRestoreError("File bukan backup HRIS yang valid");
+          return;
+        }
+        setRestorePreview(parsed);
+        setRestoreBackupDialogOpen(true);
+      } catch {
+        setRestoreError("File JSON tidak valid");
+      }
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const handleRestoreBackup = useCallback(() => {
+    if (!restorePreview) return;
+    try {
+      // Write directly to localStorage in the Zustand persist format
+      const currentRaw = localStorage.getItem(STORE_KEY);
+      const currentParsed = currentRaw ? JSON.parse(currentRaw) : {};
+      const newData = {
+        ...currentParsed,
+        state: {
+          ...restorePreview.state,
+          isUsingDemoData: false,
+          hasBeenInitialized: true,
+        },
+      };
+      localStorage.setItem(STORE_KEY, JSON.stringify(newData));
+
+      // Reload to pick up the new state
+      setRestoreBackupDialogOpen(false);
+      setRestorePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.success("Data berhasil di-restore dari backup. Halaman akan dimuat ulang...");
+      setTimeout(() => window.location.reload(), 1000);
+    } catch {
+      toast.error("Gagal me-restore data dari backup");
+    }
+  }, [restorePreview]);
+
+  const activeEmps = employees.filter((e) => !e.isDeleted).length;
+  const activeDepts = departments.filter((d) => d.isActive).length;
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Database className="h-5 w-5 text-muted-foreground" />
-          <CardTitle>Manajemen Data</CardTitle>
-        </div>
-        <CardDescription>
-          Hapus semua data untuk memulai dari awal, atau muat ulang data demo.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Status */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Status saat ini:</span>
-          {isUsingDemoData ? (
-            <Badge variant="secondary">Menggunakan data demo</Badge>
-          ) : (
-            <Badge variant="outline">Data kosong (fresh start)</Badge>
+    <div className="space-y-6">
+      {/* Backup & Restore */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Backup & Restore</CardTitle>
+          </div>
+          <CardDescription>
+            Simpan salinan data HRIS ke file JSON, atau pulihkan dari file backup sebelumnya.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Current data summary */}
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <p className="text-sm font-medium mb-2">Ringkasan Data Saat Ini</p>
+            <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground sm:grid-cols-4">
+              <div>
+                <span className="font-medium text-foreground">{activeEmps}</span> Karyawan
+              </div>
+              <div>
+                <span className="font-medium text-foreground">{activeDepts}</span> Departemen
+              </div>
+              <div>
+                <span className="font-medium text-foreground">
+                  {isUsingDemoData ? "Demo" : "Custom"}
+                </span> Mode
+              </div>
+              <div>
+                <FileJson className="mr-1 inline h-3.5 w-3.5" />
+                localStorage
+              </div>
+            </div>
+          </div>
+
+          {/* Backup section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Download className="h-4 w-4 text-emerald-600" />
+              Backup Data
+            </h3>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1 space-y-1.5">
+                <Label htmlFor="backup-desc" className="text-xs text-muted-foreground">
+                  Deskripsi (opsional)
+                </Label>
+                <Input
+                  id="backup-desc"
+                  placeholder="Contoh: Sebelum reset data, Data akhir bulan..."
+                  value={backupDesc}
+                  onChange={(e) => setBackupDesc((e.target as HTMLInputElement).value)}
+                />
+              </div>
+              <Button onClick={handleBackup} className="shrink-0">
+                <Download className="mr-1.5 h-4 w-4" />
+                Download Backup
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Restore section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Upload className="h-4 w-4 text-blue-600" />
+              Restore dari Backup
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Pilih file backup JSON HRIS untuk mengembalikan data. Data saat ini akan ditimpa.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="mr-1.5 h-4 w-4" />
+                Pilih File Backup
+              </Button>
+              {restoreError && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  {restoreError}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Restore Backup Confirmation Dialog */}
+      <Dialog open={restoreBackupDialogOpen} onOpenChange={setRestoreBackupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                <Upload className="h-4 w-4 text-blue-600" />
+              </div>
+              <DialogTitle>Restore dari Backup</DialogTitle>
+            </div>
+            <DialogDescription>
+              Data saat ini akan ditimpa dengan data dari file backup.
+            </DialogDescription>
+          </DialogHeader>
+          {restorePreview && (
+            <div className="rounded-lg border bg-muted/30 p-4 text-sm space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tanggal backup</span>
+                <span className="font-medium">
+                  {new Date(restorePreview._meta.createdAt).toLocaleString("id-ID")}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Deskripsi</span>
+                <span className="font-medium">{restorePreview._meta.description}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Versi</span>
+                <span className="font-medium">v{restorePreview._meta.version}</span>
+              </div>
+              {Array.isArray(restorePreview.state.employees) && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Karyawan</span>
+                  <span className="font-medium">
+                    {restorePreview.state.employees.length} data
+                  </span>
+                </div>
+              )}
+            </div>
           )}
-        </div>
+          <DialogFooter>
+            <DialogClose
+              render={<Button variant="outline" />}
+            >
+              Batal
+            </DialogClose>
+            <Button onClick={handleRestoreBackup}>
+              <Upload className="mr-1.5 h-4 w-4" />
+              Ya, Restore Sekarang
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Action buttons */}
-        <div className="flex flex-wrap gap-3">
-          {/* Hapus Semua Data */}
-          <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-            <DialogTrigger
-              render={
-                <Button variant="destructive" size="lg">
-                  <Trash2 className="mr-1.5 h-4 w-4" data-icon="inline-start" />
-                  Hapus Semua Data
-                </Button>
-              }
-            />
-            <DialogContent>
-              <DialogHeader>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                  </div>
-                  <DialogTitle>Hapus Semua Data</DialogTitle>
-                </div>
-                <DialogDescription>
-                  Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak
-                  dapat dibatalkan.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <DialogClose
-                  render={<Button variant="outline" />}
-                >
-                  Batal
-                </DialogClose>
-                <Button variant="destructive" onClick={handleReset}>
-                  Ya, Hapus Semua
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+      {/* Data Management (existing) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Manajemen Data</CardTitle>
+          </div>
+          <CardDescription>
+            Hapus semua data untuk memulai dari awal, atau muat ulang data demo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Status */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Status saat ini:</span>
+            {isUsingDemoData ? (
+              <Badge variant="secondary">Menggunakan data demo</Badge>
+            ) : (
+              <Badge variant="outline">Data kosong (fresh start)</Badge>
+            )}
+          </div>
 
-          {/* Muat Data Demo */}
-          <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
-            <DialogTrigger
-              render={
-                <Button variant="secondary" size="lg">
-                  <RotateCcw className="mr-1.5 h-4 w-4" data-icon="inline-start" />
-                  Muat Data Demo
-                </Button>
-              }
-            />
-            <DialogContent>
-              <DialogHeader>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                    <RotateCcw className="h-4 w-4 text-blue-600" />
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-3">
+            {/* Hapus Semua Data */}
+            <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+              <DialogTrigger
+                render={
+                  <Button variant="destructive" size="lg">
+                    <Trash2 className="mr-1.5 h-4 w-4" data-icon="inline-start" />
+                    Hapus Semua Data
+                  </Button>
+                }
+              />
+              <DialogContent>
+                <DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    </div>
+                    <DialogTitle>Hapus Semua Data</DialogTitle>
                   </div>
-                  <DialogTitle>Muat Data Demo</DialogTitle>
-                </div>
-                <DialogDescription>
-                  Ini akan mengganti semua data saat ini dengan data demo.
-                  Lanjutkan?
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <DialogClose
-                  render={<Button variant="outline" />}
-                >
-                  Batal
-                </DialogClose>
-                <Button onClick={handleRestore}>Ya, Muat Data Demo</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardContent>
-    </Card>
+                  <DialogDescription>
+                    Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak
+                    dapat dibatalkan. Disarankan untuk membuat backup terlebih dahulu.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose
+                    render={<Button variant="outline" />}
+                  >
+                    Batal
+                  </DialogClose>
+                  <Button variant="destructive" onClick={handleReset}>
+                    Ya, Hapus Semua
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Muat Data Demo */}
+            <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+              <DialogTrigger
+                render={
+                  <Button variant="secondary" size="lg">
+                    <RotateCcw className="mr-1.5 h-4 w-4" data-icon="inline-start" />
+                    Muat Data Demo
+                  </Button>
+                }
+              />
+              <DialogContent>
+                <DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                      <RotateCcw className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <DialogTitle>Muat Data Demo</DialogTitle>
+                  </div>
+                  <DialogDescription>
+                    Ini akan mengganti semua data saat ini dengan data demo.
+                    Lanjutkan?
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose
+                    render={<Button variant="outline" />}
+                  >
+                    Batal
+                  </DialogClose>
+                  <Button onClick={handleRestore}>Ya, Muat Data Demo</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
