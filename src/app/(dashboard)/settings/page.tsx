@@ -59,6 +59,8 @@ import {
   Upload,
   FileJson,
   ShieldCheck,
+  ImagePlus,
+  X,
 } from "lucide-react";
 
 // ---------- Constants ----------
@@ -257,6 +259,7 @@ function CompanyTab() {
   const storeSettings = useAppStore((s) => s.companySettings);
   const updateCompanySettings = useAppStore((s) => s.updateCompanySettings);
   const [form, setForm] = useState<CompanySettings>({ ...storeSettings });
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   function handleChange(field: keyof CompanySettings, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -268,8 +271,99 @@ function CompanyTab() {
     toast.success("Informasi perusahaan berhasil disimpan");
   }
 
+  function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("File harus berupa gambar (PNG, JPG, SVG, WebP)");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran logo maksimal 2MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setForm((prev) => ({ ...prev, logoUrl: dataUrl }));
+      updateCompanySettings({ logoUrl: dataUrl });
+      toast.success("Logo berhasil diperbarui");
+    };
+    reader.readAsDataURL(file);
+
+    if (logoInputRef.current) logoInputRef.current.value = "";
+  }
+
+  function handleRemoveLogo() {
+    setForm((prev) => ({ ...prev, logoUrl: "" }));
+    updateCompanySettings({ logoUrl: "" });
+    toast.success("Logo berhasil dihapus");
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Logo Perusahaan */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Logo Perusahaan</CardTitle>
+          <CardDescription>
+            Logo ditampilkan di sidebar, header, dan dokumen. Format: PNG, JPG, SVG, WebP. Maks 2MB.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            {/* Preview */}
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/30">
+              {form.logoUrl ? (
+                <>
+                  <img
+                    src={form.logoUrl}
+                    alt="Logo perusahaan"
+                    className="h-full w-full object-contain p-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white shadow-sm hover:bg-destructive/90 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              ) : (
+                <Building2 className="h-10 w-10 text-muted-foreground/40" />
+              )}
+            </div>
+
+            {/* Upload actions */}
+            <div className="space-y-2">
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                className="hidden"
+                onChange={handleLogoSelect}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => logoInputRef.current?.click()}
+              >
+                <ImagePlus className="mr-1.5 h-4 w-4" />
+                {form.logoUrl ? "Ganti Logo" : "Upload Logo"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Disarankan ukuran 256x256 px atau lebih, rasio 1:1.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Informasi Perusahaan */}
       <Card>
         <CardHeader>
           <CardTitle>Informasi Perusahaan</CardTitle>

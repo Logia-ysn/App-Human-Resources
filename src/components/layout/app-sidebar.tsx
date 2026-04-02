@@ -26,6 +26,7 @@ import {
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/lib/store/app-store";
 import {
   Sidebar,
   SidebarContent,
@@ -167,16 +168,25 @@ export function AppSidebar({
   userEmail: string;
 }) {
   const pathname = usePathname();
+  const companySettings = useAppStore((s) => s.companySettings);
+  const logoUrl = companySettings.logoUrl;
+  const companyName = companySettings.name;
 
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
-            <Building2 className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-sm font-bold text-sidebar-foreground tracking-tight">
-            HRIS
+          {logoUrl ? (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/5">
+              <img src={logoUrl} alt="Logo" className="h-7 w-7 object-contain" />
+            </div>
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
+              <Building2 className="h-4 w-4 text-white" />
+            </div>
+          )}
+          <span className="text-sm font-bold text-sidebar-foreground tracking-tight truncate">
+            {companyName || "HRIS"}
           </span>
         </Link>
       </SidebarHeader>
