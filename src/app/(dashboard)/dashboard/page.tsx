@@ -32,6 +32,7 @@ import { useAppStore } from "@/lib/store/app-store";
 import { useAuth } from "@/components/providers/auth-context";
 import { hasMinRole } from "@/lib/utils/permissions";
 import type { ActivityItem } from "@/lib/dummy-data";
+import { useMemo } from "react";
 import { format, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
 import Link from "next/link";
@@ -134,9 +135,10 @@ function EmployeeDashboard() {
     );
   }
 
-  const myLeaveBalance = leaveBalances.find(
-    (lb) => lb.employeeId === me.id && lb.leaveTypeId === "lt-1",
+  const myLeaveBalances = leaveBalances.filter(
+    (lb) => lb.employeeId === me.id,
   );
+  const myLeaveBalance = myLeaveBalances[0] ?? null;
   const myPendingLeaves = leaveRequests.filter(
     (lr) => lr.employeeId === me.id && lr.status === "PENDING",
   );
@@ -405,11 +407,12 @@ function AdminDashboard() {
   const employees = useAppStore((s) => s.employees);
   const departments = useAppStore((s) => s.departments);
   const positions = useAppStore((s) => s.positions);
-  const attendanceTrend = useAppStore((s) => s.attendanceTrend);
-  const leaveDistribution = useAppStore((s) => s.leaveDistribution);
+  const attendanceRecords = useAppStore((s) => s.attendanceRecords);
+  const leaveRequests = useAppStore((s) => s.leaveRequests);
   const activityFeed = useAppStore((s) => s.activityFeed);
 
   const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
   const activeEmployees = employees.filter(
     (e) => e.status === "ACTIVE" && !e.isDeleted,
   );
@@ -419,6 +422,76 @@ function AdminDashboard() {
   const contractExpiring = employees.filter(
     (e) => e.endDate && new Date(e.endDate) <= threeMonthsLater,
   );
+
+  // Compute attendance today from real data
+  const todayAttendance = attendanceRecords.filter(
+    (r) => r.date === todayStr && (r.status === "PRESENT" || r.status === "LATE"),
+  ).length;
+
+  // Compute pending leave requests from real data
+  const pendingLeaves = leaveRequests.filter((lr) => lr.status === "PENDING").length;
+
+  // Compute attendance trend from real data (last 7 days)
+  const attendanceTrend = useMemo(() => {
+    const baseDate = new Date(todayStr + "T00:00:00");
+    const days: { date: string; hadir: number; terlambat: number; tidakHadir: number; cuti: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split("T")[0];
+      const dayLabel = format(d, "dd MMM", { locale: id });
+      const dayRecords = attendanceRecords.filter((r) => r.date === dateStr);
+      days.push({
+        date: dayLabel,
+        hadir: dayRecords.filter((r) => r.status === "PRESENT").length,
+        terlambat: dayRecords.filter((r) => r.status === "LATE").length,
+        tidakHadir: dayRecords.filter((r) => r.status === "ABSENT").length,
+        cuti: dayRecords.filter((r) => r.status === "LEAVE" || r.status === "SICK").length,
+      });
+    }
+    return days;
+  }, [attendanceRecords, todayStr]);
+
+  // Compute leave distribution from real data
+  const leaveDistribution = useMemo(() => {
+    const LEAVE_COLORS: Record<string, string> = {
+      "Cuti Tahunan": "#3B82F6",
+      "Cuti Sakit": "#F59E0B",
+      "Cuti Melahirkan": "#EC4899",
+      "Cuti Menikah": "#8B5CF6",
+      "Cuti Duka": "#6B7280",
+      "Tanpa Gaji": "#EF4444",
+    };
+    const DEFAULT_COLOR = "#94A3B8";
+    const counts: Record<string, number> = {};
+    for (const lr of leaveRequests) {
+      const name = lr.leaveTypeName || "Lainnya";
+      counts[name] = (counts[name] || 0) + lr.totalDays;
+    }
+    return Object.entries(counts).map(([name, value]) => ({
+      name,
+      value,
+      color: LEAVE_COLORS[name] || DEFAULT_COLOR,
+    }));
+  }, [leaveRequests]);
+
+  // Compute new employees this month vs last month
+  const thisMonthStart = `${todayStr.slice(0, 7)}-01`;
+  const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastMonthStart = lastMonth.toISOString().split("T")[0].slice(0, 7) + "-01";
+  const lastMonthEnd = `${todayStr.slice(0, 7)}-01`;
+  const newThisMonth = employees.filter(
+    (e) => !e.isDeleted && e.joinDate >= thisMonthStart,
+  ).length;
+  const newLastMonth = employees.filter(
+    (e) => !e.isDeleted && e.joinDate >= lastMonthStart && e.joinDate < lastMonthEnd,
+  ).length;
+  const empDiff = newThisMonth - newLastMonth;
+  const empTrend = empDiff > 0
+    ? `+${empDiff} dari bulan lalu`
+    : empDiff < 0
+      ? `${empDiff} dari bulan lalu`
+      : "Sama dengan bulan lalu";
 
   const deptCounts = activeDepartments.slice(0, 6).map((dept) => {
     const count = employees.filter(
@@ -439,7 +512,7 @@ function AdminDashboard() {
     {
       label: "Total Karyawan",
       value: activeEmployees.length,
-      trend: "+2 dari bulan lalu",
+      trend: empTrend,
       icon: Users,
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
@@ -456,21 +529,21 @@ function AdminDashboard() {
     },
     {
       label: "Hadir Hari Ini",
-      value: 12,
+      value: todayAttendance,
       trend: `Dari ${activeEmployees.length} karyawan`,
       icon: Clock,
       iconBg: "bg-amber-100",
       iconColor: "text-amber-600",
-      href: undefined as string | undefined,
+      href: "/attendance" as string | undefined,
     },
     {
       label: "Pengajuan Cuti",
-      value: 3,
-      trend: "Menunggu persetujuan",
+      value: pendingLeaves,
+      trend: `${pendingLeaves > 0 ? "Menunggu persetujuan" : "Tidak ada pending"}`,
       icon: CalendarDays,
       iconBg: "bg-rose-100",
       iconColor: "text-rose-600",
-      href: undefined as string | undefined,
+      href: "/leave" as string | undefined,
     },
   ];
 
