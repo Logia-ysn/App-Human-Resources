@@ -266,6 +266,69 @@ enum PositionLevel {
   DIRECTOR
 }
 
+enum LifecycleType {
+  PROMOTION
+  TRANSFER
+  DEMOTION
+  CONFIRMATION
+  CONTRACT_RENEWAL
+  RESIGNATION
+  TERMINATION
+  RETIREMENT
+}
+
+enum OnboardingCategory {
+  DOKUMEN
+  TRAINING
+  EQUIPMENT
+  AKUN
+  LAINNYA
+}
+
+enum OnboardingAssignee {
+  HR
+  IT
+  KARYAWAN
+  MANAGER
+}
+
+enum OnboardingStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ExpenseStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  RETURNED
+}
+
+enum ExpenseCategory {
+  TRANSPORT
+  MAKAN
+  AKOMODASI
+  SUPPLIES
+  LAINNYA
+}
+
+enum ActivityType {
+  LEAVE
+  EMPLOYEE
+  PAYROLL
+  ATTENDANCE
+  RECRUITMENT
+  TRAINING
+}
+
+enum AttendanceMethod {
+  MANUAL
+  GPS
+  FINGERPRINT
+}
+
 // ==========================================
 // AUTHENTICATION & SYSTEM
 // ==========================================
@@ -474,6 +537,11 @@ model Employee {
   approvedPayrolls    PayrollPeriod[]         @relation("PayrollApprover")
   createdJobPostings  JobPosting[]            @relation("JobCreator")
   createdTrainings    TrainingProgram[]       @relation("TrainingCreator")
+  shiftAssignments    ShiftAssignment[]
+  onboardings         EmployeeOnboarding[]
+  lifecycleEvents     LifecycleEvent[]
+  advances            EmployeeAdvance[]
+  expenseClaims       ExpenseClaim[]
 
   @@index([departmentId])
   @@index([positionId])
@@ -1166,6 +1234,224 @@ model EmployeeCertification {
 
   @@index([employeeId])
   @@map("employee_certifications")
+}
+
+// ==========================================
+// SHIFTS
+// ==========================================
+
+model ShiftType {
+  id            String   @id @default(cuid())
+  name          String
+  startTime     String
+  endTime       String
+  breakDuration Int      @default(60)
+  color         String   @default("#3B82F6")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignments ShiftAssignment[]
+
+  @@map("shift_types")
+}
+
+model ShiftAssignment {
+  id         String    @id @default(cuid())
+  employeeId String
+  shiftId    String
+  startDate  DateTime
+  endDate    DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  employee Employee  @relation(fields: [employeeId], references: [id])
+  shift    ShiftType @relation(fields: [shiftId], references: [id])
+
+  @@index([employeeId])
+  @@index([shiftId])
+  @@map("shift_assignments")
+}
+
+// ==========================================
+// ONBOARDING
+// ==========================================
+
+model OnboardingTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks       OnboardingTask[]
+  onboardings EmployeeOnboarding[]
+
+  @@map("onboarding_templates")
+}
+
+model OnboardingTask {
+  id         String              @id @default(cuid())
+  templateId String
+  title      String
+  category   OnboardingCategory
+  assignee   OnboardingAssignee
+  dueDay     Int
+  sortOrder  Int                 @default(0)
+  createdAt  DateTime            @default(now())
+
+  template         OnboardingTemplate        @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  completionStatus EmployeeOnboardingTask[]
+
+  @@index([templateId])
+  @@map("onboarding_tasks")
+}
+
+model EmployeeOnboarding {
+  id         String           @id @default(cuid())
+  employeeId String
+  templateId String
+  startDate  DateTime
+  status     OnboardingStatus @default(IN_PROGRESS)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  employee Employee           @relation(fields: [employeeId], references: [id])
+  template OnboardingTemplate @relation(fields: [templateId], references: [id])
+  tasks    EmployeeOnboardingTask[]
+
+  @@index([employeeId])
+  @@map("employee_onboardings")
+}
+
+model EmployeeOnboardingTask {
+  id            String    @id @default(cuid())
+  onboardingId  String
+  taskId        String
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  onboarding EmployeeOnboarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  task       OnboardingTask     @relation(fields: [taskId], references: [id])
+
+  @@unique([onboardingId, taskId])
+  @@map("employee_onboarding_tasks")
+}
+
+// ==========================================
+// EMPLOYEE LIFECYCLE
+// ==========================================
+
+model LifecycleEvent {
+  id             String        @id @default(cuid())
+  employeeId     String
+  type           LifecycleType
+  fromDepartment String?
+  toDepartment   String?
+  fromPosition   String?
+  toPosition     String?
+  fromSalary     Decimal?      @db.Decimal(15, 2)
+  toSalary       Decimal?      @db.Decimal(15, 2)
+  effectiveDate  DateTime
+  reason         String
+  approvedBy     String
+  createdAt      DateTime      @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([effectiveDate])
+  @@map("lifecycle_events")
+}
+
+// ==========================================
+// EXPENSES
+// ==========================================
+
+model EmployeeAdvance {
+  id             String        @id @default(cuid())
+  employeeId     String
+  amount         Decimal       @db.Decimal(15, 2)
+  purpose        String
+  requestDate    DateTime
+  status         ExpenseStatus @default(PENDING)
+  approvedBy     String?
+  approvedDate   DateTime?
+  returnedAmount Decimal       @default(0) @db.Decimal(15, 2)
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@map("employee_advances")
+}
+
+model ExpenseClaim {
+  id            String        @id @default(cuid())
+  employeeId    String
+  title         String
+  totalAmount   Decimal       @db.Decimal(15, 2)
+  status        ExpenseStatus @default(DRAFT)
+  submittedDate DateTime
+  approvedBy    String?
+  approvedDate  DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  employee Employee       @relation(fields: [employeeId], references: [id])
+  items    ExpenseItem[]
+
+  @@index([employeeId])
+  @@map("expense_claims")
+}
+
+model ExpenseItem {
+  id          String          @id @default(cuid())
+  claimId     String
+  description String
+  amount      Decimal         @db.Decimal(15, 2)
+  category    ExpenseCategory
+  date        DateTime
+  createdAt   DateTime        @default(now())
+
+  claim ExpenseClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@map("expense_items")
+}
+
+// ==========================================
+// ACTIVITY FEED
+// ==========================================
+
+model ActivityFeed {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  action      String
+  description String
+  actor       String
+  timestamp   DateTime     @default(now())
+
+  @@index([timestamp])
+  @@map("activity_feeds")
+}
+
+// ==========================================
+// APPLICATION CONFIG (singleton)
+// ==========================================
+
+model AppConfig {
+  id   String @id @default("app-config")
+  data Json
+
+  updatedAt DateTime @updatedAt
+
+  @@map("app_configs")
 }
 
 // ==========================================

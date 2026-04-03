@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import type { Role } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
 declare module "next-auth" {
   interface User {
@@ -17,38 +19,6 @@ declare module "next-auth" {
     };
   }
 }
-
-// Demo users — replace with database lookup when PostgreSQL is connected
-const DEMO_USERS = [
-  {
-    id: "usr-superadmin",
-    email: "admin@company.co.id",
-    password: "admin123",
-    role: "SUPER_ADMIN" as Role,
-    employeeId: null,
-  },
-  {
-    id: "usr-hr",
-    email: "hr@company.co.id",
-    password: "hr123",
-    role: "HR_ADMIN" as Role,
-    employeeId: "emp-2",
-  },
-  {
-    id: "usr-manager",
-    email: "manager@company.co.id",
-    password: "manager123",
-    role: "MANAGER" as Role,
-    employeeId: "emp-3",
-  },
-  {
-    id: "usr-employee",
-    email: "karyawan@company.co.id",
-    password: "karyawan123",
-    role: "EMPLOYEE" as Role,
-    employeeId: "emp-4",
-  },
-];
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
@@ -70,14 +40,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = credentials.email as string;
         const password = credentials.password as string;
 
-        // Demo mode: check against hardcoded users
-        const user = DEMO_USERS.find(
-          (u) => u.email === email && u.password === password
-        );
+        const user = await prisma.user.findUnique({
+          where: { email, isActive: true },
+        });
 
         if (!user) {
           return null;
         }
+
+        const isValid = await bcrypt.compare(password, user.passwordHash);
+        if (!isValid) {
+          return null;
+        }
+
+        // Update last login timestamp
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
 
         return {
           id: user.id,
