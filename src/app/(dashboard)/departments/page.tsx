@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import type { Department } from "@/lib/dummy-data";
-import { useAppStore } from "@/lib/store/app-store";
+import { useDepartments, useCreateDepartment, useUpdateDepartment, useDeleteDepartment } from "@/hooks/use-departments";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,14 +53,18 @@ const EMPTY_FORM: DepartmentFormData = {
 };
 
 export default function DepartmentsPage() {
-  const departments = useAppStore((s) => s.departments);
-  const addDepartment = useAppStore((s) => s.addDepartment);
-  const updateDepartment = useAppStore((s) => s.updateDepartment);
-  const deleteDepartment = useAppStore((s) => s.deleteDepartment);
+  const { departments, isLoading, mutate } = useDepartments();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<DepartmentFormData>(EMPTY_FORM);
-  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const createDept = useCreateDepartment();
+  const updateDept = useUpdateDepartment(editingId ?? "");
+  const deleteDept = useDeleteDepartment(deleteTargetId ?? "");
+
+  const deleteTarget = departments.find((d) => d.id === deleteTargetId) ?? null;
 
   function openAddDialog() {
     setEditingId(null);
@@ -69,55 +72,56 @@ export default function DepartmentsPage() {
     setDialogOpen(true);
   }
 
-  function openEditDialog(dept: Department) {
+  function openEditDialog(dept: (typeof departments)[0]) {
     setEditingId(dept.id);
     setForm({
       name: dept.name,
       code: dept.code,
-      description: dept.description,
+      description: dept.description ?? "",
       parentId: dept.parentId,
       isActive: dept.isActive,
     });
     setDialogOpen(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim() || !form.code.trim()) return;
 
-    // Prevent circular parent assignment
     if (editingId && form.parentId === editingId) {
       toast.error("Departemen tidak bisa menjadi parent dirinya sendiri");
       return;
     }
 
-    if (editingId) {
-      updateDepartment(editingId, form);
-      toast.success("Departemen berhasil diperbarui");
-    } else {
-      const newDept: Department = {
-        id: `dept-${Date.now()}`,
-        name: form.name,
-        code: form.code,
-        description: form.description,
-        parentId: form.parentId,
-        headEmployeeId: null,
-        headEmployeeName: null,
-        isActive: form.isActive,
-        employeeCount: 0,
-        createdAt: new Date().toISOString().slice(0, 10),
-      };
-      addDepartment(newDept);
-      toast.success("Departemen berhasil ditambahkan");
+    setSaving(true);
+    try {
+      if (editingId) {
+        await updateDept.trigger(form);
+        toast.success("Departemen berhasil diperbarui");
+      } else {
+        await createDept.trigger(form);
+        toast.success("Departemen berhasil ditambahkan");
+      }
+      await mutate();
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan";
+      toast.error(msg);
+    } finally {
+      setSaving(false);
     }
-
-    setDialogOpen(false);
   }
 
-  function confirmDelete() {
-    if (!deleteTarget) return;
-    deleteDepartment(deleteTarget.id);
-    toast.success("Departemen berhasil dihapus");
-    setDeleteTarget(null);
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    try {
+      await deleteDept.trigger();
+      toast.success("Departemen berhasil dihapus");
+      await mutate();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menghapus";
+      toast.error(msg);
+    }
+    setDeleteTargetId(null);
   }
 
   function updateField<K extends keyof DepartmentFormData>(
@@ -125,6 +129,14 @@ export default function DepartmentsPage() {
     value: DepartmentFormData[K],
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -161,14 +173,14 @@ export default function DepartmentsPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <div className="space-y-1">
-                      <p className="text-muted-foreground">Kepala: <span className="text-foreground">{dept.headEmployeeName ?? "-"}</span></p>
-                      <p className="text-muted-foreground">Karyawan: <span className="font-medium text-foreground">{dept.employeeCount}</span></p>
+                      <p className="text-muted-foreground">Kepala: <span className="text-foreground">{dept.head ? `${dept.head.firstName} ${dept.head.lastName}` : "-"}</span></p>
+                      <p className="text-muted-foreground">Karyawan: <span className="font-medium text-foreground">{dept._count.employees}</span></p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(dept)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(dept)}>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTargetId(dept.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -200,8 +212,8 @@ export default function DepartmentsPage() {
                   <TableCell className="text-muted-foreground">
                     {dept.description}
                   </TableCell>
-                  <TableCell>{dept.headEmployeeName ?? "-"}</TableCell>
-                  <TableCell>{dept.employeeCount}</TableCell>
+                  <TableCell>{dept.head ? `${dept.head.firstName} ${dept.head.lastName}` : "-"}</TableCell>
+                  <TableCell>{dept._count.employees}</TableCell>
                   <TableCell>
                     <StatusBadge
                       status={dept.isActive ? "ACTIVE" : "RESIGNED"}
@@ -219,7 +231,7 @@ export default function DepartmentsPage() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => setDeleteTarget(dept)}
+                        onClick={() => setDeleteTargetId(dept.id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -324,7 +336,8 @@ export default function DepartmentsPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Batal
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingId ? "Simpan Perubahan" : "Tambah"}
             </Button>
           </DialogFooter>
@@ -333,9 +346,9 @@ export default function DepartmentsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog
-        open={deleteTarget !== null}
+        open={deleteTargetId !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) setDeleteTargetId(null);
         }}
       >
         <DialogContent className="sm:max-w-sm">
@@ -350,7 +363,7 @@ export default function DepartmentsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+            <Button variant="outline" onClick={() => setDeleteTargetId(null)}>
               Batal
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>

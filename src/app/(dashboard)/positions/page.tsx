@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -35,8 +35,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
-import type { Position } from "@/lib/dummy-data";
-import { useAppStore } from "@/lib/store/app-store";
+import { usePositions, useCreatePosition, useUpdatePosition, useDeletePosition } from "@/hooks/use-positions";
+import { useDepartments } from "@/hooks/use-departments";
 
 const LEVELS = ["STAFF", "SUPERVISOR", "MANAGER", "DIRECTOR"] as const;
 
@@ -58,7 +58,7 @@ type FormData = {
   name: string;
   code: string;
   departmentId: string;
-  level: Position["level"];
+  level: (typeof LEVELS)[number];
   minSalary: string;
   maxSalary: string;
   description: string;
@@ -76,35 +76,22 @@ const EMPTY_FORM: FormData = {
   isActive: true,
 };
 
-function formFromPosition(p: Position): FormData {
-  return {
-    name: p.name,
-    code: p.code,
-    departmentId: p.departmentId,
-    level: p.level,
-    minSalary: p.minSalary?.toString() ?? "",
-    maxSalary: p.maxSalary?.toString() ?? "",
-    description: p.description,
-    isActive: p.isActive,
-  };
-}
-
 export default function PositionsPage() {
-  const positions = useAppStore((s) => s.positions);
-  const departments = useAppStore((s) => s.departments);
-  const addPosition = useAppStore((s) => s.addPosition);
-  const updatePosition = useAppStore((s) => s.updatePosition);
-  const deletePosition = useAppStore((s) => s.deletePosition);
+  const [filterDept, setFilterDept] = useState<string>("all");
+  const { positions, isLoading, mutate } = usePositions(filterDept === "all" ? undefined : filterDept);
+  const { departments } = useDepartments();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
-  const [filterDept, setFilterDept] = useState<string>("all");
-  const [deleteTarget, setDeleteTarget] = useState<Position | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const filtered =
-    filterDept === "all"
-      ? positions
-      : positions.filter((p) => p.departmentId === filterDept);
+  const createPos = useCreatePosition();
+  const updatePos = useUpdatePosition(editingId ?? "");
+  const deletePos = useDeletePosition(deleteTargetId ?? "");
+
+  const deleteTarget = positions.find((p) => p.id === deleteTargetId) ?? null;
 
   function openCreate() {
     setEditingId(null);
@@ -112,73 +99,86 @@ export default function PositionsPage() {
     setDialogOpen(true);
   }
 
-  function openEdit(position: Position) {
-    setEditingId(position.id);
-    setForm(formFromPosition(position));
+  function openEdit(pos: (typeof positions)[0]) {
+    setEditingId(pos.id);
+    setForm({
+      name: pos.name,
+      code: pos.code,
+      departmentId: pos.departmentId,
+      level: pos.level as (typeof LEVELS)[number],
+      minSalary: pos.minSalary?.toString() ?? "",
+      maxSalary: pos.maxSalary?.toString() ?? "",
+      description: pos.description ?? "",
+      isActive: pos.isActive,
+    });
     setDialogOpen(true);
   }
 
-  function confirmDelete() {
-    if (!deleteTarget) return;
-    deletePosition(deleteTarget.id);
-    toast.success("Jabatan berhasil dihapus");
-    setDeleteTarget(null);
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    try {
+      await deletePos.trigger();
+      toast.success("Jabatan berhasil dihapus");
+      await mutate();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menghapus";
+      toast.error(msg);
+    }
+    setDeleteTargetId(null);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!form.name.trim() || !form.code.trim() || !form.departmentId) {
       toast.error("Nama, kode, dan departemen wajib diisi");
       return;
     }
 
-    const dept = departments.find((d) => d.id === form.departmentId);
-    if (!dept) {
-      toast.error("Departemen tidak ditemukan. Pilih departemen yang valid.");
-      return;
-    }
-
-    if (editingId) {
-      updatePosition(editingId, {
+    setSaving(true);
+    try {
+      const payload = {
         name: form.name.trim(),
         code: form.code.trim(),
         departmentId: form.departmentId,
-        departmentName: dept?.name ?? "",
         level: form.level,
         minSalary: form.minSalary ? Number(form.minSalary) : null,
         maxSalary: form.maxSalary ? Number(form.maxSalary) : null,
         description: form.description.trim(),
-        isActive: form.isActive,
-      });
-      toast.success("Jabatan berhasil diperbarui");
-    } else {
-      const newPosition: Position = {
-        id: `pos-${Date.now()}`,
-        name: form.name.trim(),
-        code: form.code.trim(),
-        departmentId: form.departmentId,
-        departmentName: dept?.name ?? "",
-        level: form.level,
-        minSalary: form.minSalary ? Number(form.minSalary) : null,
-        maxSalary: form.maxSalary ? Number(form.maxSalary) : null,
-        description: form.description.trim(),
-        isActive: form.isActive,
-        employeeCount: 0,
-        createdAt: new Date().toISOString().split("T")[0],
       };
-      addPosition(newPosition);
-      toast.success("Jabatan berhasil ditambahkan");
-    }
 
-    setDialogOpen(false);
+      if (editingId) {
+        await updatePos.trigger(payload);
+        toast.success("Jabatan berhasil diperbarui");
+      } else {
+        await createPos.trigger(payload);
+        toast.success("Jabatan berhasil ditambahkan");
+      }
+      await mutate();
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan";
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function formatSalaryRange(min: number | null, max: number | null): string {
-    if (min == null && max == null) return "-";
-    if (min != null && max != null) {
-      return `${currencyFormat.format(min)} - ${currencyFormat.format(max)}`;
+  function formatSalaryRange(min: unknown, max: unknown): string {
+    const minN = min != null ? Number(min) : null;
+    const maxN = max != null ? Number(max) : null;
+    if (minN == null && maxN == null) return "-";
+    if (minN != null && maxN != null) {
+      return `${currencyFormat.format(minN)} - ${currencyFormat.format(maxN)}`;
     }
-    if (min != null) return `>= ${currencyFormat.format(min)}`;
-    return `<= ${currencyFormat.format(max!)}`;
+    if (minN != null) return `>= ${currencyFormat.format(minN)}`;
+    return `<= ${currencyFormat.format(maxN!)}`;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -223,10 +223,10 @@ export default function PositionsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3 md:hidden">
-            {filtered.length === 0 ? (
+            {positions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">Tidak ada data jabatan.</div>
             ) : (
-              filtered.map((pos) => (
+              positions.map((pos) => (
                 <div key={pos.id} className="rounded-lg border p-4 space-y-2">
                   <div className="flex items-start justify-between">
                     <div>
@@ -237,18 +237,18 @@ export default function PositionsPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Badge variant={LEVEL_VARIANT[pos.level] ?? "default"}>{pos.level}</Badge>
-                    <Badge variant="outline">{pos.departmentName}</Badge>
+                    <Badge variant="outline">{pos.department.name}</Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">{formatSalaryRange(pos.minSalary, pos.maxSalary)}</p>
-                      <p className="text-muted-foreground">Karyawan: <span className="font-medium text-foreground">{pos.employeeCount}</span></p>
+                      <p className="text-muted-foreground">Karyawan: <span className="font-medium text-foreground">{pos._count.employees}</span></p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon-sm" onClick={() => openEdit(pos)}>
                         <Pencil className="size-4" />
                       </Button>
-                      <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(pos)}>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTargetId(pos.id)}>
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </div>
@@ -275,20 +275,20 @@ export default function PositionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {positions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
                       Tidak ada data jabatan.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((pos) => (
+                  positions.map((pos) => (
                     <TableRow key={pos.id}>
                       <TableCell className="font-mono text-xs">
                         {pos.code}
                       </TableCell>
                       <TableCell className="font-medium">{pos.name}</TableCell>
-                      <TableCell>{pos.departmentName}</TableCell>
+                      <TableCell>{pos.department.name}</TableCell>
                       <TableCell>
                         <Badge variant={LEVEL_VARIANT[pos.level] ?? "default"}>
                           {pos.level}
@@ -298,7 +298,7 @@ export default function PositionsPage() {
                         {formatSalaryRange(pos.minSalary, pos.maxSalary)}
                       </TableCell>
                       <TableCell className="text-center">
-                        {pos.employeeCount}
+                        {pos._count.employees}
                       </TableCell>
                       <TableCell>
                         <StatusBadge
@@ -317,7 +317,7 @@ export default function PositionsPage() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => setDeleteTarget(pos)}
+                            onClick={() => setDeleteTargetId(pos.id)}
                           >
                             <Trash2 className="size-4 text-destructive" />
                           </Button>
@@ -403,7 +403,7 @@ export default function PositionsPage() {
                   onValueChange={(val) =>
                     setForm((prev) => ({
                       ...prev,
-                      level: val as Position["level"],
+                      level: val as (typeof LEVELS)[number],
                     }))
                   }
                 >
@@ -484,7 +484,8 @@ export default function PositionsPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Batal
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingId ? "Simpan Perubahan" : "Tambah"}
             </Button>
           </DialogFooter>
@@ -493,9 +494,9 @@ export default function PositionsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog
-        open={deleteTarget !== null}
+        open={deleteTargetId !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) setDeleteTargetId(null);
         }}
       >
         <DialogContent className="sm:max-w-sm">
@@ -510,7 +511,7 @@ export default function PositionsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+            <Button variant="outline" onClick={() => setDeleteTargetId(null)}>
               Batal
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
