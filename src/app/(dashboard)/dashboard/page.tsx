@@ -1,5 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
+import Link from "next/link";
+import { format, differenceInDays } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import {
   Card,
   CardContent,
@@ -18,25 +22,23 @@ import {
   CalendarPlus,
   ClipboardList,
   CalendarClock,
-  Briefcase,
-  GraduationCap,
-  UserCheck,
-  HandCoins,
-  Activity,
   TrendingUp,
   UserCircle,
   FileText,
   Wallet,
+  Loader2,
 } from "lucide-react";
-import { useAppStore } from "@/lib/store/app-store";
 import { useAuth } from "@/components/providers/auth-context";
 import { hasMinRole } from "@/lib/utils/permissions";
-import type { ActivityItem } from "@/lib/dummy-data";
-import { useMemo } from "react";
-import { format, differenceInDays } from "date-fns";
-import { id } from "date-fns/locale";
-import Link from "next/link";
+import { useDashboardStats } from "@/hooks/use-dashboard";
+import { useEmployees } from "@/hooks/use-employees";
+import { useDepartments } from "@/hooks/use-departments";
+import { usePositions } from "@/hooks/use-positions";
+import { useEmployee } from "@/hooks/use-employees";
+import { useLeaveBalances, useLeaveRequests } from "@/hooks/use-leave";
+import { useAttendanceRecords } from "@/hooks/use-attendance";
 import { AttendanceChart, LeaveChart } from "./dashboard-charts";
+import type { AttendanceTrendPoint, LeaveDistribution } from "./dashboard-charts";
 import { WelcomeBanner } from "./welcome-banner";
 
 function getGreeting(): string {
@@ -47,52 +49,8 @@ function getGreeting(): string {
 }
 
 function getFormattedDate(): string {
-  const today = new Date();
-  return format(today, "EEEE, dd MMMM yyyy", { locale: id });
+  return format(new Date(), "EEEE, dd MMMM yyyy", { locale: idLocale });
 }
-
-const ACTIVITY_BORDER_MAP: Record<ActivityItem["type"], string> = {
-  leave: "border-l-purple-500",
-  employee: "border-l-blue-500",
-  payroll: "border-l-emerald-500",
-  attendance: "border-l-amber-500",
-  recruitment: "border-l-indigo-500",
-  training: "border-l-pink-500",
-};
-
-const ACTIVITY_ICON_MAP: Record<
-  ActivityItem["type"],
-  { icon: typeof Users; color: string; bg: string }
-> = {
-  leave: { icon: CalendarClock, color: "text-purple-600", bg: "bg-purple-50" },
-  employee: { icon: UserCheck, color: "text-blue-600", bg: "bg-blue-50" },
-  payroll: { icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-50" },
-  attendance: { icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-  recruitment: { icon: Briefcase, color: "text-indigo-600", bg: "bg-indigo-50" },
-  training: { icon: GraduationCap, color: "text-pink-600", bg: "bg-pink-50" },
-};
-
-function formatRelativeTime(timestamp: string): string {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffHours < 1) return "Baru saja";
-  if (diffHours < 24) return `${diffHours} jam lalu`;
-  if (diffDays === 1) return "Kemarin";
-  return `${diffDays} hari lalu`;
-}
-
-const DEPT_BAR_COLORS = [
-  "bg-blue-500",
-  "bg-emerald-500",
-  "bg-amber-500",
-  "bg-rose-500",
-  "bg-indigo-500",
-  "bg-cyan-500",
-];
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -103,20 +61,49 @@ function formatCurrency(amount: number): string {
 }
 
 // ============================================================
-//  EMPLOYEE DASHBOARD — personal data only
+//  GREETING BANNER (shared)
+// ============================================================
+function GreetingBanner({ subtitle }: { subtitle: string }) {
+  return (
+    <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 px-4 py-4 text-white shadow-lg sm:px-6 sm:py-5">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)",
+          backgroundSize: "20px 20px",
+        }}
+      />
+      <div className="relative">
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+          {getGreeting()}
+        </h1>
+        <p className="mt-1 text-sm text-white/80">{getFormattedDate()}</p>
+        <p className="mt-0.5 text-xs text-white/70 sm:text-sm">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+//  EMPLOYEE DASHBOARD
 // ============================================================
 function EmployeeDashboard() {
   const { employeeId } = useAuth();
-  const employees = useAppStore((s) => s.employees);
-  const leaveBalances = useAppStore((s) => s.leaveBalances);
-  const leaveRequests = useAppStore((s) => s.leaveRequests);
-  const attendanceRecords = useAppStore((s) => s.attendanceRecords);
-  const payslips = useAppStore((s) => s.payslips);
-  const performanceReviews = useAppStore((s) => s.performanceReviews);
-  const trainings = useAppStore((s) => s.trainings);
-  const trainingParticipants = useAppStore((s) => s.trainingParticipants);
+  const { employee: me, isLoading: empLoading } = useEmployee(employeeId);
+  const { balances: myBalances, isLoading: balLoading } = useLeaveBalances({ employeeId });
+  const { requests: myLeaveRequests, isLoading: reqLoading } = useLeaveRequests({ employeeId: employeeId ?? undefined });
+  const { records: myAttendance, isLoading: attLoading } = useAttendanceRecords({ employeeId: employeeId ?? undefined, limit: 30 });
 
-  const me = employees.find((e) => e.id === employeeId && !e.isDeleted);
+  const isLoading = empLoading || balLoading || reqLoading || attLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!me) {
     return (
@@ -135,26 +122,10 @@ function EmployeeDashboard() {
     );
   }
 
-  const myLeaveBalances = leaveBalances.filter(
-    (lb) => lb.employeeId === me.id,
-  );
-  const myLeaveBalance = myLeaveBalances[0] ?? null;
-  const myPendingLeaves = leaveRequests.filter(
-    (lr) => lr.employeeId === me.id && lr.status === "PENDING",
-  );
-  const myAttendanceThisMonth = attendanceRecords.filter(
-    (ar) => ar.employeeId === me.id,
-  );
-  const myLatestPayslip = payslips.find((p) => p.employeeId === me.id);
-  const myLatestReview = performanceReviews.find(
-    (pr) => pr.employeeId === me.id,
-  );
-  const myTrainings = trainingParticipants
-    .filter((tp) => tp.employeeId === me.id)
-    .map((tp) => {
-      const training = trainings.find((t) => t.id === tp.trainingId);
-      return { ...tp, trainingName: training?.title ?? "-" };
-    });
+  const positionName = me.position?.name ?? "-";
+  const departmentName = me.department?.name ?? "-";
+  const myLeaveBalance = myBalances[0] ?? null;
+  const pendingLeaves = myLeaveRequests.filter((lr) => lr.status === "PENDING");
 
   const quickLinks = [
     { label: "Profil Saya", icon: UserCircle, href: "/ess/profile", iconColor: "text-blue-600", iconBg: "bg-blue-50" },
@@ -165,7 +136,7 @@ function EmployeeDashboard() {
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      <GreetingBanner subtitle={`${me.positionName} — ${me.departmentName}`} />
+      <GreetingBanner subtitle={`${positionName} — ${departmentName}`} />
 
       {/* Profile Summary Card */}
       <Card>
@@ -178,7 +149,7 @@ function EmployeeDashboard() {
               {me.firstName} {me.lastName}
             </p>
             <p className="text-sm text-muted-foreground">
-              {me.positionName} — {me.departmentName}
+              {positionName} — {departmentName}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 font-mono">
               {me.employeeNumber}
@@ -223,7 +194,7 @@ function EmployeeDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-2xl font-bold leading-none">
-                {myAttendanceThisMonth.length}
+                {myAttendance.length}
               </p>
               <p className="mt-1 text-xs font-medium text-muted-foreground truncate">
                 Hari Hadir
@@ -242,7 +213,7 @@ function EmployeeDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-2xl font-bold leading-none">
-                {myPendingLeaves.length}
+                {pendingLeaves.length}
               </p>
               <p className="mt-1 text-xs font-medium text-muted-foreground truncate">
                 Cuti Pending
@@ -260,16 +231,12 @@ function EmployeeDashboard() {
               <Wallet className="size-5 text-emerald-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-xl font-bold leading-none truncate">
-                {myLatestPayslip
-                  ? formatCurrency(myLatestPayslip.netSalary)
-                  : "-"}
-              </p>
+              <p className="text-xl font-bold leading-none truncate">-</p>
               <p className="mt-1 text-xs font-medium text-muted-foreground truncate">
                 Gaji Terakhir
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground/70 truncate">
-                {myLatestPayslip?.periodLabel ?? "-"}
+                -
               </p>
             </div>
           </CardContent>
@@ -294,153 +261,59 @@ function EmployeeDashboard() {
           );
         })}
       </div>
-
-      {/* Bottom Grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* Kinerja */}
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-blue-50">
-              <BarChart3 className="size-4 text-blue-500" />
-            </div>
-            <CardTitle className="text-sm font-semibold sm:text-base">
-              Penilaian Kinerja
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {myLatestReview ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{myLatestReview.cycleName}</span>
-                  <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                    {myLatestReview.status.replace("_", " ")}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Self Score</p>
-                    <p className="text-lg font-bold">{myLatestReview.selfScore ?? "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Manager</p>
-                    <p className="text-lg font-bold">{myLatestReview.managerScore ?? "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Final</p>
-                    <p className="text-lg font-bold">{myLatestReview.finalScore ?? "-"}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Belum ada penilaian kinerja.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Training */}
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-pink-50">
-              <GraduationCap className="size-4 text-pink-500" />
-            </div>
-            <CardTitle className="text-sm font-semibold sm:text-base">
-              Training Saya
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {myTrainings.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Belum ada training terdaftar.</p>
-            ) : (
-              <div className="space-y-2.5">
-                {myTrainings.slice(0, 3).map((tp) => (
-                  <div key={tp.id} className="flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-medium">{tp.trainingName}</p>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                      tp.status === "COMPLETED_TRAINING"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : tp.status === "ATTENDED"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                    }`}>
-                      {tp.status === "COMPLETED_TRAINING" ? "Selesai" : tp.status === "ATTENDED" ? "Hadir" : "Terdaftar"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
 
 // ============================================================
-//  GREETING BANNER (shared)
+//  ADMIN DASHBOARD
 // ============================================================
-function GreetingBanner({ subtitle }: { subtitle: string }) {
-  return (
-    <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 px-4 py-4 text-white shadow-lg sm:px-6 sm:py-5">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-10"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)",
-          backgroundSize: "20px 20px",
-        }}
-      />
-      <div className="relative">
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-          {getGreeting()}
-        </h1>
-        <p className="mt-1 text-sm text-white/80">{getFormattedDate()}</p>
-        <p className="mt-0.5 text-xs text-white/70 sm:text-sm">{subtitle}</p>
-      </div>
-    </div>
-  );
-}
 
-// ============================================================
-//  ADMIN DASHBOARD — full company overview (Manager+)
-// ============================================================
+const DEPT_BAR_COLORS = [
+  "bg-blue-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-indigo-500",
+  "bg-cyan-500",
+];
+
 function AdminDashboard() {
-  const employees = useAppStore((s) => s.employees);
-  const departments = useAppStore((s) => s.departments);
-  const positions = useAppStore((s) => s.positions);
-  const attendanceRecords = useAppStore((s) => s.attendanceRecords);
-  const leaveRequests = useAppStore((s) => s.leaveRequests);
-  const activityFeed = useAppStore((s) => s.activityFeed);
+  const { stats, isLoading: statsLoading } = useDashboardStats();
+  const { employees, isLoading: empLoading } = useEmployees({});
+  const { departments, isLoading: deptLoading } = useDepartments();
+  const { positions } = usePositions();
+  const { records: attendanceRecords } = useAttendanceRecords({ limit: 200 });
+  const { requests: leaveRequests } = useLeaveRequests({});
+
+  const isLoading = statsLoading || empLoading || deptLoading;
 
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
-  const activeEmployees = employees.filter(
-    (e) => e.status === "ACTIVE" && !e.isDeleted,
-  );
+  const todayStr = format(today, "yyyy-MM-dd");
+
   const activeDepartments = departments.filter((d) => d.isActive);
-  const threeMonthsLater = new Date();
-  threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
-  const contractExpiring = employees.filter(
-    (e) => e.endDate && new Date(e.endDate) <= threeMonthsLater,
-  );
 
-  // Compute attendance today from real data
-  const todayAttendance = attendanceRecords.filter(
-    (r) => r.date === todayStr && (r.status === "PRESENT" || r.status === "LATE"),
-  ).length;
+  // Contract expiring in next 3 months
+  const contractExpiring = useMemo(() => {
+    const threeMonthsLater = new Date();
+    threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+    return employees.filter(
+      (e) => e.endDate && new Date(e.endDate) <= threeMonthsLater,
+    );
+  }, [employees]);
 
-  // Compute pending leave requests from real data
-  const pendingLeaves = leaveRequests.filter((lr) => lr.status === "PENDING").length;
-
-  // Compute attendance trend from real data (last 7 days)
-  const attendanceTrend = useMemo(() => {
+  // Attendance trend (last 7 days) from attendance records
+  const attendanceTrend: AttendanceTrendPoint[] = useMemo(() => {
     const baseDate = new Date(todayStr + "T00:00:00");
-    const days: { date: string; hadir: number; terlambat: number; tidakHadir: number; cuti: number }[] = [];
+    const days: AttendanceTrendPoint[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(baseDate);
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
-      const dayLabel = format(d, "dd MMM", { locale: id });
-      const dayRecords = attendanceRecords.filter((r) => r.date === dateStr);
+      const dateStr = format(d, "yyyy-MM-dd");
+      const dayLabel = format(d, "dd MMM", { locale: idLocale });
+      const dayRecords = attendanceRecords.filter(
+        (r) => format(new Date(r.date), "yyyy-MM-dd") === dateStr,
+      );
       days.push({
         date: dayLabel,
         hadir: dayRecords.filter((r) => r.status === "PRESENT").length,
@@ -452,8 +325,8 @@ function AdminDashboard() {
     return days;
   }, [attendanceRecords, todayStr]);
 
-  // Compute leave distribution from real data
-  const leaveDistribution = useMemo(() => {
+  // Leave distribution
+  const leaveDistribution: LeaveDistribution[] = useMemo(() => {
     const LEAVE_COLORS: Record<string, string> = {
       "Cuti Tahunan": "#3B82F6",
       "Cuti Sakit": "#F59E0B",
@@ -465,8 +338,8 @@ function AdminDashboard() {
     const DEFAULT_COLOR = "#94A3B8";
     const counts: Record<string, number> = {};
     for (const lr of leaveRequests) {
-      const name = lr.leaveTypeName || "Lainnya";
-      counts[name] = (counts[name] || 0) + lr.totalDays;
+      const name = lr.leaveType?.name || "Lainnya";
+      counts[name] = (counts[name] || 0) + Number(lr.totalDays);
     }
     return Object.entries(counts).map(([name, value]) => ({
       name,
@@ -475,43 +348,45 @@ function AdminDashboard() {
     }));
   }, [leaveRequests]);
 
-  // Compute new employees this month vs last month
-  const thisMonthStart = `${todayStr.slice(0, 7)}-01`;
-  const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const lastMonthStart = lastMonth.toISOString().split("T")[0].slice(0, 7) + "-01";
-  const lastMonthEnd = `${todayStr.slice(0, 7)}-01`;
-  const newThisMonth = employees.filter(
-    (e) => !e.isDeleted && e.joinDate >= thisMonthStart,
-  ).length;
-  const newLastMonth = employees.filter(
-    (e) => !e.isDeleted && e.joinDate >= lastMonthStart && e.joinDate < lastMonthEnd,
-  ).length;
-  const empDiff = newThisMonth - newLastMonth;
-  const empTrend = empDiff > 0
-    ? `+${empDiff} dari bulan lalu`
-    : empDiff < 0
-      ? `${empDiff} dari bulan lalu`
-      : "Sama dengan bulan lalu";
-
-  const deptCounts = activeDepartments.slice(0, 6).map((dept) => {
-    const count = employees.filter(
-      (e) => e.departmentId === dept.id && !e.isDeleted,
-    ).length;
-    return { ...dept, count };
-  });
+  // Department employee counts
+  const deptCounts = useMemo(() => {
+    return activeDepartments.slice(0, 6).map((dept) => ({
+      ...dept,
+      count: dept._count?.employees ?? 0,
+    }));
+  }, [activeDepartments]);
   const maxDeptCount = Math.max(...deptCounts.map((d) => d.count), 1);
 
-  const recentEmployees = [...employees]
-    .sort(
-      (a, b) =>
-        new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime(),
-    )
-    .slice(0, 5);
+  // Recent employees
+  const recentEmployees = useMemo(() => {
+    return [...employees]
+      .sort(
+        (a, b) =>
+          new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime(),
+      )
+      .slice(0, 5);
+  }, [employees]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const empTrend = stats
+    ? stats.newEmployees.trend > 0
+      ? `+${stats.newEmployees.trend} dari bulan lalu`
+      : stats.newEmployees.trend < 0
+        ? `${stats.newEmployees.trend} dari bulan lalu`
+        : "Sama dengan bulan lalu"
+    : "";
 
   const statCards = [
     {
       label: "Total Karyawan",
-      value: activeEmployees.length,
+      value: stats?.activeEmployees ?? 0,
       trend: empTrend,
       icon: Users,
       iconBg: "bg-blue-100",
@@ -529,8 +404,8 @@ function AdminDashboard() {
     },
     {
       label: "Hadir Hari Ini",
-      value: todayAttendance,
-      trend: `Dari ${activeEmployees.length} karyawan`,
+      value: stats?.attendance.present ?? 0,
+      trend: `Dari ${stats?.activeEmployees ?? 0} karyawan`,
       icon: Clock,
       iconBg: "bg-amber-100",
       iconColor: "text-amber-600",
@@ -538,8 +413,8 @@ function AdminDashboard() {
     },
     {
       label: "Pengajuan Cuti",
-      value: pendingLeaves,
-      trend: `${pendingLeaves > 0 ? "Menunggu persetujuan" : "Tidak ada pending"}`,
+      value: stats?.pendingLeave ?? 0,
+      trend: `${(stats?.pendingLeave ?? 0) > 0 ? "Menunggu persetujuan" : "Tidak ada pending"}`,
       icon: CalendarDays,
       iconBg: "bg-rose-100",
       iconColor: "text-rose-600",
@@ -659,14 +534,14 @@ function AdminDashboard() {
                     <div key={emp.id} className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{emp.firstName} {emp.lastName}</p>
-                        <p className="text-xs text-muted-foreground">{emp.positionName}</p>
+                        <p className="text-xs text-muted-foreground">{emp.position?.name ?? "-"}</p>
                       </div>
                       <div className="shrink-0 text-right">
                         <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${isPast ? "bg-red-100 text-red-700" : isUrgent ? "bg-orange-100 text-orange-700" : "bg-amber-50 text-amber-700"}`}>
                           {isPast ? "Sudah berakhir" : `${daysLeft} hari lagi`}
                         </span>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {format(endDate, "dd MMM yyyy", { locale: id })}
+                          {format(endDate, "dd MMM yyyy", { locale: idLocale })}
                         </p>
                       </div>
                     </div>
@@ -720,10 +595,10 @@ function AdminDashboard() {
                 <div key={emp.id} className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{emp.firstName} {emp.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{emp.departmentName}</p>
+                    <p className="text-xs text-muted-foreground">{emp.department?.name ?? "-"}</p>
                   </div>
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {format(new Date(emp.joinDate), "dd MMM yyyy", { locale: id })}
+                    {format(new Date(emp.joinDate), "dd MMM yyyy", { locale: idLocale })}
                   </span>
                 </div>
               ))}
@@ -731,49 +606,12 @@ function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Activity Feed */}
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
-            <Activity className="h-4 w-4 text-blue-500" />
-          </div>
-          <CardTitle className="text-sm font-semibold sm:text-base">Aktivitas Terbaru</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 overflow-x-auto">
-            {activityFeed.map((item) => {
-              const config = ACTIVITY_ICON_MAP[item.type];
-              const borderClass = ACTIVITY_BORDER_MAP[item.type];
-              const Icon = config.icon;
-              return (
-                <div key={item.id} className={`flex gap-3 rounded-lg border-l-2 py-2 pl-3 ${borderClass}`}>
-                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${config.bg}`}>
-                    <Icon className={`h-3.5 w-3.5 ${config.color}`} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium leading-tight">{item.action}</p>
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
-                      </div>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {formatRelativeTime(item.timestamp)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
 
 // ============================================================
-//  MAIN — route to correct dashboard by role
+//  MAIN
 // ============================================================
 export default function DashboardPage() {
   const { role } = useAuth();

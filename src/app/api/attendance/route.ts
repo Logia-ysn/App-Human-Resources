@@ -43,10 +43,9 @@ export async function GET(req: NextRequest) {
     prisma.attendance.count({ where }),
   ]);
 
+  const meta = { total, page, limit, totalPages: Math.ceil(total / limit) };
+
   return NextResponse.json(
-    successResponse(
-      { records },
-      { total, page, limit, totalPages: Math.ceil(total / limit) }
-    )
+    successResponse({ records, meta })
   );
 }

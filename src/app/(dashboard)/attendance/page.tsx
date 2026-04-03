@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { Clock, CheckCircle, XCircle, AlertTriangle, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useAppStore } from "@/lib/store/app-store";
-import {
-  type AttendanceRecord,
-  type OvertimeRecord,
-  type HolidayRecord,
-} from "@/lib/dummy-data";
-import { useAuth } from "@/components/providers/auth-context";
+import { useAttendanceRecords, useOvertimeRequests } from "@/hooks/use-attendance";
+import { useHolidays } from "@/hooks/use-holidays";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,8 +45,8 @@ const HOLIDAY_TYPE_LABELS: Record<string, string> = {
   CUTI_BERSAMA: "Cuti Bersama",
 };
 
-function formatWorkHours(minutes: number): string {
-  if (minutes === 0) return "-";
+function formatWorkHours(minutes: number | null): string {
+  if (!minutes || minutes === 0) return "-";
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return mins > 0 ? `${hours}j ${mins}m` : `${hours}j`;
@@ -61,25 +58,27 @@ function formatOvertimeDuration(minutes: number): string {
   return mins > 0 ? `${hours} jam ${mins} menit` : `${hours} jam`;
 }
 
-export default function AttendancePage() {
-  const attendanceRecords = useAppStore((s) => s.attendanceRecords);
-  const overtimeList = useAppStore((s) => s.overtimeRecords);
-  const holidayList = useAppStore((s) => s.holidays);
-  const updateOvertimeRecord = useAppStore((s) => s.updateOvertimeRecord);
-  const addHoliday = useAppStore((s) => s.addHoliday);
+function formatTime(dateStr: string | Date | null): string {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return format(d, "HH:mm");
+}
 
-  const { email } = useAuth();
+export default function AttendancePage() {
+  const today = new Date().toISOString().split("T")[0];
+
+  const { records: todayRecords, isLoading: attendanceLoading } = useAttendanceRecords({
+    startDate: today,
+    endDate: today,
+    limit: 100,
+  });
+  const { requests: overtimeList, isLoading: overtimeLoading } = useOvertimeRequests();
+  const { holidays: holidayList, isLoading: holidaysLoading } = useHolidays();
+
   const [holidayDialogOpen, setHolidayDialogOpen] = useState(false);
   const [newHolidayName, setNewHolidayName] = useState("");
   const [newHolidayDate, setNewHolidayDate] = useState("");
   const [newHolidayType, setNewHolidayType] = useState<string>("NATIONAL");
-
-  const today = new Date().toISOString().split("T")[0];
-
-  const todayRecords = useMemo(
-    () => attendanceRecords.filter((r) => r.date === today),
-    [attendanceRecords, today],
-  );
 
   const summary = useMemo(() => {
     const hadir = todayRecords.filter(
@@ -96,38 +95,32 @@ export default function AttendancePage() {
     return { hadir, terlambat, tidakHadir, cutiSakitDinas };
   }, [todayRecords]);
 
-  const handleApproveOvertime = (id: string) => {
-    updateOvertimeRecord(id, { status: "APPROVED" as const, approvedBy: email });
-    toast.success("Overtime disetujui");
-  };
-
-  const handleRejectOvertime = (id: string) => {
-    updateOvertimeRecord(id, { status: "REJECTED" as const, approvedBy: email });
-    toast.error("Overtime ditolak");
-  };
-
   const handleAddHoliday = () => {
     if (!newHolidayName.trim() || !newHolidayDate) return;
-
-    const newHoliday: HolidayRecord = {
-      id: `hol-${Date.now()}`,
-      name: newHolidayName.trim(),
-      date: newHolidayDate,
-      type: newHolidayType as HolidayRecord["type"],
-    };
-
-    addHoliday(newHoliday);
+    // TODO: Call API to create holiday when endpoint is ready
+    toast.info("Fitur tambah hari libur via API belum tersedia");
     setNewHolidayName("");
     setNewHolidayDate("");
     setNewHolidayType("NATIONAL");
     setHolidayDialogOpen(false);
-    toast.success("Hari libur berhasil ditambahkan");
   };
 
   const sortedHolidays = useMemo(
-    () => [...holidayList].sort((a, b) => a.date.localeCompare(b.date)),
+    () => [...holidayList].sort((a, b) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    ),
     [holidayList],
   );
+
+  const isLoading = attendanceLoading || overtimeLoading || holidaysLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -155,7 +148,6 @@ export default function AttendancePage() {
         {/* Tab 1: Kehadiran Hari Ini */}
         <TabsContent value="kehadiran">
           <div className="space-y-4">
-            {/* Stat Cards - 2 col mobile, 4 col desktop */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-green-500">
                 <div className="flex items-center gap-3">
@@ -218,17 +210,19 @@ export default function AttendancePage() {
                 todayRecords.map((record) => (
                   <Card key={record.id} className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">{record.employeeName}</span>
+                      <span className="font-medium text-sm">
+                        {record.employee.firstName} {record.employee.lastName}
+                      </span>
                       <StatusBadge status={record.status} />
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <p className="text-[11px] text-muted-foreground">Check In</p>
-                        <p className="font-medium">{record.checkIn ?? "-"}</p>
+                        <p className="font-medium">{formatTime(record.checkIn)}</p>
                       </div>
                       <div>
                         <p className="text-[11px] text-muted-foreground">Check Out</p>
-                        <p className="font-medium">{record.checkOut ?? "-"}</p>
+                        <p className="font-medium">{formatTime(record.checkOut)}</p>
                       </div>
                       <div>
                         <p className="text-[11px] text-muted-foreground">Jam Kerja</p>
@@ -237,7 +231,7 @@ export default function AttendancePage() {
                       <div>
                         <p className="text-[11px] text-muted-foreground">Terlambat</p>
                         <p className="font-medium">
-                          {record.lateMinutes > 0 ? (
+                          {record.lateMinutes && record.lateMinutes > 0 ? (
                             <Badge variant="outline" className="text-yellow-700 border-yellow-300 bg-yellow-50 text-xs">
                               {record.lateMinutes} menit
                             </Badge>
@@ -271,10 +265,7 @@ export default function AttendancePage() {
                     <TableBody>
                       {todayRecords.length === 0 ? (
                         <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="h-24 text-center text-muted-foreground"
-                          >
+                          <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                             Tidak ada data kehadiran hari ini.
                           </TableCell>
                         </TableRow>
@@ -282,12 +273,12 @@ export default function AttendancePage() {
                         todayRecords.map((record) => (
                           <TableRow key={record.id} className="hover:bg-muted/50">
                             <TableCell className="font-medium">
-                              {record.employeeName}
+                              {record.employee.firstName} {record.employee.lastName}
                             </TableCell>
-                            <TableCell>{record.checkIn ?? "-"}</TableCell>
-                            <TableCell>{record.checkOut ?? "-"}</TableCell>
+                            <TableCell>{formatTime(record.checkIn)}</TableCell>
+                            <TableCell>{formatTime(record.checkOut)}</TableCell>
                             <TableCell>
-                              {record.lateMinutes > 0 ? (
+                              {record.lateMinutes && record.lateMinutes > 0 ? (
                                 <Badge variant="outline" className="text-yellow-700 border-yellow-300 bg-yellow-50">
                                   {record.lateMinutes}
                                 </Badge>
@@ -299,7 +290,7 @@ export default function AttendancePage() {
                               {formatWorkHours(record.workMinutes)}
                             </TableCell>
                             <TableCell>
-                              {record.overtimeMinutes > 0
+                              {record.overtimeMinutes && record.overtimeMinutes > 0
                                 ? formatWorkHours(record.overtimeMinutes)
                                 : "-"}
                             </TableCell>
@@ -331,13 +322,17 @@ export default function AttendancePage() {
               overtimeList.map((ot) => (
                 <Card key={ot.id} className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-sm">{ot.employeeName}</span>
+                    <span className="font-medium text-sm">
+                      {ot.employee.firstName} {ot.employee.lastName}
+                    </span>
                     <StatusBadge status={ot.status} />
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                     <div>
                       <p className="text-[11px] text-muted-foreground">Tanggal</p>
-                      <p className="font-medium">{ot.date}</p>
+                      <p className="font-medium">
+                        {format(new Date(ot.date), "dd MMM yyyy", { locale: idLocale })}
+                      </p>
                     </div>
                     <div>
                       <p className="text-[11px] text-muted-foreground">Durasi</p>
@@ -347,34 +342,16 @@ export default function AttendancePage() {
                       <p className="text-[11px] text-muted-foreground">Waktu</p>
                       <p className="font-medium">{ot.startTime} - {ot.endTime}</p>
                     </div>
-                    <div className="col-span-2">
-                      <p className="text-[11px] text-muted-foreground">Alasan</p>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{ot.reason}</p>
-                    </div>
+                    {ot.reason && (
+                      <div className="col-span-2">
+                        <p className="text-[11px] text-muted-foreground">Alasan</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{ot.reason}</p>
+                      </div>
+                    )}
                   </div>
-                  {ot.status === "PENDING" && (
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-green-700 border-green-300 bg-green-50 hover:bg-green-100"
-                        onClick={() => handleApproveOvertime(ot.id)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-red-700 border-red-300 bg-red-50 hover:bg-red-100"
-                        onClick={() => handleRejectOvertime(ot.id)}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  )}
                   {ot.status !== "PENDING" && ot.approvedBy && (
                     <p className="text-xs text-muted-foreground pt-2 border-t">
-                      oleh {ot.approvedBy}
+                      oleh {ot.approvedBy.firstName} {ot.approvedBy.lastName}
                     </p>
                   )}
                 </Card>
@@ -395,16 +372,13 @@ export default function AttendancePage() {
                       <TableHead>Durasi</TableHead>
                       <TableHead>Alasan</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
+                      <TableHead className="text-right">Diproses oleh</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {overtimeList.length === 0 ? (
                       <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="h-24 text-center text-muted-foreground"
-                        >
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                           Tidak ada data overtime.
                         </TableCell>
                       </TableRow>
@@ -412,9 +386,11 @@ export default function AttendancePage() {
                       overtimeList.map((ot) => (
                         <TableRow key={ot.id} className="hover:bg-muted/50">
                           <TableCell className="font-medium">
-                            {ot.employeeName}
+                            {ot.employee.firstName} {ot.employee.lastName}
                           </TableCell>
-                          <TableCell>{ot.date}</TableCell>
+                          <TableCell>
+                            {format(new Date(ot.date), "dd MMM yyyy", { locale: idLocale })}
+                          </TableCell>
                           <TableCell>
                             {ot.startTime} - {ot.endTime}
                           </TableCell>
@@ -422,36 +398,17 @@ export default function AttendancePage() {
                             {formatOvertimeDuration(ot.plannedMinutes)}
                           </TableCell>
                           <TableCell className="max-w-[200px] truncate">
-                            {ot.reason}
+                            {ot.reason ?? "-"}
                           </TableCell>
                           <TableCell>
                             <StatusBadge status={ot.status} />
                           </TableCell>
                           <TableCell className="text-right">
-                            {ot.status === "PENDING" ? (
-                              <div className="flex items-center justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="xs"
-                                  className="text-green-700 hover:text-green-800 hover:bg-green-50"
-                                  onClick={() => handleApproveOvertime(ot.id)}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="xs"
-                                  className="text-red-700 hover:text-red-800 hover:bg-red-50"
-                                  onClick={() => handleRejectOvertime(ot.id)}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">
-                                {ot.approvedBy ?? "-"}
-                              </span>
-                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {ot.approvedBy
+                                ? `${ot.approvedBy.firstName} ${ot.approvedBy.lastName}`
+                                : "-"}
+                            </span>
                           </TableCell>
                         </TableRow>
                       ))
@@ -516,18 +473,13 @@ export default function AttendancePage() {
                         <SelectContent>
                           <SelectItem value="NATIONAL">Nasional</SelectItem>
                           <SelectItem value="COMPANY">Perusahaan</SelectItem>
-                          <SelectItem value="CUTI_BERSAMA">
-                            Cuti Bersama
-                          </SelectItem>
+                          <SelectItem value="CUTI_BERSAMA">Cuti Bersama</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setHolidayDialogOpen(false)}
-                    >
+                    <Button variant="outline" onClick={() => setHolidayDialogOpen(false)}>
                       Batal
                     </Button>
                     <Button
@@ -555,7 +507,9 @@ export default function AttendancePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-sm">{holiday.name}</p>
-                        <p className="text-xs text-muted-foreground">{holiday.date}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(holiday.date), "dd MMMM yyyy", { locale: idLocale })}
+                        </p>
                       </div>
                       <Badge variant="outline">
                         {HOLIDAY_TYPE_LABELS[holiday.type] ?? holiday.type}
@@ -581,24 +535,20 @@ export default function AttendancePage() {
                     <TableBody>
                       {sortedHolidays.length === 0 ? (
                         <TableRow>
-                          <TableCell
-                            colSpan={3}
-                            className="h-24 text-center text-muted-foreground"
-                          >
+                          <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                             Tidak ada data hari libur.
                           </TableCell>
                         </TableRow>
                       ) : (
                         sortedHolidays.map((holiday) => (
                           <TableRow key={holiday.id} className="hover:bg-muted/50">
-                            <TableCell className="font-medium">
-                              {holiday.name}
+                            <TableCell className="font-medium">{holiday.name}</TableCell>
+                            <TableCell>
+                              {format(new Date(holiday.date), "dd MMMM yyyy", { locale: idLocale })}
                             </TableCell>
-                            <TableCell>{holiday.date}</TableCell>
                             <TableCell>
                               <Badge variant="outline">
-                                {HOLIDAY_TYPE_LABELS[holiday.type] ??
-                                  holiday.type}
+                                {HOLIDAY_TYPE_LABELS[holiday.type] ?? holiday.type}
                               </Badge>
                             </TableCell>
                           </TableRow>

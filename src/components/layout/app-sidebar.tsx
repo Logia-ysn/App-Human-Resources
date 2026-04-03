@@ -26,7 +26,7 @@ import {
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/lib/store/app-store";
+import { useCompany } from "@/hooks/use-settings";
 import {
   Sidebar,
   SidebarContent,
@@ -168,9 +168,9 @@ export function AppSidebar({
   userEmail: string;
 }) {
   const pathname = usePathname();
-  const companySettings = useAppStore((s) => s.companySettings);
-  const logoUrl = companySettings.logoUrl;
-  const companyName = companySettings.name;
+  const { company } = useCompany();
+  const logoUrl = company?.logoUrl ?? "";
+  const companyName = company?.name ?? "";
 
   return (
     <Sidebar>

@@ -1,14 +1,14 @@
 "use client";
 
-import { useAppStore } from "@/lib/store/app-store";
 import { useAuth } from "@/components/providers/auth-context";
+import { useEmployee } from "@/hooks/use-employees";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { UserCircle, Briefcase, MapPin, Phone, Mail, Shield } from "lucide-react";
+import { UserCircle, Briefcase, MapPin, Phone, Mail, Shield, Loader2 } from "lucide-react";
 
 const GENDER_LABEL: Record<string, string> = { MALE: "Laki-laki", FEMALE: "Perempuan" };
 const RELIGION_LABEL: Record<string, string> = { ISLAM: "Islam", KRISTEN: "Kristen", KATOLIK: "Katolik", HINDU: "Hindu", BUDDHA: "Buddha", KONGHUCU: "Konghucu", LAINNYA: "Lainnya" };
@@ -24,9 +24,16 @@ function InfoItem({ label, value }: { label: string; value: string | number | nu
 }
 
 export default function EssProfilePage() {
-  const employees = useAppStore((s) => s.employees);
   const { employeeId } = useAuth();
-  const emp = employees.find((e) => e.id === employeeId);
+  const { employee: emp, isLoading } = useEmployee(employeeId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!emp) {
     return (
@@ -43,6 +50,11 @@ export default function EssProfilePage() {
   }
 
   const initials = `${emp.firstName[0]}${emp.lastName[0]}`;
+  const departmentName = emp.department.name;
+  const positionName = emp.position.name;
+  const managerName = emp.manager
+    ? `${emp.manager.firstName} ${emp.manager.lastName}`
+    : null;
 
   return (
     <div className="space-y-6">
@@ -65,7 +77,7 @@ export default function EssProfilePage() {
             </Avatar>
             <div className="flex-1 pb-1">
               <h2 className="text-xl font-bold">{emp.firstName} {emp.lastName}</h2>
-              <p className="text-muted-foreground">{emp.positionName} — {emp.departmentName}</p>
+              <p className="text-muted-foreground">{positionName} — {departmentName}</p>
             </div>
             <div className="flex gap-2 pb-1">
               <StatusBadge status={emp.status} />
@@ -93,7 +105,7 @@ export default function EssProfilePage() {
             <InfoItem label="NIK" value={emp.nik} />
             <InfoItem label="Tempat, Tgl Lahir" value={`${emp.placeOfBirth}, ${format(new Date(emp.dateOfBirth), "dd MMM yyyy", { locale: idLocale })}`} />
             <InfoItem label="Jenis Kelamin" value={GENDER_LABEL[emp.gender]} />
-            <InfoItem label="Agama" value={RELIGION_LABEL[emp.religion]} />
+            <InfoItem label="Agama" value={RELIGION_LABEL[emp.religion ?? ""]} />
             <InfoItem label="Status Pernikahan" value={MARITAL_LABEL[emp.maritalStatus]} />
             <InfoItem label="Tanggungan" value={emp.dependents} />
           </CardContent>
@@ -108,9 +120,9 @@ export default function EssProfilePage() {
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-5">
             <InfoItem label="No. Karyawan" value={emp.employeeNumber} />
-            <InfoItem label="Departemen" value={emp.departmentName} />
-            <InfoItem label="Jabatan" value={emp.positionName} />
-            <InfoItem label="Atasan" value={emp.managerName} />
+            <InfoItem label="Departemen" value={departmentName} />
+            <InfoItem label="Jabatan" value={positionName} />
+            <InfoItem label="Atasan" value={managerName} />
             <InfoItem label="Tgl Masuk" value={format(new Date(emp.joinDate), "dd MMM yyyy", { locale: idLocale })} />
             <InfoItem label="Status PTKP" value={emp.ptkpStatus} />
           </CardContent>

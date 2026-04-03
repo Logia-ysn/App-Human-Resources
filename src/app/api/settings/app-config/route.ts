@@ -17,10 +17,15 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json();
 
+  // Merge with existing data instead of replacing
+  const existing = await prisma.appConfig.findFirst({ where: { id: "app-config" } });
+  const currentData = (existing?.data as Record<string, unknown>) ?? {};
+  const mergedData = { ...currentData, ...body };
+
   const config = await prisma.appConfig.upsert({
     where: { id: "app-config" },
-    update: { data: body },
-    create: { id: "app-config", data: body },
+    update: { data: mergedData },
+    create: { id: "app-config", data: mergedData },
   });
 
   return NextResponse.json(successResponse(config.data));

@@ -39,11 +39,10 @@ export async function GET(req: NextRequest) {
     prisma.overtimeRequest.count({ where }),
   ]);
 
+  const meta = { total, page, limit, totalPages: Math.ceil(total / limit) };
+
   return NextResponse.json(
-    successResponse(
-      { requests },
-      { total, page, limit, totalPages: Math.ceil(total / limit) }
-    )
+    successResponse({ requests, meta })
   );
 }
 

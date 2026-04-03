@@ -17,8 +17,10 @@ import {
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import type { Employee } from "@/lib/dummy-data";
-import { useAppStore } from "@/lib/store/app-store";
+import { useEmployees, useCreateEmployee } from "@/hooks/use-employees";
+import { useDepartments } from "@/hooks/use-departments";
+import { usePositions } from "@/hooks/use-positions";
+import { Loader2 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -260,19 +262,20 @@ function StepIndicator({
 
 export default function NewEmployeePage() {
   const router = useRouter();
-  const departments = useAppStore((s) => s.departments);
-  const positions = useAppStore((s) => s.positions);
-  const allEmployees = useAppStore((s) => s.employees);
-  const addEmployee = useAppStore((s) => s.addEmployee);
+  const { departments } = useDepartments();
+  const { positions } = usePositions();
+  const { employees: allEmployees } = useEmployees({ limit: 200 });
+  const createMutation = useCreateEmployee();
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
+  const [saving, setSaving] = useState(false);
 
   const filteredPositions = positions.filter(
     (p) => p.departmentId === form.departmentId && p.isActive
   );
 
   const activeEmployees = allEmployees.filter(
-    (e) => e.status === "ACTIVE" && !e.isDeleted
+    (e) => e.status === "ACTIVE"
   );
 
   const showEndDate =
@@ -305,93 +308,74 @@ export default function NewEmployeePage() {
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email.trim())) {
       toast.error("Format email tidak valid");
       return;
     }
 
-    const duplicateEmail = allEmployees.find(
-      (e) => e.email.toLowerCase() === form.email.trim().toLowerCase() && !e.isDeleted
-    );
-    if (duplicateEmail) {
-      toast.error("Email sudah digunakan oleh karyawan lain");
+    if (!form.departmentId) {
+      toast.error("Departemen wajib dipilih");
+      return;
+    }
+    if (!form.positionId) {
+      toast.error("Jabatan wajib dipilih");
       return;
     }
 
-    const dept = departments.find((d) => d.id === form.departmentId);
-    const pos = positions.find((p) => p.id === form.positionId);
-
-    if (!dept) {
-      toast.error("Departemen yang dipilih tidak valid");
-      return;
-    }
-    if (!pos) {
-      toast.error("Jabatan yang dipilih tidak valid");
-      return;
-    }
-
-    const manager = allEmployees.find((e) => e.id === form.managerId);
-
+    // Generate employee number from existing employees
     const maxNum = allEmployees.reduce((max, e) => {
       const match = e.employeeNumber?.match(/EMP-(\d+)/);
       return match ? Math.max(max, parseInt(match[1], 10)) : max;
     }, 0);
     const empNumber = `EMP-${String(maxNum + 1).padStart(4, "0")}`;
 
-    const newEmployee: Employee = {
-      id: `emp-${Date.now()}`,
-      employeeNumber: empNumber,
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      photoUrl: null,
-      gender: form.gender as Employee["gender"],
-      dateOfBirth: form.dateOfBirth,
-      placeOfBirth: form.placeOfBirth.trim(),
-      religion: form.religion,
-      maritalStatus: form.maritalStatus as Employee["maritalStatus"],
-      dependents: form.dependents ? Number(form.dependents) : 0,
-      nik: form.nik.trim(),
-      npwp: form.npwp.trim(),
-      bpjsKesNumber: form.bpjsKesNumber.trim(),
-      bpjsTkNumber: form.bpjsTkNumber.trim(),
-      bankName: form.bankName,
-      bankAccountNo: form.bankAccountNo.trim(),
-      bankAccountName: form.bankAccountName.trim(),
-      address: form.address.trim(),
-      city: form.city.trim(),
-      province: form.province.trim(),
-      postalCode: form.postalCode.trim(),
-      emergencyName: form.emergencyName.trim(),
-      emergencyPhone: form.emergencyPhone.trim(),
-      emergencyRelation: form.emergencyRelation.trim(),
-      departmentId: form.departmentId,
-      departmentName: dept?.name ?? "",
-      positionId: form.positionId,
-      positionName: pos?.name ?? "",
-      managerId: form.managerId || null,
-      managerName: manager ? `${manager.firstName} ${manager.lastName}` : null,
-      status: "ACTIVE",
-      type: (form.type || "PERMANENT") as Employee["type"],
-      joinDate: form.joinDate || new Date().toISOString().split("T")[0],
-      endDate: form.endDate || null,
-      resignDate: null,
-      ptkpStatus: form.ptkpStatus || "TK0",
-      taxMethod: (form.taxMethod || "GROSS") as Employee["taxMethod"],
-      basicSalary: form.basicSalary ? Number(form.basicSalary) : 0,
-      allowanceTransport: form.allowanceTransport ? Number(form.allowanceTransport) : 0,
-      allowanceMeal: form.allowanceMeal ? Number(form.allowanceMeal) : 0,
-      allowancePosition: form.allowancePosition ? Number(form.allowancePosition) : 0,
-      allowanceOther: form.allowanceOther ? Number(form.allowanceOther) : 0,
-      isDeleted: false,
-    };
-
-    addEmployee(newEmployee);
-    toast.success("Karyawan berhasil ditambahkan");
-    router.push("/employees");
+    setSaving(true);
+    try {
+      await createMutation.trigger({
+        employeeNumber: empNumber,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        gender: form.gender as "MALE" | "FEMALE",
+        dateOfBirth: form.dateOfBirth,
+        placeOfBirth: form.placeOfBirth.trim(),
+        religion: (form.religion || undefined) as "ISLAM" | "KRISTEN" | "KATOLIK" | "HINDU" | "BUDDHA" | "KONGHUCU" | "LAINNYA" | undefined,
+        maritalStatus: form.maritalStatus as "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED",
+        dependents: form.dependents ? Number(form.dependents) : 0,
+        nik: form.nik.trim(),
+        npwp: form.npwp.trim() || undefined,
+        bpjsKesNumber: form.bpjsKesNumber.trim() || undefined,
+        bpjsTkNumber: form.bpjsTkNumber.trim() || undefined,
+        bankName: form.bankName || undefined,
+        bankAccountNo: form.bankAccountNo.trim() || undefined,
+        bankAccountName: form.bankAccountName.trim() || undefined,
+        address: form.address.trim() || undefined,
+        city: form.city.trim() || undefined,
+        province: form.province.trim() || undefined,
+        postalCode: form.postalCode.trim() || undefined,
+        emergencyName: form.emergencyName.trim() || undefined,
+        emergencyPhone: form.emergencyPhone.trim() || undefined,
+        emergencyRelation: form.emergencyRelation.trim() || undefined,
+        departmentId: form.departmentId,
+        positionId: form.positionId,
+        managerId: form.managerId || null,
+        status: "ACTIVE" as const,
+        type: (form.type || "PERMANENT") as "PERMANENT" | "CONTRACT" | "PROBATION" | "INTERNSHIP",
+        joinDate: form.joinDate || new Date().toISOString().split("T")[0],
+        endDate: form.endDate || null,
+        ptkpStatus: (form.ptkpStatus || "TK0") as never,
+        taxMethod: (form.taxMethod || "GROSS") as "GROSS" | "GROSS_UP" | "NETT",
+      });
+      toast.success("Karyawan berhasil ditambahkan");
+      router.push("/employees");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -751,7 +735,7 @@ export default function NewEmployeePage() {
                     <SelectContent>
                       {activeEmployees.map((emp) => (
                         <SelectItem key={emp.id} value={emp.id}>
-                          {emp.firstName} {emp.lastName} - {emp.positionName}
+                          {emp.firstName} {emp.lastName} - {emp.position.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1070,8 +1054,8 @@ export default function NewEmployeePage() {
                 <ArrowRight data-icon="inline-end" className="size-4" />
               </Button>
             ) : (
-              <Button className="w-full sm:w-auto" onClick={handleSubmit}>
-                <Check data-icon="inline-start" className="size-4" />
+              <Button className="w-full sm:w-auto" onClick={handleSubmit} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check data-icon="inline-start" className="size-4" />}
                 Simpan Karyawan
               </Button>
             )}

@@ -4,7 +4,6 @@ import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import { fetcher, apiClient } from "@/lib/api-client";
 import type { Employee } from "@prisma/client";
-import type { ApiResponse } from "@/types/api";
 import type { CreateEmployeeInput, UpdateEmployeeInput } from "@/lib/validators/employee";
 
 type EmployeeWithRelations = Employee & {
@@ -13,9 +12,16 @@ type EmployeeWithRelations = Employee & {
   manager: { id: string; firstName: string; lastName: string } | null;
 };
 
+type PaginationMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 type EmployeeListResponse = {
   employees: EmployeeWithRelations[];
-  meta: ApiResponse["meta"];
+  meta: PaginationMeta;
 };
 
 function buildQuery(params: Record<string, string | number | undefined>): string {
@@ -32,6 +38,7 @@ export function useEmployees(params: {
   search?: string;
   departmentId?: string;
   status?: string;
+  type?: string;
 } = {}) {
   const query = buildQuery(params);
   const { data, error, isLoading, mutate } = useSWR<EmployeeListResponse>(

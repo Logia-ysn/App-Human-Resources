@@ -10,15 +10,11 @@ import {
   XCircle,
   Plus,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/components/providers/auth-context";
 
-import { useAppStore } from "@/lib/store/app-store";
-import {
-  type LeaveTypeRecord,
-  type LeaveRequestRecord,
-} from "@/lib/dummy-data";
+import { useLeaveRequests, useLeaveTypes, useLeaveBalances, useApproveLeave } from "@/hooks/use-leave";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,10 +49,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-// ---------------------------------------------------------------------------
-// Status filter options
-// ---------------------------------------------------------------------------
-
 const STATUS_OPTIONS = [
   { value: "ALL", label: "Semua Status" },
   { value: "PENDING", label: "Menunggu" },
@@ -65,11 +57,19 @@ const STATUS_OPTIONS = [
   { value: "CANCELLED", label: "Dibatalkan" },
 ];
 
-// ---------------------------------------------------------------------------
-// Blank leave-type form state
-// ---------------------------------------------------------------------------
+type LeaveTypeForm = {
+  name: string;
+  code: string;
+  defaultQuota: number;
+  isPaid: boolean;
+  isCarryOver: boolean;
+  maxCarryOver: number;
+  requiresDoc: boolean;
+  allowHalfDay: boolean;
+  isActive: boolean;
+};
 
-const EMPTY_LEAVE_TYPE: Omit<LeaveTypeRecord, "id"> = {
+const EMPTY_LEAVE_TYPE: LeaveTypeForm = {
   name: "",
   code: "",
   defaultQuota: 12,
@@ -81,29 +81,20 @@ const EMPTY_LEAVE_TYPE: Omit<LeaveTypeRecord, "id"> = {
   isActive: true,
 };
 
-// ---------------------------------------------------------------------------
-// Page component
-// ---------------------------------------------------------------------------
-
 export default function LeavePage() {
-  const { email } = useAuth();
-  // ----- Store selectors & actions -----
-  const requests = useAppStore((s) => s.leaveRequests);
-  const types = useAppStore((s) => s.leaveTypes);
-  const leaveBalances = useAppStore((s) => s.leaveBalances);
-  const approveLeaveRequest = useAppStore((s) => s.approveLeaveRequest);
-  const rejectLeaveRequest = useAppStore((s) => s.rejectLeaveRequest);
-  const addLeaveType = useAppStore((s) => s.addLeaveType);
-
-  // ----- Status filter -----
   const [statusFilter, setStatusFilter] = useState("ALL");
-
-  // ----- Dialog for adding leave type -----
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newType, setNewType] =
-    useState<Omit<LeaveTypeRecord, "id">>(EMPTY_LEAVE_TYPE);
+  const [newType, setNewType] = useState<LeaveTypeForm>(EMPTY_LEAVE_TYPE);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
-  // ----- Derived stats -----
+  const { requests, isLoading: requestsLoading, mutate: mutateRequests } = useLeaveRequests({
+    status: statusFilter !== "ALL" ? statusFilter : undefined,
+  });
+  const { leaveTypes: types, isLoading: typesLoading } = useLeaveTypes();
+  const { balances: leaveBalances, isLoading: balancesLoading } = useLeaveBalances();
+
+  const approveMutation = useApproveLeave(approvingId ?? "");
+
   const stats = useMemo(() => {
     const total = requests.length;
     const pending = requests.filter((r) => r.status === "PENDING").length;
@@ -112,49 +103,58 @@ export default function LeavePage() {
     return { total, pending, approved, rejected };
   }, [requests]);
 
-  // ----- Filtered requests -----
-  const filteredRequests = useMemo(() => {
-    if (statusFilter === "ALL") return requests;
-    return requests.filter((r) => r.status === statusFilter);
-  }, [requests, statusFilter]);
-
-  // ----- Handlers -----
   const handleStatusFilterChange = (value: string | null) => {
     setStatusFilter(value ?? "ALL");
   };
 
-  const handleApprove = (id: string) => {
-    approveLeaveRequest(id, email);
-    toast.success("Pengajuan cuti berhasil disetujui");
-  };
+  async function handleApprove(id: string) {
+    setApprovingId(id);
+    try {
+      await approveMutation.trigger({ status: "APPROVED" });
+      toast.success("Pengajuan cuti berhasil disetujui");
+      await mutateRequests();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyetujui");
+    }
+    setApprovingId(null);
+  }
 
-  const handleReject = (id: string) => {
-    rejectLeaveRequest(id, email);
-    toast.error("Pengajuan cuti ditolak");
-  };
+  async function handleReject(id: string) {
+    setApprovingId(id);
+    try {
+      await approveMutation.trigger({ status: "REJECTED" });
+      toast.error("Pengajuan cuti ditolak");
+      await mutateRequests();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menolak");
+    }
+    setApprovingId(null);
+  }
 
   const handleAddType = () => {
     if (!newType.name.trim() || !newType.code.trim()) {
       toast.error("Nama dan Kode wajib diisi");
       return;
     }
-
-    const created: LeaveTypeRecord = {
-      ...newType,
-      id: `lt-${Date.now()}`,
-    };
-
-    addLeaveType(created);
+    // TODO: Call API to create leave type when endpoint is ready
+    toast.info("Fitur tambah tipe cuti via API belum tersedia");
     setNewType(EMPTY_LEAVE_TYPE);
     setDialogOpen(false);
-    toast.success(`Tipe cuti "${created.name}" berhasil ditambahkan`);
   };
 
-  // ----- Balance helpers -----
   const computeRemaining = (b: { entitlement: number; carried: number; used: number; pending: number }) =>
     Math.max(0, b.entitlement + b.carried - b.used - b.pending);
 
-  // -----------------------------------------------------------------------
+  const isLoading = requestsLoading || typesLoading || balancesLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex items-center gap-3">
@@ -176,11 +176,8 @@ export default function LeavePage() {
           <TabsTrigger value="types">Tipe Cuti</TabsTrigger>
         </TabsList>
 
-        {/* ================================================================
-            TAB 1 — Pengajuan Cuti
-        ================================================================ */}
+        {/* TAB 1 — Pengajuan Cuti */}
         <TabsContent value="requests" className="space-y-4">
-          {/* Stat Cards - 2 col mobile, 4 col desktop */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-blue-500">
               <div className="flex items-center gap-3">
@@ -231,7 +228,6 @@ export default function LeavePage() {
             </Card>
           </div>
 
-          {/* Filter */}
           <Card className="shadow-sm">
             <CardContent>
               <div className="flex items-center gap-4">
@@ -253,38 +249,36 @@ export default function LeavePage() {
 
           {/* Mobile card view */}
           <div className="md:hidden space-y-3">
-            {filteredRequests.length === 0 ? (
+            {requests.length === 0 ? (
               <Card className="p-4">
                 <p className="text-center text-sm text-muted-foreground">
                   Tidak ada pengajuan cuti ditemukan.
                 </p>
               </Card>
             ) : (
-              filteredRequests.map((req) => (
+              requests.map((req) => (
                 <Card key={req.id} className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-sm">{req.employeeName}</span>
+                    <span className="font-medium text-sm">
+                      {req.employee.firstName} {req.employee.lastName}
+                    </span>
                     <StatusBadge status={req.status} />
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                     <div>
                       <p className="text-[11px] text-muted-foreground">Tipe Cuti</p>
-                      <p className="font-medium">{req.leaveTypeName}</p>
+                      <p className="font-medium">{req.leaveType.name}</p>
                     </div>
                     <div>
                       <p className="text-[11px] text-muted-foreground">Jumlah</p>
-                      <p className="font-medium">{req.totalDays} hari</p>
+                      <p className="font-medium">{Number(req.totalDays)} hari</p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-[11px] text-muted-foreground">Tanggal</p>
                       <p className="font-medium">
-                        {format(new Date(req.startDate), "dd MMM", {
-                          locale: idLocale,
-                        })}{" "}
-                        &ndash;{" "}
-                        {format(new Date(req.endDate), "dd MMM yyyy", {
-                          locale: idLocale,
-                        })}
+                        {format(new Date(req.startDate), "dd MMM", { locale: idLocale })}
+                        {" "}&ndash;{" "}
+                        {format(new Date(req.endDate), "dd MMM yyyy", { locale: idLocale })}
                       </p>
                     </div>
                   </div>
@@ -310,9 +304,9 @@ export default function LeavePage() {
                       </Button>
                     </div>
                   )}
-                  {req.status !== "PENDING" && req.approvedBy && (
+                  {req.status !== "PENDING" && req.approverNote && (
                     <p className="text-xs text-muted-foreground pt-2 border-t">
-                      oleh {req.approvedBy}
+                      {req.approverNote}
                     </p>
                   )}
                 </Card>
@@ -337,33 +331,26 @@ export default function LeavePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRequests.length === 0 ? (
+                    {requests.length === 0 ? (
                       <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="h-24 text-center text-muted-foreground"
-                        >
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                           Tidak ada pengajuan cuti ditemukan.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredRequests.map((req) => (
+                      requests.map((req) => (
                         <TableRow key={req.id} className="hover:bg-muted/50">
                           <TableCell className="font-medium">
-                            {req.employeeName}
+                            {req.employee.firstName} {req.employee.lastName}
                           </TableCell>
-                          <TableCell>{req.departmentName}</TableCell>
-                          <TableCell>{req.leaveTypeName}</TableCell>
+                          <TableCell>{req.employee.department.name}</TableCell>
+                          <TableCell>{req.leaveType.name}</TableCell>
                           <TableCell>
-                            {format(new Date(req.startDate), "dd MMM", {
-                              locale: idLocale,
-                            })}{" "}
-                            &ndash;{" "}
-                            {format(new Date(req.endDate), "dd MMM yyyy", {
-                              locale: idLocale,
-                            })}
+                            {format(new Date(req.startDate), "dd MMM", { locale: idLocale })}
+                            {" "}&ndash;{" "}
+                            {format(new Date(req.endDate), "dd MMM yyyy", { locale: idLocale })}
                           </TableCell>
-                          <TableCell>{req.totalDays} hari</TableCell>
+                          <TableCell>{Number(req.totalDays)} hari</TableCell>
                           <TableCell>
                             <StatusBadge status={req.status} />
                           </TableCell>
@@ -391,9 +378,7 @@ export default function LeavePage() {
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">
-                                {req.approvedBy
-                                  ? `oleh ${req.approvedBy}`
-                                  : "\u2014"}
+                                {req.approverNote ?? "\u2014"}
                               </span>
                             )}
                           </TableCell>
@@ -407,11 +392,9 @@ export default function LeavePage() {
           </div>
         </TabsContent>
 
-        {/* ================================================================
-            TAB 2 — Saldo Cuti
-        ================================================================ */}
+        {/* TAB 2 — Saldo Cuti */}
         <TabsContent value="balances" className="space-y-4">
-          {/* Mobile card grid for leave balances */}
+          {/* Mobile card grid */}
           <div className="md:hidden space-y-3">
             {leaveBalances.length === 0 ? (
               <Card className="p-4">
@@ -432,15 +415,13 @@ export default function LeavePage() {
                   <Card key={bal.id} className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <p className="font-medium text-sm">{bal.employeeName}</p>
-                        <p className="text-xs text-muted-foreground">{bal.leaveTypeName}</p>
+                        <p className="font-medium text-sm">
+                          {bal.employee.firstName} {bal.employee.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{bal.leaveType.name}</p>
                       </div>
                       <div className="text-right">
-                        <span
-                          className={`text-lg font-bold ${
-                            remaining <= 2 ? "text-red-600" : ""
-                          }`}
-                        >
+                        <span className={`text-lg font-bold ${remaining <= 2 ? "text-red-600" : ""}`}>
                           {remaining}
                         </span>
                         <p className="text-[11px] text-muted-foreground">sisa hari</p>
@@ -508,10 +489,7 @@ export default function LeavePage() {
                   <TableBody>
                     {leaveBalances.length === 0 ? (
                       <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="h-24 text-center text-muted-foreground"
-                        >
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                           Tidak ada data saldo cuti.
                         </TableCell>
                       </TableRow>
@@ -527,18 +505,12 @@ export default function LeavePage() {
                         return (
                           <TableRow key={bal.id} className="hover:bg-muted/50">
                             <TableCell className="font-medium">
-                              {bal.employeeName}
+                              {bal.employee.firstName} {bal.employee.lastName}
                             </TableCell>
-                            <TableCell>{bal.leaveTypeName}</TableCell>
-                            <TableCell className="text-center">
-                              {bal.entitlement}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {bal.carried}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {bal.used}
-                            </TableCell>
+                            <TableCell>{bal.leaveType.name}</TableCell>
+                            <TableCell className="text-center">{bal.entitlement}</TableCell>
+                            <TableCell className="text-center">{bal.carried}</TableCell>
+                            <TableCell className="text-center">{bal.used}</TableCell>
                             <TableCell className="text-center">
                               {bal.pending > 0 ? (
                                 <Badge variant="outline" className="text-yellow-700 border-yellow-300">
@@ -550,13 +522,7 @@ export default function LeavePage() {
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="flex flex-col items-center gap-1">
-                                <span
-                                  className={
-                                    remaining <= 2
-                                      ? "font-bold text-red-600"
-                                      : "font-bold"
-                                  }
-                                >
+                                <span className={remaining <= 2 ? "font-bold text-red-600" : "font-bold"}>
                                   {remaining}
                                 </span>
                                 <div className="h-1.5 w-16 rounded-full bg-muted">
@@ -584,17 +550,13 @@ export default function LeavePage() {
           </div>
         </TabsContent>
 
-        {/* ================================================================
-            TAB 3 — Tipe Cuti
-        ================================================================ */}
+        {/* TAB 3 — Tipe Cuti */}
         <TabsContent value="types" className="space-y-4">
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Daftar Tipe Cuti</CardTitle>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger
-                  render={<Button />}
-                >
+                <DialogTrigger render={<Button />}>
                   <Plus data-icon="inline-start" />
                   Tambah Tipe Cuti
                 </DialogTrigger>
@@ -791,10 +753,7 @@ export default function LeavePage() {
                   <TableBody>
                     {types.length === 0 ? (
                       <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="h-24 text-center text-muted-foreground"
-                        >
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                           Tidak ada tipe cuti.
                         </TableCell>
                       </TableRow>
@@ -823,22 +782,16 @@ export default function LeavePage() {
                           </TableCell>
                           <TableCell className="text-center">
                             {lt.isCarryOver ? (
-                              <span className="text-sm">
-                                Maks {lt.maxCarryOver} hari
-                              </span>
+                              <span className="text-sm">Maks {lt.maxCarryOver} hari</span>
                             ) : (
-                              <span className="text-sm text-muted-foreground">
-                                Tidak
-                              </span>
+                              <span className="text-sm text-muted-foreground">Tidak</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
                             {lt.requiresDoc ? (
                               <CalendarDays className="mx-auto h-4 w-4 text-blue-600" />
                             ) : (
-                              <span className="text-sm text-muted-foreground">
-                                &mdash;
-                              </span>
+                              <span className="text-sm text-muted-foreground">&mdash;</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">

@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
-import type { CompanySettings } from "@/lib/dummy-data";
-import type { PayrollConfig } from "@/lib/dummy-data/payroll-config";
-import type { AppConfig } from "@/lib/dummy-data/app-config";
-import { useAppStore } from "@/lib/store/app-store";
+import { useCompany, useUpdateCompany, useAppConfig, useUpdateAppConfig } from "@/hooks/use-settings";
+import type { AppConfigData } from "@/hooks/use-settings";
+import type { Company } from "@prisma/client";
 import {
   Card,
   CardContent,
@@ -31,75 +30,32 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import {
-  Trash2,
-  RotateCcw,
-  Database,
-  AlertTriangle,
   Building2,
   Wallet,
   Clock,
   CalendarDays,
   ClipboardList,
   Settings,
-  Download,
-  Upload,
-  FileJson,
-  ShieldCheck,
   ImagePlus,
   X,
+  Loader2,
 } from "lucide-react";
 
 // ---------- Constants ----------
 
 const provinces = [
-  "Aceh",
-  "Bali",
-  "Banten",
-  "Bengkulu",
-  "DI Yogyakarta",
-  "DKI Jakarta",
-  "Gorontalo",
-  "Jambi",
-  "Jawa Barat",
-  "Jawa Tengah",
-  "Jawa Timur",
-  "Kalimantan Barat",
-  "Kalimantan Selatan",
-  "Kalimantan Tengah",
-  "Kalimantan Timur",
-  "Kalimantan Utara",
-  "Kepulauan Bangka Belitung",
-  "Kepulauan Riau",
-  "Lampung",
-  "Maluku",
-  "Maluku Utara",
-  "Nusa Tenggara Barat",
-  "Nusa Tenggara Timur",
-  "Papua",
-  "Papua Barat",
-  "Riau",
-  "Sulawesi Barat",
-  "Sulawesi Selatan",
-  "Sulawesi Tengah",
-  "Sulawesi Tenggara",
-  "Sulawesi Utara",
-  "Sumatera Barat",
-  "Sumatera Selatan",
-  "Sumatera Utara",
+  "Aceh", "Bali", "Banten", "Bengkulu", "DI Yogyakarta", "DKI Jakarta",
+  "Gorontalo", "Jambi", "Jawa Barat", "Jawa Tengah", "Jawa Timur",
+  "Kalimantan Barat", "Kalimantan Selatan", "Kalimantan Tengah",
+  "Kalimantan Timur", "Kalimantan Utara", "Kepulauan Bangka Belitung",
+  "Kepulauan Riau", "Lampung", "Maluku", "Maluku Utara",
+  "Nusa Tenggara Barat", "Nusa Tenggara Timur", "Papua", "Papua Barat",
+  "Riau", "Sulawesi Barat", "Sulawesi Selatan", "Sulawesi Tengah",
+  "Sulawesi Tenggara", "Sulawesi Utara", "Sumatera Barat",
+  "Sumatera Selatan", "Sumatera Utara",
 ];
 
 const WORK_DAYS_LABELS: { value: number; label: string }[] = [
@@ -142,7 +98,7 @@ type PayrollConfigForm = {
   pph21NonTaxableIncome: number;
 };
 
-function configToForm(config: PayrollConfig): PayrollConfigForm {
+function configToForm(config: AppConfigData): PayrollConfigForm {
   return {
     bpjsKesCompanyRate: String(config.bpjsKesCompanyRate * 100),
     bpjsKesEmployeeRate: String(config.bpjsKesEmployeeRate * 100),
@@ -156,7 +112,7 @@ function configToForm(config: PayrollConfig): PayrollConfigForm {
   };
 }
 
-function formToConfig(formData: PayrollConfigForm): Partial<PayrollConfig> {
+function formToConfig(formData: PayrollConfigForm): Partial<AppConfigData> {
   return {
     bpjsKesCompanyRate: parseFloat(formData.bpjsKesCompanyRate) / 100 || 0,
     bpjsKesEmployeeRate: parseFloat(formData.bpjsKesEmployeeRate) / 100 || 0,
@@ -173,6 +129,17 @@ function formToConfig(formData: PayrollConfigForm): Partial<PayrollConfig> {
 // ---------- Main Page ----------
 
 export default function SettingsPage() {
+  const { company, isLoading: compLoading } = useCompany();
+  const { config, isLoading: configLoading } = useAppConfig();
+
+  if (compLoading || configLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -217,34 +184,26 @@ export default function SettingsPage() {
             <ClipboardList className="mr-1.5 h-4 w-4" />
             Absensi
           </TabsTrigger>
-          <TabsTrigger value="sistem">
-            <Settings className="mr-1.5 h-4 w-4" />
-            Sistem
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="perusahaan">
-          <CompanyTab />
+          {company && <CompanyTab company={company} />}
         </TabsContent>
 
         <TabsContent value="penggajian">
-          <PayrollTab />
+          {company && <PayrollTab company={company} appConfig={config} />}
         </TabsContent>
 
         <TabsContent value="jam-kerja">
-          <WorkHoursTab />
+          <WorkHoursTab appConfig={config} />
         </TabsContent>
 
         <TabsContent value="cuti">
-          <LeaveTab />
+          <LeaveTab appConfig={config} />
         </TabsContent>
 
         <TabsContent value="absensi">
-          <AttendanceTab />
-        </TabsContent>
-
-        <TabsContent value="sistem">
-          <DataManagementSection />
+          <AttendanceTab appConfig={config} />
         </TabsContent>
       </Tabs>
     </div>
@@ -255,20 +214,56 @@ export default function SettingsPage() {
 // Tab 1: Perusahaan
 // =================================================================
 
-function CompanyTab() {
-  const storeSettings = useAppStore((s) => s.companySettings);
-  const updateCompanySettings = useAppStore((s) => s.updateCompanySettings);
-  const [form, setForm] = useState<CompanySettings>({ ...storeSettings });
+type CompanyForm = {
+  name: string;
+  legalName: string;
+  npwp: string;
+  address: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  phone: string;
+  email: string;
+  website: string;
+  logoUrl: string;
+};
+
+function CompanyTab({ company }: { company: Company }) {
+  const { mutate } = useCompany();
+  const updateCompany = useUpdateCompany();
+
+  const [form, setForm] = useState<CompanyForm>({
+    name: company.name,
+    legalName: company.legalName,
+    npwp: company.npwp ?? "",
+    address: company.address,
+    city: company.city,
+    province: company.province,
+    postalCode: company.postalCode ?? "",
+    phone: company.phone ?? "",
+    email: company.email ?? "",
+    website: company.website ?? "",
+    logoUrl: company.logoUrl ?? "",
+  });
+  const [saving, setSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  function handleChange(field: keyof CompanySettings, value: string | number) {
+  function handleChange(field: keyof CompanyForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    updateCompanySettings(form);
-    toast.success("Informasi perusahaan berhasil disimpan");
+    setSaving(true);
+    try {
+      await updateCompany.trigger(form);
+      await mutate();
+      toast.success("Informasi perusahaan berhasil disimpan");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -289,8 +284,6 @@ function CompanyTab() {
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
       setForm((prev) => ({ ...prev, logoUrl: dataUrl }));
-      updateCompanySettings({ logoUrl: dataUrl });
-      toast.success("Logo berhasil diperbarui");
     };
     reader.readAsDataURL(file);
 
@@ -299,8 +292,6 @@ function CompanyTab() {
 
   function handleRemoveLogo() {
     setForm((prev) => ({ ...prev, logoUrl: "" }));
-    updateCompanySettings({ logoUrl: "" });
-    toast.success("Logo berhasil dihapus");
   }
 
   return (
@@ -315,7 +306,6 @@ function CompanyTab() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-6">
-            {/* Preview */}
             <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/30">
               {form.logoUrl ? (
                 <>
@@ -337,7 +327,6 @@ function CompanyTab() {
               )}
             </div>
 
-            {/* Upload actions */}
             <div className="space-y-2">
               <input
                 ref={logoInputRef}
@@ -469,7 +458,10 @@ function CompanyTab() {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit">Simpan Pengaturan</Button>
+        <Button type="submit" disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Simpan Pengaturan
+        </Button>
       </div>
     </form>
   );
@@ -479,35 +471,45 @@ function CompanyTab() {
 // Tab 2: Penggajian
 // =================================================================
 
-function PayrollTab() {
-  const storeSettings = useAppStore((s) => s.companySettings);
-  const updateCompanySettings = useAppStore((s) => s.updateCompanySettings);
-  const payrollConfig = useAppStore((s) => s.payrollConfig);
-  const updatePayrollConfig = useAppStore((s) => s.updatePayrollConfig);
+function PayrollTab({ company, appConfig }: { company: Company; appConfig: AppConfigData }) {
+  const { mutate: mutateCompany } = useCompany();
+  const updateCompany = useUpdateCompany();
+  const { mutate: mutateConfig } = useAppConfig();
+  const updateConfig = useUpdateAppConfig();
 
-  const [form, setForm] = useState<CompanySettings>({ ...storeSettings });
+  const [umrAmount, setUmrAmount] = useState(Number(company.umrAmount));
+  const [umrRegion, setUmrRegion] = useState(company.umrRegion);
+  const [cutOffDate, setCutOffDate] = useState(String(company.cutOffDate));
+  const [payDate, setPayDate] = useState(String(company.payDate));
   const [configForm, setConfigForm] = useState<PayrollConfigForm>(() =>
-    configToForm(payrollConfig),
+    configToForm(appConfig),
   );
-
-  function handleChange(field: keyof CompanySettings, value: string | number) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
+  const [saving, setSaving] = useState(false);
 
   function handleConfigChange(field: keyof PayrollConfigForm, value: string | number) {
     setConfigForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    updateCompanySettings({
-      umrAmount: form.umrAmount,
-      umrRegion: form.umrRegion,
-      cutOffDate: form.cutOffDate,
-      payDate: form.payDate,
-    });
-    updatePayrollConfig(formToConfig(configForm));
-    toast.success("Pengaturan penggajian berhasil disimpan");
+    setSaving(true);
+    try {
+      await Promise.all([
+        updateCompany.trigger({
+          umrAmount: umrAmount as unknown as import("@prisma/client/runtime/library").Decimal,
+          umrRegion,
+          cutOffDate: parseInt(cutOffDate),
+          payDate: parseInt(payDate),
+        }),
+        updateConfig.trigger(formToConfig(configForm)),
+      ]);
+      await Promise.all([mutateCompany(), mutateConfig()]);
+      toast.success("Pengaturan penggajian berhasil disimpan");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const dateOptions = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -527,17 +529,15 @@ function PayrollTab() {
             <Label htmlFor="umrAmount">UMR</Label>
             <Input
               id="umrAmount"
-              value={formatCurrency(form.umrAmount)}
-              onChange={(e) =>
-                handleChange("umrAmount", parseCurrency(e.target.value))
-              }
+              value={formatCurrency(umrAmount)}
+              onChange={(e) => setUmrAmount(parseCurrency(e.target.value))}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="umrRegion">Wilayah UMR</Label>
             <Select
-              value={form.umrRegion}
-              onValueChange={(val) => val !== null && handleChange("umrRegion", val)}
+              value={umrRegion}
+              onValueChange={(val) => val !== null && setUmrRegion(val)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih wilayah" />
@@ -554,15 +554,15 @@ function PayrollTab() {
           <div className="space-y-2">
             <Label htmlFor="cutOffDate">Tanggal Cut Off</Label>
             <Select
-              value={form.cutOffDate}
-              onValueChange={(val) => val !== null && handleChange("cutOffDate", val)}
+              value={cutOffDate}
+              onValueChange={(val) => val !== null && setCutOffDate(val)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih tanggal" />
               </SelectTrigger>
               <SelectContent>
                 {dateOptions.map((d) => (
-                  <SelectItem key={d} value={d}>
+                  <SelectItem key={d} value={String(d)}>
                     Tanggal {d}
                   </SelectItem>
                 ))}
@@ -572,15 +572,15 @@ function PayrollTab() {
           <div className="space-y-2">
             <Label htmlFor="payDate">Tanggal Gajian</Label>
             <Select
-              value={form.payDate}
-              onValueChange={(val) => val !== null && handleChange("payDate", val)}
+              value={payDate}
+              onValueChange={(val) => val !== null && setPayDate(val)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih tanggal" />
               </SelectTrigger>
               <SelectContent>
                 {dateOptions.map((d) => (
-                  <SelectItem key={d} value={d}>
+                  <SelectItem key={d} value={String(d)}>
                     Tanggal {d}
                   </SelectItem>
                 ))}
@@ -817,7 +817,10 @@ function PayrollTab() {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit">Simpan Pengaturan</Button>
+        <Button type="submit" disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Simpan Pengaturan
+        </Button>
       </div>
     </form>
   );
@@ -827,13 +830,13 @@ function PayrollTab() {
 // Tab 3: Jam Kerja
 // =================================================================
 
-function WorkHoursTab() {
-  const appConfig = useAppStore((s) => s.appConfig);
-  const updateAppConfig = useAppStore((s) => s.updateAppConfig);
+function WorkHoursTab({ appConfig }: { appConfig: AppConfigData }) {
+  const { mutate } = useAppConfig();
+  const updateConfig = useUpdateAppConfig();
 
   const [form, setForm] = useState<
     Pick<
-      AppConfig,
+      AppConfigData,
       | "defaultStartTime"
       | "defaultEndTime"
       | "lateToleranceMinutes"
@@ -853,6 +856,7 @@ function WorkHoursTab() {
     minOvertimeMinutes: appConfig.minOvertimeMinutes,
     maxOvertimeHoursPerDay: appConfig.maxOvertimeHoursPerDay,
   });
+  const [saving, setSaving] = useState(false);
 
   function toggleWorkDay(day: number) {
     setForm((prev) => {
@@ -864,15 +868,22 @@ function WorkHoursTab() {
     });
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    updateAppConfig(form);
-    toast.success("Konfigurasi jam kerja berhasil disimpan");
+    setSaving(true);
+    try {
+      await updateConfig.trigger(form);
+      await mutate();
+      toast.success("Konfigurasi jam kerja berhasil disimpan");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Konfigurasi Jam Kerja */}
       <Card>
         <CardHeader>
           <CardTitle>Konfigurasi Jam Kerja</CardTitle>
@@ -961,7 +972,6 @@ function WorkHoursTab() {
         </CardContent>
       </Card>
 
-      {/* Konfigurasi Overtime */}
       <Card>
         <CardHeader>
           <CardTitle>Konfigurasi Overtime</CardTitle>
@@ -1028,7 +1038,10 @@ function WorkHoursTab() {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit">Simpan Pengaturan</Button>
+        <Button type="submit" disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Simpan Pengaturan
+        </Button>
       </div>
     </form>
   );
@@ -1038,13 +1051,13 @@ function WorkHoursTab() {
 // Tab 4: Cuti
 // =================================================================
 
-function LeaveTab() {
-  const appConfig = useAppStore((s) => s.appConfig);
-  const updateAppConfig = useAppStore((s) => s.updateAppConfig);
+function LeaveTab({ appConfig }: { appConfig: AppConfigData }) {
+  const { mutate } = useAppConfig();
+  const updateConfig = useUpdateAppConfig();
 
   const [form, setForm] = useState<
     Pick<
-      AppConfig,
+      AppConfigData,
       | "annualLeaveEntitlement"
       | "leaveWaitingPeriodMonths"
       | "maxCarryOverDays"
@@ -1066,23 +1079,28 @@ function LeaveTab() {
     bereavementLeaveDays: appConfig.bereavementLeaveDays,
     sickWithoutNoteDays: appConfig.sickWithoutNoteDays,
   });
+  const [saving, setSaving] = useState(false);
 
-  function handleNumberChange(
-    field: keyof typeof form,
-    value: string,
-  ) {
+  function handleNumberChange(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: parseInt(value) || 0 }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    updateAppConfig(form);
-    toast.success("Kebijakan cuti berhasil disimpan");
+    setSaving(true);
+    try {
+      await updateConfig.trigger(form);
+      await mutate();
+      toast.success("Kebijakan cuti berhasil disimpan");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Kebijakan Cuti */}
       <Card>
         <CardHeader>
           <CardTitle>Kebijakan Cuti</CardTitle>
@@ -1140,7 +1158,6 @@ function LeaveTab() {
         </CardContent>
       </Card>
 
-      {/* Cuti Khusus */}
       <Card>
         <CardHeader>
           <CardTitle>Cuti Khusus (Default Hari)</CardTitle>
@@ -1231,7 +1248,10 @@ function LeaveTab() {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit">Simpan Pengaturan</Button>
+        <Button type="submit" disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Simpan Pengaturan
+        </Button>
       </div>
     </form>
   );
@@ -1241,13 +1261,13 @@ function LeaveTab() {
 // Tab 5: Absensi
 // =================================================================
 
-function AttendanceTab() {
-  const appConfig = useAppStore((s) => s.appConfig);
-  const updateAppConfig = useAppStore((s) => s.updateAppConfig);
+function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
+  const { mutate } = useAppConfig();
+  const updateConfig = useUpdateAppConfig();
 
   const [form, setForm] = useState<
     Pick<
-      AppConfig,
+      AppConfigData,
       "attendanceMethod" | "gpsRadiusMeters" | "autoCheckoutTime" | "allowOutOfSchedule"
     >
   >({
@@ -1256,11 +1276,20 @@ function AttendanceTab() {
     autoCheckoutTime: appConfig.autoCheckoutTime,
     allowOutOfSchedule: appConfig.allowOutOfSchedule,
   });
+  const [saving, setSaving] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    updateAppConfig(form);
-    toast.success("Konfigurasi absensi berhasil disimpan");
+    setSaving(true);
+    try {
+      await updateConfig.trigger(form);
+      await mutate();
+      toast.success("Konfigurasi absensi berhasil disimpan");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -1282,7 +1311,7 @@ function AttendanceTab() {
                   val !== null &&
                   setForm((prev) => ({
                     ...prev,
-                    attendanceMethod: val as AppConfig["attendanceMethod"],
+                    attendanceMethod: val as AppConfigData["attendanceMethod"],
                   }))
                 }
               >
@@ -1352,424 +1381,11 @@ function AttendanceTab() {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit">Simpan Pengaturan</Button>
+        <Button type="submit" disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Simpan Pengaturan
+        </Button>
       </div>
     </form>
-  );
-}
-
-// =================================================================
-// Tab 6: Sistem (Data Management)
-// =================================================================
-
-// ---------- Backup/Restore helpers ----------
-
-const BACKUP_VERSION = 1;
-const STORE_KEY = "hris-app-store";
-
-type BackupFile = {
-  _meta: {
-    version: number;
-    appName: string;
-    createdAt: string;
-    description: string;
-  };
-  state: Record<string, unknown>;
-};
-
-function createBackupPayload(description: string): BackupFile {
-  const raw = localStorage.getItem(STORE_KEY);
-  if (!raw) throw new Error("Store data tidak ditemukan di localStorage");
-  const parsed = JSON.parse(raw);
-  return {
-    _meta: {
-      version: BACKUP_VERSION,
-      appName: "HRIS",
-      createdAt: new Date().toISOString(),
-      description,
-    },
-    state: parsed.state ?? parsed,
-  };
-}
-
-function validateBackupFile(data: unknown): data is BackupFile {
-  if (typeof data !== "object" || data === null) return false;
-  const obj = data as Record<string, unknown>;
-  if (typeof obj._meta !== "object" || obj._meta === null) return false;
-  const meta = obj._meta as Record<string, unknown>;
-  if (meta.appName !== "HRIS") return false;
-  if (typeof meta.version !== "number") return false;
-  if (typeof obj.state !== "object" || obj.state === null) return false;
-  return true;
-}
-
-function downloadJson(payload: BackupFile) {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const timeStr = new Date().toTimeString().slice(0, 5).replace(":", "");
-  const filename = `hris-backup-${dateStr}-${timeStr}.json`;
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-// ---------- DataManagementSection ----------
-
-function DataManagementSection() {
-  const isUsingDemoData = useAppStore((s) => s.isUsingDemoData);
-  const resetAllData = useAppStore((s) => s.resetAllData);
-  const restoreDemoData = useAppStore((s) => s.restoreDemoData);
-  const employees = useAppStore((s) => s.employees);
-  const departments = useAppStore((s) => s.departments);
-
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [restoreBackupDialogOpen, setRestoreBackupDialogOpen] = useState(false);
-  const [backupDesc, setBackupDesc] = useState("");
-  const [restorePreview, setRestorePreview] = useState<BackupFile | null>(null);
-  const [restoreError, setRestoreError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  function handleReset() {
-    resetAllData();
-    setResetDialogOpen(false);
-    toast.success("Semua data berhasil dihapus");
-  }
-
-  function handleRestore() {
-    restoreDemoData();
-    setRestoreDialogOpen(false);
-    toast.success("Data demo berhasil dimuat");
-  }
-
-  const handleBackup = useCallback(() => {
-    try {
-      const payload = createBackupPayload(backupDesc || "Manual backup");
-      downloadJson(payload);
-      setBackupDesc("");
-      toast.success("Backup berhasil diunduh");
-    } catch {
-      toast.error("Gagal membuat backup");
-    }
-  }, [backupDesc]);
-
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setRestoreError("");
-    setRestorePreview(null);
-
-    if (!file.name.endsWith(".json")) {
-      setRestoreError("File harus berformat JSON");
-      return;
-    }
-
-    if (file.size > 50 * 1024 * 1024) {
-      setRestoreError("Ukuran file terlalu besar (maks 50MB)");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (!validateBackupFile(parsed)) {
-          setRestoreError("File bukan backup HRIS yang valid");
-          return;
-        }
-        setRestorePreview(parsed);
-        setRestoreBackupDialogOpen(true);
-      } catch {
-        setRestoreError("File JSON tidak valid");
-      }
-    };
-    reader.readAsText(file);
-  }, []);
-
-  const handleRestoreBackup = useCallback(() => {
-    if (!restorePreview) return;
-    try {
-      // Write directly to localStorage in the Zustand persist format
-      const currentRaw = localStorage.getItem(STORE_KEY);
-      const currentParsed = currentRaw ? JSON.parse(currentRaw) : {};
-      const newData = {
-        ...currentParsed,
-        state: {
-          ...restorePreview.state,
-          isUsingDemoData: false,
-          hasBeenInitialized: true,
-        },
-      };
-      localStorage.setItem(STORE_KEY, JSON.stringify(newData));
-
-      // Reload to pick up the new state
-      setRestoreBackupDialogOpen(false);
-      setRestorePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      toast.success("Data berhasil di-restore dari backup. Halaman akan dimuat ulang...");
-      setTimeout(() => window.location.reload(), 1000);
-    } catch {
-      toast.error("Gagal me-restore data dari backup");
-    }
-  }, [restorePreview]);
-
-  const activeEmps = employees.filter((e) => !e.isDeleted).length;
-  const activeDepts = departments.filter((d) => d.isActive).length;
-
-  return (
-    <div className="space-y-6">
-      {/* Backup & Restore */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Backup & Restore</CardTitle>
-          </div>
-          <CardDescription>
-            Simpan salinan data HRIS ke file JSON, atau pulihkan dari file backup sebelumnya.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {/* Current data summary */}
-          <div className="rounded-lg border bg-muted/30 p-4">
-            <p className="text-sm font-medium mb-2">Ringkasan Data Saat Ini</p>
-            <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground sm:grid-cols-4">
-              <div>
-                <span className="font-medium text-foreground">{activeEmps}</span> Karyawan
-              </div>
-              <div>
-                <span className="font-medium text-foreground">{activeDepts}</span> Departemen
-              </div>
-              <div>
-                <span className="font-medium text-foreground">
-                  {isUsingDemoData ? "Demo" : "Custom"}
-                </span> Mode
-              </div>
-              <div>
-                <FileJson className="mr-1 inline h-3.5 w-3.5" />
-                localStorage
-              </div>
-            </div>
-          </div>
-
-          {/* Backup section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              <Download className="h-4 w-4 text-emerald-600" />
-              Backup Data
-            </h3>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="backup-desc" className="text-xs text-muted-foreground">
-                  Deskripsi (opsional)
-                </Label>
-                <Input
-                  id="backup-desc"
-                  placeholder="Contoh: Sebelum reset data, Data akhir bulan..."
-                  value={backupDesc}
-                  onChange={(e) => setBackupDesc((e.target as HTMLInputElement).value)}
-                />
-              </div>
-              <Button onClick={handleBackup} className="shrink-0">
-                <Download className="mr-1.5 h-4 w-4" />
-                Download Backup
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Restore section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              <Upload className="h-4 w-4 text-blue-600" />
-              Restore dari Backup
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Pilih file backup JSON HRIS untuk mengembalikan data. Data saat ini akan ditimpa.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                className="hidden"
-                onChange={handleFileSelect}
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="mr-1.5 h-4 w-4" />
-                Pilih File Backup
-              </Button>
-              {restoreError && (
-                <p className="text-sm text-destructive flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                  {restoreError}
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Restore Backup Confirmation Dialog */}
-      <Dialog open={restoreBackupDialogOpen} onOpenChange={setRestoreBackupDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                <Upload className="h-4 w-4 text-blue-600" />
-              </div>
-              <DialogTitle>Restore dari Backup</DialogTitle>
-            </div>
-            <DialogDescription>
-              Data saat ini akan ditimpa dengan data dari file backup.
-            </DialogDescription>
-          </DialogHeader>
-          {restorePreview && (
-            <div className="rounded-lg border bg-muted/30 p-4 text-sm space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tanggal backup</span>
-                <span className="font-medium">
-                  {new Date(restorePreview._meta.createdAt).toLocaleString("id-ID")}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Deskripsi</span>
-                <span className="font-medium">{restorePreview._meta.description}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Versi</span>
-                <span className="font-medium">v{restorePreview._meta.version}</span>
-              </div>
-              {Array.isArray(restorePreview.state.employees) && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Karyawan</span>
-                  <span className="font-medium">
-                    {restorePreview.state.employees.length} data
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <DialogClose
-              render={<Button variant="outline" />}
-            >
-              Batal
-            </DialogClose>
-            <Button onClick={handleRestoreBackup}>
-              <Upload className="mr-1.5 h-4 w-4" />
-              Ya, Restore Sekarang
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Data Management (existing) */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Manajemen Data</CardTitle>
-          </div>
-          <CardDescription>
-            Hapus semua data untuk memulai dari awal, atau muat ulang data demo.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Status */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Status saat ini:</span>
-            {isUsingDemoData ? (
-              <Badge variant="secondary">Menggunakan data demo</Badge>
-            ) : (
-              <Badge variant="outline">Data kosong (fresh start)</Badge>
-            )}
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-3">
-            {/* Hapus Semua Data */}
-            <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-              <DialogTrigger
-                render={
-                  <Button variant="destructive" size="lg">
-                    <Trash2 className="mr-1.5 h-4 w-4" data-icon="inline-start" />
-                    Hapus Semua Data
-                  </Button>
-                }
-              />
-              <DialogContent>
-                <DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                    </div>
-                    <DialogTitle>Hapus Semua Data</DialogTitle>
-                  </div>
-                  <DialogDescription>
-                    Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak
-                    dapat dibatalkan. Disarankan untuk membuat backup terlebih dahulu.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <DialogClose
-                    render={<Button variant="outline" />}
-                  >
-                    Batal
-                  </DialogClose>
-                  <Button variant="destructive" onClick={handleReset}>
-                    Ya, Hapus Semua
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Muat Data Demo */}
-            <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
-              <DialogTrigger
-                render={
-                  <Button variant="secondary" size="lg">
-                    <RotateCcw className="mr-1.5 h-4 w-4" data-icon="inline-start" />
-                    Muat Data Demo
-                  </Button>
-                }
-              />
-              <DialogContent>
-                <DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                      <RotateCcw className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <DialogTitle>Muat Data Demo</DialogTitle>
-                  </div>
-                  <DialogDescription>
-                    Ini akan mengganti semua data saat ini dengan data demo.
-                    Lanjutkan?
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <DialogClose
-                    render={<Button variant="outline" />}
-                  >
-                    Batal
-                  </DialogClose>
-                  <Button onClick={handleRestore}>Ya, Muat Data Demo</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
   );
 }

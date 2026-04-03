@@ -4,16 +4,32 @@ import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import { fetcher, apiClient } from "@/lib/api-client";
 import type { Attendance, OvertimeRequest } from "@prisma/client";
-import type { ApiResponse } from "@/types/api";
 import type { CheckInInput, CheckOutInput, OvertimeRequestInput } from "@/lib/validators/attendance";
 
 type AttendanceWithEmployee = Attendance & {
   employee: { id: string; firstName: string; lastName: string; employeeNumber: string };
 };
 
+type OvertimeWithRelations = OvertimeRequest & {
+  employee: { id: string; firstName: string; lastName: string; employeeNumber: string };
+  approvedBy: { id: string; firstName: string; lastName: string } | null;
+};
+
+type PaginationMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 type AttendanceListResponse = {
   records: AttendanceWithEmployee[];
-  meta: ApiResponse["meta"];
+  meta: PaginationMeta;
+};
+
+type OvertimeListResponse = {
+  requests: OvertimeWithRelations[];
+  meta: PaginationMeta;
 };
 
 function buildQuery(params: Record<string, string | number | undefined>): string {
@@ -78,7 +94,7 @@ export function useOvertimeRequests(params: {
   status?: string;
 } = {}) {
   const query = buildQuery(params);
-  const { data, error, isLoading, mutate } = useSWR<{ requests: OvertimeRequest[]; meta: ApiResponse["meta"] }>(
+  const { data, error, isLoading, mutate } = useSWR<OvertimeListResponse>(
     `/api/attendance/overtime${query}`,
     fetcher
   );
@@ -96,7 +112,7 @@ async function createOvertime(
   url: string,
   { arg }: { arg: OvertimeRequestInput }
 ) {
-  return apiClient<OvertimeRequest>(url, { method: "POST", body: arg });
+  return apiClient<OvertimeWithRelations>(url, { method: "POST", body: arg });
 }
 
 export function useCreateOvertime() {

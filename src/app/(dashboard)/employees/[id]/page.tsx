@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -18,17 +17,18 @@ import {
   Shield,
   Landmark,
   Contact,
+  Loader2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/lib/store/app-store";
+import { useEmployee } from "@/hooks/use-employees";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const GENDER_LABELS: Record<string, string> = {
@@ -89,7 +89,7 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | Date): string {
   return format(new Date(dateStr), "dd MMMM yyyy", { locale: idLocale });
 }
 
@@ -123,12 +123,15 @@ function SectionHeader({
 
 export default function EmployeeDetailPage() {
   const params = useParams<{ id: string }>();
-  const employees = useAppStore((s) => s.employees);
+  const { employee, isLoading } = useEmployee(params.id);
 
-  const employee = useMemo(
-    () => employees.find((emp) => emp.id === params.id && !emp.isDeleted),
-    [employees, params.id],
-  );
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!employee) {
     return (
@@ -146,20 +149,33 @@ export default function EmployeeDetailPage() {
   }
 
   const fullName = `${employee.firstName} ${employee.lastName}`;
+  const departmentName = employee.department.name;
+  const positionName = employee.position.name;
+  const managerName = employee.manager
+    ? `${employee.manager.firstName} ${employee.manager.lastName}`
+    : null;
+
+  // Extract salary components
+  const salaryComponents = (employee as Record<string, unknown>).salaryComponents as
+    | Array<{ amount: unknown; component: { name: string; code: string; type: string } }>
+    | undefined;
+
+  const getSalaryAmount = (code: string): number => {
+    const comp = salaryComponents?.find((sc) => sc.component.code === code);
+    return comp ? Number(comp.amount) : 0;
+  };
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Back button */}
       <Link href="/employees" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
         <ArrowLeft data-icon="inline-start" />
         Kembali
       </Link>
 
-      {/* Profile header with gradient banner */}
+      {/* Profile header */}
       <Card className="overflow-hidden">
         <div className="h-20 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 sm:h-28" />
         <CardContent className="relative pb-6">
-          {/* Mobile: centered avatar + stacked layout */}
           <div className="-mt-10 mb-3 flex flex-col items-center sm:-mt-14 sm:mb-4 sm:flex-row sm:items-end sm:gap-4">
             <Avatar className="size-20 border-4 border-background shadow-lg sm:size-24">
               <AvatarFallback className="text-xl font-semibold bg-primary text-primary-foreground sm:text-2xl">
@@ -167,7 +183,6 @@ export default function EmployeeDetailPage() {
               </AvatarFallback>
             </Avatar>
 
-            {/* Desktop: name beside avatar */}
             <div className="hidden sm:block sm:pb-1">
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-2xl font-bold tracking-tight">{fullName}</h1>
@@ -180,7 +195,6 @@ export default function EmployeeDetailPage() {
             </div>
           </div>
 
-          {/* Mobile: centered name + badges */}
           <div className="flex flex-col items-center text-center sm:hidden">
             <h1 className="text-xl font-bold tracking-tight">{fullName}</h1>
             <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
@@ -192,15 +206,14 @@ export default function EmployeeDetailPage() {
             </p>
           </div>
 
-          {/* Contact info row */}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-muted-foreground sm:justify-start sm:gap-x-5">
             <span className="flex items-center gap-1.5">
               <Briefcase className="size-4" />
-              {employee.positionName}
+              {positionName}
             </span>
             <span className="flex items-center gap-1.5">
               <Building2 className="size-4" />
-              {employee.departmentName}
+              {departmentName}
             </span>
             <span className="flex items-center gap-1.5">
               <Mail className="size-4" />
@@ -212,7 +225,6 @@ export default function EmployeeDetailPage() {
             </span>
           </div>
 
-          {/* Quick info pills - scrollable on mobile */}
           <div className="mt-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <div className="flex gap-2 sm:flex-wrap">
               <Badge variant="secondary" className="shrink-0 gap-1.5 px-3 py-1 text-xs font-normal">
@@ -221,18 +233,17 @@ export default function EmployeeDetailPage() {
               </Badge>
               <Badge variant="secondary" className="shrink-0 gap-1.5 px-3 py-1 text-xs font-normal">
                 <Building2 className="size-3" />
-                {employee.departmentName}
+                {departmentName}
               </Badge>
               <Badge variant="secondary" className="shrink-0 gap-1.5 px-3 py-1 text-xs font-normal">
                 <Briefcase className="size-3" />
-                {employee.positionName}
+                {positionName}
               </Badge>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabs */}
       <Tabs defaultValue="pribadi">
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="pribadi" className="flex-1 sm:flex-initial">Informasi Pribadi</TabsTrigger>
@@ -240,7 +251,6 @@ export default function EmployeeDetailPage() {
           <TabsTrigger value="keuangan" className="flex-1 sm:flex-initial">Keuangan & Pajak</TabsTrigger>
         </TabsList>
 
-        {/* Tab: Informasi Pribadi */}
         <TabsContent value="pribadi">
           <Card>
             <CardHeader>
@@ -255,7 +265,7 @@ export default function EmployeeDetailPage() {
                   value={`${employee.placeOfBirth}, ${formatDate(employee.dateOfBirth)}`}
                 />
                 <InfoItem label="Jenis Kelamin" value={GENDER_LABELS[employee.gender]} />
-                <InfoItem label="Agama" value={RELIGION_LABELS[employee.religion] ?? employee.religion} />
+                <InfoItem label="Agama" value={RELIGION_LABELS[employee.religion ?? ""] ?? employee.religion} />
                 <InfoItem label="Status Pernikahan" value={MARITAL_STATUS_LABELS[employee.maritalStatus]} />
                 <InfoItem label="Jumlah Tanggungan" value={String(employee.dependents)} />
               </div>
@@ -283,7 +293,6 @@ export default function EmployeeDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Tab: Kepegawaian */}
         <TabsContent value="kepegawaian">
           <Card>
             <CardHeader>
@@ -293,9 +302,9 @@ export default function EmployeeDetailPage() {
               <SectionHeader icon={Briefcase} title="Jabatan & Penempatan" />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                 <InfoItem label="No. Karyawan" value={employee.employeeNumber} />
-                <InfoItem label="Departemen" value={employee.departmentName} />
-                <InfoItem label="Jabatan" value={employee.positionName} />
-                <InfoItem label="Atasan Langsung" value={employee.managerName ?? "-"} />
+                <InfoItem label="Departemen" value={departmentName} />
+                <InfoItem label="Jabatan" value={positionName} />
+                <InfoItem label="Atasan Langsung" value={managerName ?? "-"} />
                 <InfoItem label="Status" value={employee.status} />
                 <InfoItem label="Tipe Kepegawaian" value={TYPE_LABELS[employee.type] ?? employee.type} />
                 <InfoItem label="Tanggal Masuk" value={formatDate(employee.joinDate)} />
@@ -311,17 +320,16 @@ export default function EmployeeDetailPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                 <InfoItem label="Status PTKP" value={PTKP_LABELS[employee.ptkpStatus] ?? employee.ptkpStatus} />
                 <InfoItem label="Metode Pajak" value={TAX_METHOD_LABELS[employee.taxMethod] ?? employee.taxMethod} />
-                <InfoItem label="Gaji Pokok" value={formatCurrency(employee.basicSalary)} />
-                <InfoItem label="Tunj. Transport" value={formatCurrency(employee.allowanceTransport ?? 0)} />
-                <InfoItem label="Tunj. Makan" value={formatCurrency(employee.allowanceMeal ?? 0)} />
-                <InfoItem label="Tunj. Jabatan" value={formatCurrency(employee.allowancePosition ?? 0)} />
-                <InfoItem label="Tunj. Lainnya" value={formatCurrency(employee.allowanceOther ?? 0)} />
+                <InfoItem label="Gaji Pokok" value={formatCurrency(getSalaryAmount("BASIC"))} />
+                <InfoItem label="Tunj. Transport" value={formatCurrency(getSalaryAmount("TRANSPORT"))} />
+                <InfoItem label="Tunj. Makan" value={formatCurrency(getSalaryAmount("MEAL"))} />
+                <InfoItem label="Tunj. Jabatan" value={formatCurrency(getSalaryAmount("POSITION"))} />
+                <InfoItem label="Tunj. Lainnya" value={formatCurrency(getSalaryAmount("OTHER"))} />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab: Keuangan & Pajak */}
         <TabsContent value="keuangan">
           <Card>
             <CardHeader>

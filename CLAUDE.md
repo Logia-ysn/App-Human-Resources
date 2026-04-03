@@ -4,14 +4,13 @@
 
 Aplikasi HRIS lengkap berbasis Next.js 16 untuk manajemen SDM: Employee, Attendance, Leave, Payroll, Performance, Recruitment, Training, Onboarding, Lifecycle, Expenses, Shifts, dan Employee Self-Service (ESS).
 
-**Current mode**: Demo (localStorage + Zustand, tanpa database)
-**Target**: Production-ready dengan PostgreSQL + Prisma
+**Current mode**: Production (PostgreSQL + Prisma + SWR)
 
 ## Tech Stack
 
 - **Framework**: Next.js 16.2.1 (App Router, Server Components)
 - **UI**: React 19, Base-UI 1.3, Tailwind CSS 4, shadcn/ui
-- **State**: Zustand 5 (localStorage persistence)
+- **Data Fetching**: SWR 2 (client-side caching + revalidation)
 - **Forms**: React Hook Form 7 + Zod 4
 - **Auth**: Auth.js 5 (NextAuth beta 30) — Credentials provider, JWT
 - **Database**: Prisma 6.19 + PostgreSQL
@@ -54,7 +53,7 @@ src/
 │   │   ├── notifications/     # Notification center
 │   │   ├── settings/          # Settings & data management
 │   │   └── ess/               # Employee Self-Service (8 sub-modules)
-│   └── api/auth/              # Auth.js API routes
+│   └── api/                   # REST API routes (auth, employees, leave, attendance, etc.)
 ├── components/
 │   ├── ui/                    # shadcn/ui base components
 │   ├── layout/                # Sidebar, header
@@ -62,9 +61,10 @@ src/
 ├── lib/
 │   ├── auth.ts                # Auth.js config
 │   ├── db.ts                  # Prisma client
-│   ├── store/app-store.ts     # Zustand store (all state)
-│   ├── utils/                 # Constants, format, permissions
-│   └── dummy-data/            # Demo data (18+ files)
+│   ├── api-client.ts          # SWR fetcher + API client
+│   ├── api-guard.ts           # Role-based API route guard
+│   ├── validators/            # Zod schemas for API validation
+│   └── utils/                 # Constants, format, permissions
 ├── types/api.ts               # API type definitions
 ├── hooks/                     # Custom React hooks
 └── middleware.ts              # Auth middleware
@@ -78,7 +78,7 @@ prisma/
 ### Code Style
 - **Language**: Indonesian for UI labels/docs, English for code (variable names, comments)
 - **Components**: Functional components with TypeScript
-- **State**: Zustand store di `lib/store/app-store.ts` — semua module share satu store
+- **Data**: SWR hooks di `hooks/use-*.ts` — fetch dari API routes
 - **Styling**: Tailwind CSS utility classes, cn() helper untuk merge
 - **Forms**: React Hook Form + Zod schema validation
 - **Tables**: TanStack React Table dengan shared `DataTable` component
@@ -87,19 +87,20 @@ prisma/
 ### File Naming
 - Pages: `page.tsx` (Next.js App Router convention)
 - Components: `kebab-case.tsx` (e.g., `data-table.tsx`, `stat-card.tsx`)
-- Utilities: `kebab-case.ts` (e.g., `dummy-data/employees.ts`)
+- Utilities: `kebab-case.ts` (e.g., `utils/permissions.ts`)
 
 ### Auth & Roles
 4 roles: `SUPER_ADMIN`, `HR_ADMIN`, `MANAGER`, `EMPLOYEE`
-- Demo credentials hardcoded di `lib/auth.ts`
+- Credentials provider authenticates against PostgreSQL (User table)
 - Middleware protects all `(dashboard)` routes
 - Permission check via `lib/utils/permissions.ts`
 
-### Data Pattern (Demo Mode)
-- Dummy data di `lib/dummy-data/*.ts`
-- Zustand store loads dummy data as initial state
-- localStorage persistence via Zustand `persist` middleware
-- Reset/restore via Settings page
+### Data Pattern (Production)
+- API routes di `app/api/` — Prisma + PostgreSQL
+- SWR hooks di `hooks/use-*.ts` — fetcher + mutation
+- API response envelope: `{ success, data, error, meta? }`
+- Role-based access via `apiGuard()` middleware
+- Zod validation pada semua API input
 
 ## Commands
 

@@ -15,7 +15,19 @@ import {
   Area,
   AreaChart,
 } from "recharts";
-import type { AttendanceTrendPoint, LeaveDistribution } from "@/lib/dummy-data";
+type AttendanceTrendPoint = {
+  date: string;
+  hadir: number;
+  terlambat: number;
+  tidakHadir: number;
+  cuti: number;
+};
+
+type LeaveDistribution = {
+  name: string;
+  value: number;
+  color: string;
+};
 
 const CHART_COLORS = {
   blue: "#3B82F6",
@@ -118,6 +130,8 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
     </div>
   );
 }
+
+export type { AttendanceTrendPoint, LeaveDistribution };
 
 type LeaveChartProps = {
   readonly data: readonly LeaveDistribution[];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -9,16 +9,21 @@ import {
   ChevronRight,
   Eye,
   Filter,
+  Loader2,
   Pencil,
   Plus,
   Search,
   Trash2,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/lib/store/app-store";
+import { useEmployees, useDeleteEmployee } from "@/hooks/use-employees";
+import { useDepartments } from "@/hooks/use-departments";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { useAuth } from "@/components/providers/auth-context";
+import { hasMinRole } from "@/lib/utils/permissions";
 
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -60,11 +65,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
-
-import type { Employee } from "@/lib/dummy-data";
-import { useAuth } from "@/components/providers/auth-context";
-import { hasMinRole } from "@/lib/utils/permissions";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -111,59 +111,49 @@ function activeFilterCount(
 export default function EmployeesPage() {
   const { role } = useAuth();
   const canEdit = hasMinRole(role, "HR_ADMIN");
-  const allEmployees = useAppStore((s) => s.employees);
-  const departments = useAppStore((s) => s.departments);
-  const deleteEmployee = useAppStore((s) => s.deleteEmployee);
+
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetName, setDeleteTargetName] = useState("");
 
-  function confirmDelete() {
-    if (!deleteTarget) return;
-    deleteEmployee(deleteTarget.id);
-    toast.success("Karyawan berhasil dihapus");
-    setDeleteTarget(null);
-  }
+  const { departments } = useDepartments();
+  const { employees, meta, isLoading, mutate } = useEmployees({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    search: search || undefined,
+    departmentId: departmentFilter !== "ALL" ? departmentFilter : undefined,
+    status: statusFilter !== "ALL" ? statusFilter : undefined,
+    type: typeFilter !== "ALL" ? typeFilter : undefined,
+  });
 
-  const activeEmployees = useMemo(
-    () => allEmployees.filter((emp) => !emp.isDeleted),
-    [allEmployees]
-  );
+  const deleteMutation = useDeleteEmployee(deleteTargetId ?? "");
 
-  const filtered = useMemo(() => {
-    const searchLower = search.toLowerCase();
-    return activeEmployees.filter((emp) => {
-      const matchesSearch =
-        searchLower === "" ||
-        `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchLower) ||
-        emp.employeeNumber.toLowerCase().includes(searchLower) ||
-        emp.email.toLowerCase().includes(searchLower);
-
-      const matchesDepartment =
-        departmentFilter === "ALL" || emp.departmentId === departmentFilter;
-
-      const matchesStatus =
-        statusFilter === "ALL" || emp.status === statusFilter;
-
-      const matchesType =
-        typeFilter === "ALL" || emp.type === typeFilter;
-
-      return matchesSearch && matchesDepartment && matchesStatus && matchesType;
-    });
-  }, [activeEmployees, search, departmentFilter, statusFilter, typeFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const total = meta?.total ?? 0;
+  const totalPages = meta?.totalPages ?? 1;
   const safePage = Math.min(currentPage, totalPages);
 
-  const paginated = useMemo(() => {
-    const start = (safePage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, safePage]);
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    try {
+      await deleteMutation.trigger();
+      toast.success("Karyawan berhasil dihapus");
+      await mutate();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menghapus";
+      toast.error(msg);
+    }
+    setDeleteTargetId(null);
+  }
 
-  // Reset page to 1 when filters change
+  function openDeleteDialog(id: string, name: string) {
+    setDeleteTargetId(id);
+    setDeleteTargetName(name);
+  }
+
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setCurrentPage(1);
@@ -184,7 +174,6 @@ export default function EmployeesPage() {
     setCurrentPage(1);
   };
 
-  // Generate page numbers for pagination
   const getPageNumbers = (): (number | "ellipsis")[] => {
     if (totalPages <= 5) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -247,6 +236,14 @@ export default function EmployeesPage() {
     </div>
   );
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Page header */}
@@ -262,7 +259,6 @@ export default function EmployeesPage() {
             </p>
           </div>
         </div>
-        {/* Desktop add button */}
         {canEdit && (
           <Link href="/employees/new" className={cn(buttonVariants(), "hidden md:inline-flex")}>
             <Plus data-icon="inline-start" />
@@ -369,7 +365,7 @@ export default function EmployeesPage() {
 
       {/* Mobile card view */}
       <div className="md:hidden">
-        {paginated.length === 0 ? (
+        {employees.length === 0 ? (
           <Card>
             <CardContent className="flex h-24 items-center justify-center text-muted-foreground">
               Tidak ada data karyawan ditemukan.
@@ -377,11 +373,10 @@ export default function EmployeesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {paginated.map((emp) => (
+            {employees.map((emp) => (
               <Link key={emp.id} href={`/employees/${emp.id}`} className="block">
                 <Card className="transition-colors hover:bg-muted/50">
                   <CardContent className="p-4">
-                    {/* Top: avatar + name + email */}
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarFallback className="text-xs">
@@ -398,17 +393,15 @@ export default function EmployeesPage() {
                       </div>
                     </div>
 
-                    {/* Middle: department + status badges */}
                     <div className="mt-3 flex flex-wrap items-center gap-1.5">
                       <Badge variant="secondary" className="text-[10px]">
-                        {emp.departmentName}
+                        {emp.department.name}
                       </Badge>
                       <StatusBadge status={emp.status} />
                     </div>
 
-                    {/* Bottom: position + join date */}
                     <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                      <span className="truncate">{emp.positionName}</span>
+                      <span className="truncate">{emp.position.name}</span>
                       <span className="shrink-0">
                         {format(new Date(emp.joinDate), "dd MMM yyyy", { locale: idLocale })}
                       </span>
@@ -438,14 +431,14 @@ export default function EmployeesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginated.length === 0 ? (
+              {employees.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                     Tidak ada data karyawan ditemukan.
                   </TableCell>
                 </TableRow>
               ) : (
-                paginated.map((emp) => (
+                employees.map((emp) => (
                   <TableRow
                     key={emp.id}
                     className="transition-colors hover:bg-muted/50 even:bg-muted/30"
@@ -470,8 +463,8 @@ export default function EmployeesPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{emp.departmentName}</TableCell>
-                    <TableCell>{emp.positionName}</TableCell>
+                    <TableCell>{emp.department.name}</TableCell>
+                    <TableCell>{emp.position.name}</TableCell>
                     <TableCell>
                       <StatusBadge status={emp.status} />
                     </TableCell>
@@ -502,7 +495,10 @@ export default function EmployeesPage() {
                             <Button
                               variant="ghost"
                               size="icon-xs"
-                              onClick={() => setDeleteTarget(emp)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openDeleteDialog(emp.id, `${emp.firstName} ${emp.lastName}`);
+                              }}
                             >
                               <Trash2 className="size-4 text-destructive" />
                               <span className="sr-only">Hapus</span>
@@ -550,9 +546,9 @@ export default function EmployeesPage() {
           {/* Desktop pagination: full */}
           <div className="hidden md:flex md:items-center md:justify-between">
             <p className="text-sm text-muted-foreground">
-              Menampilkan {filtered.length === 0 ? 0 : (safePage - 1) * ITEMS_PER_PAGE + 1}
-              &ndash;{Math.min(safePage * ITEMS_PER_PAGE, filtered.length)} dari{" "}
-              {filtered.length} karyawan
+              Menampilkan {total === 0 ? 0 : (safePage - 1) * ITEMS_PER_PAGE + 1}
+              &ndash;{Math.min(safePage * ITEMS_PER_PAGE, total)} dari{" "}
+              {total} karyawan
             </p>
             <div className="flex items-center gap-1">
               <Button
@@ -621,9 +617,9 @@ export default function EmployeesPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog
-        open={deleteTarget !== null}
+        open={deleteTargetId !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) setDeleteTargetId(null);
         }}
       >
         <DialogContent className="sm:max-w-sm">
@@ -632,15 +628,13 @@ export default function EmployeesPage() {
             <DialogDescription>
               Apakah Anda yakin ingin menghapus karyawan{" "}
               <span className="font-semibold text-foreground">
-                {deleteTarget
-                  ? `${deleteTarget.firstName} ${deleteTarget.lastName}`
-                  : ""}
+                {deleteTargetName}
               </span>
               ? Data karyawan akan ditandai sebagai dihapus.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+            <Button variant="outline" onClick={() => setDeleteTargetId(null)}>
               Batal
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>

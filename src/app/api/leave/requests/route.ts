@@ -40,7 +40,12 @@ export async function GET(req: NextRequest) {
     prisma.leaveRequest.findMany({
       where,
       include: {
-        employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } },
+        employee: {
+          select: {
+            id: true, firstName: true, lastName: true, employeeNumber: true,
+            department: { select: { id: true, name: true } },
+          },
+        },
         leaveType: { select: { id: true, name: true, code: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -50,11 +55,10 @@ export async function GET(req: NextRequest) {
     prisma.leaveRequest.count({ where }),
   ]);
 
+  const meta = { total, page, limit, totalPages: Math.ceil(total / limit) };
+
   return NextResponse.json(
-    successResponse(
-      { requests },
-      { total, page, limit, totalPages: Math.ceil(total / limit) }
-    )
+    successResponse({ requests, meta })
   );
 }
 

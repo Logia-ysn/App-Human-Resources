@@ -47,11 +47,10 @@ export async function GET(req: NextRequest) {
     prisma.employee.count({ where }),
   ]);
 
+  const meta = { total, page, limit, totalPages: Math.ceil(total / limit) };
+
   return NextResponse.json(
-    successResponse(
-      { employees },
-      { total, page, limit, totalPages: Math.ceil(total / limit) }
-    )
+    successResponse({ employees, meta })
   );
 }
 

@@ -1,29 +1,13 @@
 "use client";
 
-import { useAppStore } from "@/lib/store/app-store";
 import { useAuth } from "@/components/providers/auth-context";
-import { CATEGORY_LABELS } from "@/lib/dummy-data";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { GraduationCap, Star } from "lucide-react";
-
-const PARTICIPANT_STATUS_MAP: Record<string, string> = {
-  REGISTERED: "PENDING",
-  ATTENDED: "ACTIVE",
-  COMPLETED_TRAINING: "APPROVED",
-  ABSENT: "REJECTED",
-};
+import { Card, CardContent } from "@/components/ui/card";
+import { GraduationCap } from "lucide-react";
 
 export default function EssTrainingPage() {
-  const employees = useAppStore((s) => s.employees);
-  const trainingParticipants = useAppStore((s) => s.trainingParticipants);
   const { employeeId } = useAuth();
-  const currentEmployee = employees.find((e) => e.id === employeeId);
-  const myTrainings = trainingParticipants.filter((t) => t.employeeId === currentEmployee?.id);
 
-  if (!currentEmployee) {
+  if (!employeeId) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-2">
@@ -40,78 +24,15 @@ export default function EssTrainingPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-lg sm:text-2xl font-bold tracking-tight">Training Saya</h1>
-
-      {myTrainings.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">Belum ada training yang diikuti.</CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <GraduationCap className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>Daftar Training</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 md:hidden">
-              {myTrainings.map((t) => (
-                <div key={t.id} className="rounded-lg border p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm">{t.trainingTitle}</p>
-                    <StatusBadge status={PARTICIPANT_STATUS_MAP[t.status] || t.status} />
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>Skor: {t.score ?? "-"}</span>
-                    {t.isPassed !== null && (
-                      t.isPassed ? <Badge className="bg-green-100 text-green-800 border-0 text-xs">Lulus</Badge> : <Badge className="bg-red-100 text-red-800 border-0 text-xs">Tidak Lulus</Badge>
-                    )}
-                    {t.rating && (
-                      <div className="flex items-center gap-0.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-3 w-3 ${i < t.rating! ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Training</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Skor</TableHead>
-                    <TableHead>Lulus</TableHead>
-                    <TableHead>Rating</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {myTrainings.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-medium">{t.trainingTitle}</TableCell>
-                      <TableCell><StatusBadge status={PARTICIPANT_STATUS_MAP[t.status] || t.status} /></TableCell>
-                      <TableCell>{t.score ?? "-"}</TableCell>
-                      <TableCell>{t.isPassed === null ? "-" : t.isPassed ? <Badge className="bg-green-100 text-green-800 border-0">Lulus</Badge> : <Badge className="bg-red-100 text-red-800 border-0">Tidak Lulus</Badge>}</TableCell>
-                      <TableCell>
-                        {t.rating ? (
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star key={i} className={`h-3 w-3 ${i < t.rating! ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`} />
-                            ))}
-                          </div>
-                        ) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+          <GraduationCap className="h-12 w-12 text-muted-foreground/30 mb-4" />
+          <p className="text-lg font-semibold">Fitur Training</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Modul training sedang dalam proses migrasi ke database.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

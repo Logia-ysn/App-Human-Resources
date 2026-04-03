@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore } from "@/lib/store/app-store";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import { useAuth } from "@/components/providers/auth-context";
+import { useLeaveRequests, useLeaveTypes, useLeaveBalances, useCreateLeaveRequest } from "@/hooks/use-leave";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -25,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type LeaveFormData = {
@@ -52,32 +54,30 @@ function calculateDays(start: string, end: string): number {
 
 export default function EssLeavePage() {
   const { employeeId } = useAuth();
-  const employees = useAppStore((s) => s.employees);
-  const leaveBalances = useAppStore((s) => s.leaveBalances);
-  const leaveRequests = useAppStore((s) => s.leaveRequests);
-  const leaveTypes = useAppStore((s) => s.leaveTypes);
-  const addLeaveRequest = useAppStore((s) => s.addLeaveRequest);
 
-  const currentEmployee = employees.find((e) => e.id === employeeId);
-  const myBalances = leaveBalances.filter((b) => b.employeeId === currentEmployee?.id);
-  const myRequests = leaveRequests.filter((r) => r.employeeId === currentEmployee?.id);
+  const { requests: myRequests, isLoading: reqLoading, mutate: mutateRequests } = useLeaveRequests({
+    employeeId: employeeId ?? undefined,
+  });
+  const { leaveTypes, isLoading: typesLoading } = useLeaveTypes();
+  const { balances: myBalances, isLoading: balLoading } = useLeaveBalances({
+    employeeId: employeeId,
+  });
+  const createLeave = useCreateLeaveRequest();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<LeaveFormData>(EMPTY_LEAVE_FORM);
+  const [saving, setSaving] = useState(false);
 
   const activeLeaveTypes = leaveTypes.filter((lt) => lt.isActive);
+
+  const isLoading = reqLoading || typesLoading || balLoading;
 
   function handleOpenDialog() {
     setForm(EMPTY_LEAVE_FORM);
     setDialogOpen(true);
   }
 
-  function handleSubmit() {
-    if (!currentEmployee) {
-      toast.error("Data karyawan tidak ditemukan. Tidak dapat mengajukan cuti.");
-      return;
-    }
-
+  async function handleSubmit() {
     if (!form.leaveTypeId || !form.startDate || !form.endDate || !form.reason.trim()) {
       toast.error("Semua field wajib diisi");
       return;
@@ -89,31 +89,35 @@ export default function EssLeavePage() {
       return;
     }
 
-    const leaveType = leaveTypes.find((lt) => lt.id === form.leaveTypeId);
-    const empName = `${currentEmployee.firstName} ${currentEmployee.lastName}`;
-
-    addLeaveRequest({
-      id: `lr-${Date.now()}`,
-      employeeId: currentEmployee.id,
-      employeeName: empName,
-      departmentName: currentEmployee.departmentName ?? "",
-      leaveTypeId: form.leaveTypeId,
-      leaveTypeName: leaveType?.name ?? "",
-      startDate: form.startDate,
-      endDate: form.endDate,
-      totalDays,
-      reason: form.reason.trim(),
-      status: "PENDING",
-      createdAt: new Date().toISOString().slice(0, 10),
-      approvedBy: null,
-      approverNote: null,
-    });
-
-    toast.success("Pengajuan cuti berhasil dikirim");
-    setDialogOpen(false);
+    setSaving(true);
+    try {
+      await createLeave.trigger({
+        leaveTypeId: form.leaveTypeId,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        totalDays,
+        isHalfDay: false,
+        reason: form.reason.trim(),
+      });
+      toast.success("Pengajuan cuti berhasil dikirim");
+      setDialogOpen(false);
+      await mutateRequests();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengajukan cuti");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (!currentEmployee) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!employeeId) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-2">
@@ -141,7 +145,7 @@ export default function EssLeavePage() {
         {myBalances.map((b) => (
           <Card key={b.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{b.leaveTypeName}</CardTitle>
+              <CardTitle className="text-sm font-medium">{b.leaveType.name}</CardTitle>
               <CalendarDays className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -165,10 +169,12 @@ export default function EssLeavePage() {
               myRequests.map((r) => (
                 <div key={r.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm">{r.leaveTypeName}</p>
+                    <p className="font-medium text-sm">{r.leaveType.name}</p>
                     <StatusBadge status={r.status} />
                   </div>
-                  <p className="text-xs text-muted-foreground">{r.startDate} — {r.endDate} ({r.totalDays} hari)</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(r.startDate), "dd MMM", { locale: idLocale })} — {format(new Date(r.endDate), "dd MMM yyyy", { locale: idLocale })} ({Number(r.totalDays)} hari)
+                  </p>
                   <p className="text-xs text-muted-foreground line-clamp-2">{r.reason}</p>
                 </div>
               ))
@@ -191,9 +197,11 @@ export default function EssLeavePage() {
                 ) : (
                   myRequests.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.leaveTypeName}</TableCell>
-                      <TableCell>{r.startDate} — {r.endDate}</TableCell>
-                      <TableCell>{r.totalDays} hari</TableCell>
+                      <TableCell>{r.leaveType.name}</TableCell>
+                      <TableCell>
+                        {format(new Date(r.startDate), "dd MMM", { locale: idLocale })} — {format(new Date(r.endDate), "dd MMM yyyy", { locale: idLocale })}
+                      </TableCell>
+                      <TableCell>{Number(r.totalDays)} hari</TableCell>
                       <TableCell>{r.reason}</TableCell>
                       <TableCell><StatusBadge status={r.status} /></TableCell>
                     </TableRow>
@@ -205,7 +213,6 @@ export default function EssLeavePage() {
         </CardContent>
       </Card>
 
-      {/* Dialog Ajukan Cuti */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -285,7 +292,10 @@ export default function EssLeavePage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Batal
             </Button>
-            <Button onClick={handleSubmit}>Ajukan</Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Ajukan
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

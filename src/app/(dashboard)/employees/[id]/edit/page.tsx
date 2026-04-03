@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,7 +17,10 @@ import {
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/lib/store/app-store";
+import { useEmployee, useEmployees, useUpdateEmployee } from "@/hooks/use-employees";
+import { useDepartments } from "@/hooks/use-departments";
+import { usePositions } from "@/hooks/use-positions";
+import { Loader2 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -216,68 +219,82 @@ export default function EditEmployeePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
-  const employees = useAppStore((s) => s.employees);
-  const departments = useAppStore((s) => s.departments);
-  const positions = useAppStore((s) => s.positions);
-  const updateEmployee = useAppStore((s) => s.updateEmployee);
+  const { employee, isLoading: empLoading } = useEmployee(params.id);
+  const { departments } = useDepartments();
+  const { positions } = usePositions();
+  const { employees: allEmployees } = useEmployees({ limit: 200 });
+  const updateMutation = useUpdateEmployee(params.id);
+  const [saving, setSaving] = useState(false);
 
-  const employee = useMemo(
-    () => employees.find((e) => e.id === params.id && !e.isDeleted),
-    [employees, params.id],
-  );
+  // Extract salary components from the employee
+  const salaryComponents = (employee as Record<string, unknown> | undefined)?.salaryComponents as
+    | Array<{ amount: unknown; component: { code: string } }>
+    | undefined;
+
+  const getSalaryAmount = (code: string): number => {
+    const comp = salaryComponents?.find((sc) => sc.component.code === code);
+    return comp ? Number(comp.amount) : 0;
+  };
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [form, setForm] = useState<FormData>(() => {
-    if (!employee) {
-      return {} as FormData;
-    }
-    return {
+  const [form, setForm] = useState<FormData>({} as FormData);
+  const [formInitialized, setFormInitialized] = useState(false);
+
+  // Initialize form when employee data loads
+  if (employee && !formInitialized) {
+    const toDateStr = (d: string | Date | null) => {
+      if (!d) return "";
+      return new Date(d).toISOString().split("T")[0];
+    };
+
+    setForm({
       firstName: employee.firstName,
       lastName: employee.lastName,
       email: employee.email,
-      phone: employee.phone,
+      phone: employee.phone ?? "",
       gender: employee.gender,
-      dateOfBirth: employee.dateOfBirth,
+      dateOfBirth: toDateStr(employee.dateOfBirth),
       placeOfBirth: employee.placeOfBirth,
-      religion: employee.religion,
+      religion: employee.religion ?? "",
       maritalStatus: employee.maritalStatus,
       dependents: String(employee.dependents),
       nik: employee.nik,
-      address: employee.address,
-      city: employee.city,
-      province: employee.province,
+      address: employee.address ?? "",
+      city: employee.city ?? "",
+      province: employee.province ?? "",
       postalCode: employee.postalCode ?? "",
-      emergencyName: employee.emergencyName,
-      emergencyPhone: employee.emergencyPhone,
-      emergencyRelation: employee.emergencyRelation,
+      emergencyName: employee.emergencyName ?? "",
+      emergencyPhone: employee.emergencyPhone ?? "",
+      emergencyRelation: employee.emergencyRelation ?? "",
       departmentId: employee.departmentId,
       positionId: employee.positionId,
       managerId: employee.managerId ?? "",
       type: employee.type,
-      joinDate: employee.joinDate,
-      endDate: employee.endDate ?? "",
-      basicSalary: String(employee.basicSalary),
-      allowanceTransport: String(employee.allowanceTransport ?? 0),
-      allowanceMeal: String(employee.allowanceMeal ?? 0),
-      allowancePosition: String(employee.allowancePosition ?? 0),
-      allowanceOther: String(employee.allowanceOther ?? 0),
+      joinDate: toDateStr(employee.joinDate),
+      endDate: toDateStr(employee.endDate),
+      basicSalary: String(getSalaryAmount("BASIC")),
+      allowanceTransport: String(getSalaryAmount("TRANSPORT")),
+      allowanceMeal: String(getSalaryAmount("MEAL")),
+      allowancePosition: String(getSalaryAmount("POSITION")),
+      allowanceOther: String(getSalaryAmount("OTHER")),
       npwp: employee.npwp ?? "",
       ptkpStatus: employee.ptkpStatus,
       taxMethod: employee.taxMethod,
-      bpjsKesNumber: employee.bpjsKesNumber,
-      bpjsTkNumber: employee.bpjsTkNumber,
-      bankName: employee.bankName,
-      bankAccountNo: employee.bankAccountNo,
-      bankAccountName: employee.bankAccountName,
-    };
-  });
+      bpjsKesNumber: employee.bpjsKesNumber ?? "",
+      bpjsTkNumber: employee.bpjsTkNumber ?? "",
+      bankName: employee.bankName ?? "",
+      bankAccountNo: employee.bankAccountNo ?? "",
+      bankAccountName: employee.bankAccountName ?? "",
+    });
+    setFormInitialized(true);
+  }
 
   const filteredPositions = positions.filter(
     (p) => p.departmentId === form.departmentId && p.isActive,
   );
 
-  const activeEmployees = employees.filter(
-    (e) => e.status === "ACTIVE" && !e.isDeleted && e.id !== params.id,
+  const activeEmployees = allEmployees.filter(
+    (e) => e.status === "ACTIVE" && e.id !== params.id,
   );
 
   const showEndDate =
@@ -306,58 +323,60 @@ export default function EditEmployeePage() {
     if (currentStep > 1) setCurrentStep((prev) => prev - 1);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!employee) return;
+    setSaving(true);
 
-    const dept = departments.find((d) => d.id === form.departmentId);
-    const pos = positions.find((p) => p.id === form.positionId);
-    const manager = employees.find((e) => e.id === form.managerId);
+    try {
+      await updateMutation.trigger({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        gender: form.gender as "MALE" | "FEMALE",
+        dateOfBirth: form.dateOfBirth,
+        placeOfBirth: form.placeOfBirth,
+        religion: form.religion as "ISLAM" | "KRISTEN" | "KATOLIK" | "HINDU" | "BUDDHA" | "KONGHUCU" | "LAINNYA" | undefined,
+        maritalStatus: form.maritalStatus as "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED",
+        dependents: Number(form.dependents) || 0,
+        nik: form.nik,
+        address: form.address,
+        city: form.city,
+        province: form.province,
+        postalCode: form.postalCode,
+        emergencyName: form.emergencyName,
+        emergencyPhone: form.emergencyPhone,
+        emergencyRelation: form.emergencyRelation,
+        departmentId: form.departmentId,
+        positionId: form.positionId,
+        managerId: form.managerId || null,
+        type: form.type as "PERMANENT" | "CONTRACT" | "PROBATION" | "INTERNSHIP",
+        joinDate: form.joinDate,
+        endDate: form.endDate || null,
+        npwp: form.npwp,
+        ptkpStatus: form.ptkpStatus as never,
+        taxMethod: form.taxMethod as "GROSS" | "GROSS_UP" | "NETT",
+        bpjsKesNumber: form.bpjsKesNumber,
+        bpjsTkNumber: form.bpjsTkNumber,
+        bankName: form.bankName,
+        bankAccountNo: form.bankAccountNo,
+        bankAccountName: form.bankAccountName,
+      });
+      toast.success("Data karyawan berhasil diperbarui");
+      router.push(`/employees/${employee.id}`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-    updateEmployee(employee.id, {
-      firstName: form.firstName,
-      lastName: form.lastName,
-      email: form.email,
-      phone: form.phone,
-      gender: form.gender as "MALE" | "FEMALE",
-      dateOfBirth: form.dateOfBirth,
-      placeOfBirth: form.placeOfBirth,
-      religion: form.religion,
-      maritalStatus: form.maritalStatus as "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED",
-      dependents: Number(form.dependents) || 0,
-      nik: form.nik,
-      address: form.address,
-      city: form.city,
-      province: form.province,
-      postalCode: form.postalCode,
-      emergencyName: form.emergencyName,
-      emergencyPhone: form.emergencyPhone,
-      emergencyRelation: form.emergencyRelation,
-      departmentId: form.departmentId,
-      departmentName: dept?.name ?? employee.departmentName,
-      positionId: form.positionId,
-      positionName: pos?.name ?? employee.positionName,
-      managerId: form.managerId || null,
-      managerName: manager ? `${manager.firstName} ${manager.lastName}` : null,
-      type: form.type as "PERMANENT" | "CONTRACT" | "PROBATION" | "INTERNSHIP",
-      joinDate: form.joinDate,
-      endDate: form.endDate || null,
-      basicSalary: Number(form.basicSalary) || 0,
-      allowanceTransport: Number(form.allowanceTransport) || 0,
-      allowanceMeal: Number(form.allowanceMeal) || 0,
-      allowancePosition: Number(form.allowancePosition) || 0,
-      allowanceOther: Number(form.allowanceOther) || 0,
-      npwp: form.npwp,
-      ptkpStatus: form.ptkpStatus,
-      taxMethod: form.taxMethod as "GROSS" | "GROSS_UP" | "NETT",
-      bpjsKesNumber: form.bpjsKesNumber,
-      bpjsTkNumber: form.bpjsTkNumber,
-      bankName: form.bankName,
-      bankAccountNo: form.bankAccountNo,
-      bankAccountName: form.bankAccountName,
-    });
-
-    toast.success("Data karyawan berhasil diperbarui");
-    router.push(`/employees/${employee.id}`);
+  if (empLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   if (!employee) {
@@ -725,7 +744,7 @@ export default function EditEmployeePage() {
                     <SelectContent>
                       {activeEmployees.map((emp) => (
                         <SelectItem key={emp.id} value={emp.id}>
-                          {emp.firstName} {emp.lastName} - {emp.positionName}
+                          {emp.firstName} {emp.lastName} - {emp.position.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1035,8 +1054,8 @@ export default function EditEmployeePage() {
                 <ArrowRight data-icon="inline-end" className="size-4" />
               </Button>
             ) : (
-              <Button className="w-full sm:w-auto" onClick={handleSubmit}>
-                <Check data-icon="inline-start" className="size-4" />
+              <Button className="w-full sm:w-auto" onClick={handleSubmit} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check data-icon="inline-start" className="size-4" />}
                 Simpan Perubahan
               </Button>
             )}

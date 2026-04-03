@@ -5,16 +5,30 @@ import useSWRMutation from "swr/mutation";
 import { fetcher, apiClient } from "@/lib/api-client";
 import type { LeaveRequest, LeaveBalance, LeaveType } from "@prisma/client";
 import type { CreateLeaveRequestInput, ApproveLeaveInput } from "@/lib/validators/leave";
-import type { ApiResponse } from "@/types/api";
 
 type LeaveRequestWithRelations = LeaveRequest & {
-  employee: { id: string; firstName: string; lastName: string; employeeNumber: string };
+  employee: {
+    id: string; firstName: string; lastName: string; employeeNumber: string;
+    department: { id: string; name: string };
+  };
   leaveType: { id: string; name: string; code: string };
+};
+
+type PaginationMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 };
 
 type LeaveListResponse = {
   requests: LeaveRequestWithRelations[];
-  meta: ApiResponse["meta"];
+  meta: PaginationMeta;
+};
+
+type LeaveBalanceWithRelations = LeaveBalance & {
+  employee: { id: string; firstName: string; lastName: string; employeeNumber: string };
+  leaveType: { id: string; name: string; code: string; defaultQuota: number };
 };
 
 function buildQuery(params: Record<string, string | number | undefined>): string {
@@ -55,13 +69,17 @@ export function useLeaveTypes() {
   return { leaveTypes: data ?? [], error, isLoading };
 }
 
-export function useLeaveBalances(employeeId: string | null, year?: number) {
-  const url = employeeId
-    ? `/api/leave/balances?employeeId=${employeeId}${year ? `&year=${year}` : ""}`
-    : null;
+export function useLeaveBalances(params: {
+  employeeId?: string | null;
+  year?: number;
+} = {}) {
+  const query = buildQuery({
+    ...(params.employeeId && { employeeId: params.employeeId }),
+    ...(params.year && { year: params.year }),
+  });
 
-  const { data, error, isLoading, mutate } = useSWR<LeaveBalance[]>(
-    url,
+  const { data, error, isLoading, mutate } = useSWR<LeaveBalanceWithRelations[]>(
+    `/api/leave/balances${query}`,
     fetcher
   );
 
