@@ -33,6 +33,16 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   Building2,
   Wallet,
   Clock,
@@ -42,6 +52,10 @@ import {
   ImagePlus,
   X,
   Loader2,
+  Trash2,
+  RotateCcw,
+  Database,
+  AlertTriangle,
 } from "lucide-react";
 
 // ---------- Constants ----------
@@ -184,6 +198,10 @@ export default function SettingsPage() {
             <ClipboardList className="mr-1.5 h-4 w-4" />
             Absensi
           </TabsTrigger>
+          <TabsTrigger value="sistem">
+            <Settings className="mr-1.5 h-4 w-4" />
+            Sistem
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="perusahaan">
@@ -204,6 +222,10 @@ export default function SettingsPage() {
 
         <TabsContent value="absensi">
           <AttendanceTab appConfig={config} />
+        </TabsContent>
+
+        <TabsContent value="sistem">
+          <DataManagementSection />
         </TabsContent>
       </Tabs>
     </div>
@@ -1387,5 +1409,141 @@ function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
         </Button>
       </div>
     </form>
+  );
+}
+
+// =================================================================
+// Tab 6: Sistem (Data Management)
+// =================================================================
+
+function DataManagementSection() {
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [reseedDialogOpen, setReseedDialogOpen] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  async function handleAction(action: "reset" | "reseed") {
+    setProcessing(true);
+    try {
+      const res = await fetch("/api/settings/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Gagal");
+      }
+      toast.success(json.data.message);
+      setResetDialogOpen(false);
+      setReseedDialogOpen(false);
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Operasi gagal");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Manajemen Data</CardTitle>
+          </div>
+          <CardDescription>
+            Hapus semua data untuk memulai dari awal, atau muat ulang data demo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-3">
+            {/* Hapus Semua Data */}
+            <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+              <DialogTrigger
+                render={
+                  <Button variant="destructive" size="lg">
+                    <Trash2 className="mr-1.5 h-4 w-4" />
+                    Hapus Semua Data
+                  </Button>
+                }
+              />
+              <DialogContent>
+                <DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    </div>
+                    <DialogTitle>Hapus Semua Data</DialogTitle>
+                  </div>
+                  <DialogDescription>
+                    Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak
+                    dapat dibatalkan. Semua data karyawan, absensi, cuti, dan lainnya
+                    akan dihapus dari database.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose render={<Button variant="outline" />}>
+                    Batal
+                  </DialogClose>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleAction("reset")}
+                    disabled={processing}
+                  >
+                    {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Ya, Hapus Semua
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Muat Data Demo */}
+            <Dialog open={reseedDialogOpen} onOpenChange={setReseedDialogOpen}>
+              <DialogTrigger
+                render={
+                  <Button variant="secondary" size="lg">
+                    <RotateCcw className="mr-1.5 h-4 w-4" />
+                    Muat Data Demo
+                  </Button>
+                }
+              />
+              <DialogContent>
+                <DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                      <RotateCcw className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <DialogTitle>Muat Data Demo</DialogTitle>
+                  </div>
+                  <DialogDescription>
+                    Ini akan menghapus semua data saat ini dan menggantinya dengan
+                    data demo (perusahaan, departemen, posisi, dan akun login).
+                    Lanjutkan?
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose render={<Button variant="outline" />}>
+                    Batal
+                  </DialogClose>
+                  <Button
+                    onClick={() => handleAction("reseed")}
+                    disabled={processing}
+                  >
+                    {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Ya, Muat Data Demo
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Data demo mencakup: 1 perusahaan, 9 departemen, 15 posisi, dan 4 akun login.
+            Anda akan otomatis logout setelah reset.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
