@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import type { Role } from "@prisma/client";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const PUBLIC_ROUTES = ["/login", "/forgot-password"];
 
@@ -45,6 +46,27 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
+  // Rate limit credentials login endpoint (5 attempts per minute per IP)
+  if (
+    pathname === "/api/auth/callback/credentials" &&
+    req.method === "POST"
+  ) {
+    const ip = getClientIp(req.headers);
+    const rl = rateLimit(`login:${ip}`, 5, 60_000);
+    if (!rl.ok) {
+      return new NextResponse(
+        JSON.stringify({ success: false, data: null, error: "Terlalu banyak percobaan login. Coba lagi dalam 1 menit." }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)),
+          },
+        }
+      );
+    }
+  }
+
   // Skip public routes and API auth routes
   if (
     PUBLIC_ROUTES.some((route) => pathname.startsWith(route)) ||
@@ -67,6 +89,15 @@ export default auth((req) => {
   // Redirect root to dashboard
   if (pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  // Force password change before accessing any other page
+  if (
+    req.auth.user.mustChangePassword &&
+    pathname !== "/change-password" &&
+    !pathname.startsWith("/api/auth/change-password")
+  ) {
+    return NextResponse.redirect(new URL("/change-password", req.url));
   }
 
   // Check role-based route permissions

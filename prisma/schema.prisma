@@ -337,6 +337,7 @@ model User {
   id              String    @id @default(cuid())
   email           String    @unique
   passwordHash    String
+  mustChangePassword Boolean @default(false)
   role            Role      @default(EMPLOYEE)
   isActive        Boolean   @default(true)
   employeeId      String?   @unique
@@ -475,8 +476,8 @@ model Employee {
   religion          Religion?
   maritalStatus     MaritalStatus
   dependents        Int              @default(0)
-  nik               String
-  npwp              String?
+  nik               String           @unique
+  npwp              String?          @unique
   bpjsKesNumber     String?
   bpjsTkNumber      String?
   bankName          String?

@@ -301,6 +301,7 @@ export async function seedDatabase(prisma: PrismaClient) {
       create: {
         email: u.email,
         passwordHash: hash,
+        mustChangePassword: true,
         role: u.role,
         isActive: true,
         employeeId: u.employeeId,
