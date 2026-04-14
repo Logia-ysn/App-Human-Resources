@@ -27,6 +27,36 @@ export function useUpdateCompany() {
   return useSWRMutation("/api/company", updateCompany);
 }
 
+async function createCompany(
+  url: string,
+  { arg }: { arg: Record<string, unknown> }
+) {
+  return apiClient<Company>(url, { method: "POST", body: arg });
+}
+
+export function useCreateCompany() {
+  return useSWRMutation("/api/company", createCompany);
+}
+
+// ---------- Setup Status ----------
+
+export type SetupStatus = {
+  company: boolean;
+  departments: number;
+  positions: number;
+  employees: number;
+  leaveTypes: number;
+  complete: boolean;
+};
+
+export function useSetupStatus() {
+  const { data, error, isLoading, mutate } = useSWR<SetupStatus>(
+    "/api/setup/status",
+    fetcher
+  );
+  return { status: data ?? null, error, isLoading, mutate };
+}
+
 // ---------- App Config ----------
 
 export type AppConfigData = {

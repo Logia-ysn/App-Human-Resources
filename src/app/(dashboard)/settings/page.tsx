@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useCompany, useUpdateCompany, useAppConfig, useUpdateAppConfig } from "@/hooks/use-settings";
+import { GetStartedWizard } from "@/components/settings/get-started-wizard";
+import { SetupChecklist } from "@/components/settings/setup-checklist";
 import type { AppConfigData } from "@/hooks/use-settings";
 import type { Company } from "@prisma/client";
 import {
@@ -176,6 +178,11 @@ export default function SettingsPage() {
 
       <Separator />
 
+      {!company && <GetStartedWizard />}
+
+      {company && <SetupChecklist />}
+
+      {company && (
       <Tabs defaultValue="perusahaan">
         <TabsList className="flex w-full flex-wrap gap-1">
           <TabsTrigger value="perusahaan">
@@ -228,6 +235,13 @@ export default function SettingsPage() {
           <DataManagementSection />
         </TabsContent>
       </Tabs>
+      )}
+
+      {!company && (
+        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          Pengaturan lanjutan (Penggajian, Jam Kerja, Cuti, Absensi, Sistem) akan aktif setelah data perusahaan tersimpan.
+        </div>
+      )}
     </div>
   );
 }
