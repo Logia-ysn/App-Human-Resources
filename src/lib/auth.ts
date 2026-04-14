@@ -23,7 +23,7 @@ declare module "next-auth" {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
   pages: {
     signIn: "/login",
   },
@@ -78,22 +78,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as { role: Role }).role;
         token.employeeId = (user as { employeeId: string | null }).employeeId;
         token.mustChangePassword = (user as { mustChangePassword: boolean }).mustChangePassword;
+        token.iat = Math.floor(Date.now() / 1000);
         return token;
       }
 
-      // Refresh from DB only when the token still claims mustChangePassword=true.
-      // Once cleared, skip the DB hit on subsequent requests.
-      if (token.mustChangePassword && token.id) {
+      // Refresh isActive + profile from DB on every request so that
+      // deactivated accounts are blocked immediately (not just at login).
+      if (token.id) {
         try {
           const fresh = await prisma.user.findUnique({
             where: { id: token.id as string },
             select: { mustChangePassword: true, role: true, employeeId: true, isActive: true },
           });
-          if (fresh && fresh.isActive) {
-            token.mustChangePassword = fresh.mustChangePassword;
-            token.role = fresh.role;
-            token.employeeId = fresh.employeeId;
+          if (!fresh || !fresh.isActive) {
+            // Return null-equivalent: signal invalid session
+            return null as unknown as typeof token;
           }
+          token.mustChangePassword = fresh.mustChangePassword;
+          token.role = fresh.role;
+          token.employeeId = fresh.employeeId;
         } catch {
           // swallow: stale token is better than broken auth
         }
