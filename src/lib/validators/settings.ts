@@ -26,9 +26,7 @@ export const updateAppConfigSchema = z
   });
 
 export const resetActionSchema = z.object({
-  action: z.enum(["reset", "reseed"], {
-    error: "Action harus 'reset' atau 'reseed'",
-  }),
+  action: z.literal("reset", { error: "Action harus 'reset'" }),
 });
 
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;

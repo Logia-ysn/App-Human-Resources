@@ -1418,16 +1418,15 @@ function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
 
 function DataManagementSection() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [reseedDialogOpen, setReseedDialogOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  async function handleAction(action: "reset" | "reseed") {
+  async function handleReset() {
     setProcessing(true);
     try {
       const res = await fetch("/api/settings/reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action: "reset" }),
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
@@ -1435,7 +1434,6 @@ function DataManagementSection() {
       }
       toast.success(json.data.message);
       setResetDialogOpen(false);
-      setReseedDialogOpen(false);
       setTimeout(() => window.location.reload(), 800);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Operasi gagal");
@@ -1453,95 +1451,50 @@ function DataManagementSection() {
             <CardTitle>Manajemen Data</CardTitle>
           </div>
           <CardDescription>
-            Hapus semua data untuk memulai dari awal, atau muat ulang data demo.
+            Hapus seluruh data bisnis (karyawan, absensi, cuti, payroll, dll).
+            Akun login tetap dipertahankan.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            {/* Hapus Semua Data */}
-            <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-              <DialogTrigger
-                render={
-                  <Button variant="destructive" size="lg">
-                    <Trash2 className="mr-1.5 h-4 w-4" />
-                    Hapus Semua Data
-                  </Button>
-                }
-              />
-              <DialogContent>
-                <DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                    </div>
-                    <DialogTitle>Hapus Semua Data</DialogTitle>
+          <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+            <DialogTrigger
+              render={
+                <Button variant="destructive" size="lg">
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  Hapus Semua Data
+                </Button>
+              }
+            />
+            <DialogContent>
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
                   </div>
-                  <DialogDescription>
-                    Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak
-                    dapat dibatalkan. Semua data karyawan, absensi, cuti, dan lainnya
-                    akan dihapus dari database.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <DialogClose render={<Button variant="outline" />}>
-                    Batal
-                  </DialogClose>
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleAction("reset")}
-                    disabled={processing}
-                  >
-                    {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Ya, Hapus Semua
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Muat Data Demo */}
-            <Dialog open={reseedDialogOpen} onOpenChange={setReseedDialogOpen}>
-              <DialogTrigger
-                render={
-                  <Button variant="secondary" size="lg">
-                    <RotateCcw className="mr-1.5 h-4 w-4" />
-                    Muat Data Demo
-                  </Button>
-                }
-              />
-              <DialogContent>
-                <DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                      <RotateCcw className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <DialogTitle>Muat Data Demo</DialogTitle>
-                  </div>
-                  <DialogDescription>
-                    Ini akan menghapus semua data saat ini dan menggantinya dengan
-                    data demo (perusahaan, departemen, posisi, dan akun login).
-                    Lanjutkan?
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <DialogClose render={<Button variant="outline" />}>
-                    Batal
-                  </DialogClose>
-                  <Button
-                    onClick={() => handleAction("reseed")}
-                    disabled={processing}
-                  >
-                    {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Ya, Muat Data Demo
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Data demo mencakup: 1 perusahaan, 9 departemen, 15 posisi, dan 4 akun login.
-            Anda akan otomatis logout setelah reset.
-          </p>
+                  <DialogTitle>Hapus Semua Data</DialogTitle>
+                </div>
+                <DialogDescription>
+                  Apakah Anda yakin ingin menghapus semua data bisnis? Tindakan
+                  ini tidak dapat dibatalkan. Seluruh data karyawan, absensi,
+                  cuti, payroll, dan lainnya akan dihapus dari database.
+                  Akun login Anda tetap aman.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose render={<Button variant="outline" />}>
+                  Batal
+                </DialogClose>
+                <Button
+                  variant="destructive"
+                  onClick={handleReset}
+                  disabled={processing}
+                >
+                  {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Ya, Hapus Semua
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>
