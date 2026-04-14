@@ -23,7 +23,29 @@ type AuditEntry = {
   newValues?: unknown;
   ipAddress?: string | null;
   userAgent?: string | null;
+  redactFields?: string[];
 };
+
+/**
+ * Returns a shallow copy of `obj` with the specified fields replaced by "[REDACTED]".
+ * Handles plain objects and arrays of plain objects.
+ */
+export function sanitizeForAudit(obj: unknown, fieldsToRedact: string[]): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeForAudit(item, fieldsToRedact));
+  }
+  if (typeof obj === "object") {
+    const result: Record<string, unknown> = { ...(obj as Record<string, unknown>) };
+    for (const field of fieldsToRedact) {
+      if (field in result) {
+        result[field] = "[REDACTED]";
+      }
+    }
+    return result;
+  }
+  return obj;
+}
 
 const MAX_VALUE_BYTES = 8_000;
 
@@ -42,6 +64,10 @@ function clamp(value: unknown): Prisma.InputJsonValue | undefined {
  * in the expected order.
  */
 export async function recordAudit(entry: AuditEntry): Promise<void> {
+  const redact = entry.redactFields ?? [];
+  const safeOld = redact.length > 0 ? sanitizeForAudit(entry.oldValues, redact) : entry.oldValues;
+  const safeNew = redact.length > 0 ? sanitizeForAudit(entry.newValues, redact) : entry.newValues;
+
   try {
     await prisma.auditLog.create({
       data: {
@@ -49,8 +75,8 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
         action: entry.action,
         entityType: entry.entityType,
         entityId: entry.entityId,
-        oldValues: clamp(entry.oldValues),
-        newValues: clamp(entry.newValues),
+        oldValues: clamp(safeOld),
+        newValues: clamp(safeNew),
         ipAddress: entry.ipAddress ?? null,
         userAgent: entry.userAgent ?? null,
       },
