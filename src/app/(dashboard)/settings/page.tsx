@@ -53,7 +53,6 @@ import {
   X,
   Loader2,
   Trash2,
-  RotateCcw,
   Database,
   AlertTriangle,
 } from "lucide-react";
@@ -562,7 +561,8 @@ function PayrollTab({ company, appConfig }: { company: Company; appConfig: AppCo
     try {
       await Promise.all([
         updateCompany.trigger({
-          umrAmount: umrAmount as unknown as import("@prisma/client/runtime/library").Decimal,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          umrAmount: String(umrAmount) as any,
           umrRegion,
           cutOffDate: parseInt(cutOffDate),
           payDate: parseInt(payDate),
