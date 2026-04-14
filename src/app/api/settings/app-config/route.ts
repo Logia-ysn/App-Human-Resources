@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { updateAppConfigSchema } from "@/lib/validators/settings";
+import { recordAudit, getRequestMeta } from "@/lib/audit";
 
 export async function GET() {
   const session = await apiGuard();
@@ -32,6 +33,16 @@ export async function PATCH(req: NextRequest) {
     where: { id: "app-config" },
     update: { data: mergedData },
     create: { id: "app-config", data: mergedData },
+  });
+
+  await recordAudit({
+    userId: session.user.id,
+    action: "CONFIG_UPDATE",
+    entityType: "AppConfig",
+    entityId: config.id,
+    oldValues: currentData,
+    newValues: mergedData,
+    ...getRequestMeta(req.headers),
   });
 
   return NextResponse.json(successResponse(config.data));

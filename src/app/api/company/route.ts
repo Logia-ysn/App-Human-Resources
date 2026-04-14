@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { updateCompanySchema } from "@/lib/validators/settings";
+import { recordAudit, getRequestMeta } from "@/lib/audit";
 
 export async function GET() {
   const session = await apiGuard();
@@ -30,6 +31,16 @@ export async function PATCH(req: NextRequest) {
   const updated = await prisma.company.update({
     where: { id: company.id },
     data: parsed.data,
+  });
+
+  await recordAudit({
+    userId: session.user.id,
+    action: "COMPANY_UPDATE",
+    entityType: "Company",
+    entityId: company.id,
+    oldValues: company,
+    newValues: updated,
+    ...getRequestMeta(req.headers),
   });
 
   return NextResponse.json(successResponse(updated));

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { updateEmployeeSchema } from "@/lib/validators/employee";
+import { recordAudit, getRequestMeta } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -66,6 +67,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     },
   });
 
+  await recordAudit({
+    userId: session.user.id,
+    action: "UPDATE",
+    entityType: "Employee",
+    entityId: id,
+    oldValues: existing,
+    newValues: employee,
+    ...getRequestMeta(req.headers),
+  });
+
   return NextResponse.json(successResponse(employee));
 }
 
@@ -84,6 +95,15 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   await prisma.employee.update({
     where: { id },
     data: { isDeleted: true, deletedAt: new Date() },
+  });
+
+  await recordAudit({
+    userId: session.user.id,
+    action: "DELETE",
+    entityType: "Employee",
+    entityId: id,
+    oldValues: existing,
+    ...getRequestMeta(req.headers),
   });
 
   return NextResponse.json(successResponse({ id }));

@@ -4,6 +4,7 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { seedDatabase } from "@/lib/seed";
 import { resetActionSchema } from "@/lib/validators/settings";
+import { recordAudit, getRequestMeta } from "@/lib/audit";
 
 // Tables to truncate in dependency order (children first)
 const TRUNCATE_ORDER = [
@@ -91,8 +92,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(errorResponse(parsed.error.issues[0].message), { status: 400 });
   }
 
+  const meta = getRequestMeta(req.headers);
+
   if (parsed.data.action === "reset") {
     await truncateAll(true);
+    await recordAudit({
+      userId: session.user.id,
+      action: "RESET_DATA",
+      entityType: "System",
+      entityId: "database",
+      newValues: { preserveAuth: true },
+      ...meta,
+    });
     return NextResponse.json(successResponse({ message: "Semua data berhasil dihapus (akun login dipertahankan)" }));
   }
 
@@ -103,5 +114,13 @@ export async function POST(req: NextRequest) {
     const msg = err instanceof Error ? err.message : "Seed gagal";
     return NextResponse.json(errorResponse(`Data dihapus tapi seed gagal: ${msg}`), { status: 500 });
   }
+  await recordAudit({
+    userId: session.user.id,
+    action: "RESEED_DATA",
+    entityType: "System",
+    entityId: "database",
+    newValues: { preserveAuth: false },
+    ...meta,
+  });
   return NextResponse.json(successResponse({ message: "Data demo berhasil dimuat ulang" }));
 }

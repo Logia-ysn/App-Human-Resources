@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { successResponse, errorResponse } from "@/types/api";
+import { recordAudit, getRequestMeta } from "@/lib/audit";
 
 const schema = z.object({
   currentPassword: z.string().min(1, "Password lama wajib diisi"),
@@ -46,6 +47,14 @@ export async function POST(req: NextRequest) {
   await prisma.user.update({
     where: { id: user.id },
     data: { passwordHash: hash, mustChangePassword: false },
+  });
+
+  await recordAudit({
+    userId: user.id,
+    action: "PASSWORD_CHANGED",
+    entityType: "User",
+    entityId: user.id,
+    ...getRequestMeta(req.headers),
   });
 
   return NextResponse.json(successResponse({ message: "Password berhasil diubah" }));

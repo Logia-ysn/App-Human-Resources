@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { createEmployeeSchema, employeeQuerySchema } from "@/lib/validators/employee";
+import { recordAudit, getRequestMeta } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const session = await apiGuard({ minRole: "MANAGER" });
@@ -97,6 +98,15 @@ export async function POST(req: NextRequest) {
       position: { select: { id: true, name: true, code: true } },
       manager: { select: { id: true, firstName: true, lastName: true } },
     },
+  });
+
+  await recordAudit({
+    userId: session.user.id,
+    action: "CREATE",
+    entityType: "Employee",
+    entityId: employee.id,
+    newValues: employee,
+    ...getRequestMeta(req.headers),
   });
 
   return NextResponse.json(successResponse(employee), { status: 201 });
