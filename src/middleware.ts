@@ -91,11 +91,14 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Force password change before accessing any other page
+  // Force password change before accessing any other page.
+  // Skip API routes — they should return JSON, not a redirect.
+  // The /api/auth/change-password route itself is the only API needed
+  // while in this state.
   if (
     req.auth.user.mustChangePassword &&
-    pathname !== "/change-password" &&
-    !pathname.startsWith("/api/auth/change-password")
+    !pathname.startsWith("/api/") &&
+    pathname !== "/change-password"
   ) {
     return NextResponse.redirect(new URL("/change-password", req.url));
   }
