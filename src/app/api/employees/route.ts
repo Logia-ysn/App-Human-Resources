@@ -5,6 +5,8 @@ import { successResponse, errorResponse } from "@/types/api";
 import { createEmployeeSchema, employeeQuerySchema } from "@/lib/validators/employee";
 import { recordAudit, getRequestMeta } from "@/lib/audit";
 
+const PII_FIELDS_TO_REDACT = ["nik", "npwp", "bpjsKesNumber", "bpjsTkNumber", "bankAccountNo", "bankAccountName"];
+
 export async function GET(req: NextRequest) {
   const session = await apiGuard({ minRole: "MANAGER" });
   if (isGuardError(session)) return session;
@@ -29,7 +31,7 @@ export async function GET(req: NextRequest) {
       ],
     }),
     ...(departmentId && { departmentId }),
-    ...(status && { status: status as never }),
+    ...(status && { status: parsed.data.status }),
     ...(type && { type: type as never }),
   };
 
@@ -106,6 +108,7 @@ export async function POST(req: NextRequest) {
     entityType: "Employee",
     entityId: employee.id,
     newValues: employee,
+    redactFields: PII_FIELDS_TO_REDACT,
     ...getRequestMeta(req.headers),
   });
 
