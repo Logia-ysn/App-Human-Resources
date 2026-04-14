@@ -41,13 +41,13 @@ const GENDER_OPTIONS = [
 ] as const;
 
 const RELIGION_OPTIONS = [
-  "Islam",
-  "Kristen",
-  "Katolik",
-  "Hindu",
-  "Buddha",
-  "Konghucu",
-  "Lainnya",
+  { value: "ISLAM", label: "Islam" },
+  { value: "KRISTEN", label: "Kristen" },
+  { value: "KATOLIK", label: "Katolik" },
+  { value: "HINDU", label: "Hindu" },
+  { value: "BUDDHA", label: "Buddha" },
+  { value: "KONGHUCU", label: "Konghucu" },
+  { value: "LAINNYA", label: "Lainnya" },
 ] as const;
 
 const MARITAL_OPTIONS = [
@@ -399,15 +399,15 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("religion", val)
                   }
-                  items={RELIGION_OPTIONS.map((r) => ({ value: r, label: r }))}
+                  items={RELIGION_OPTIONS.map((r) => ({ value: r.value, label: r.label }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih agama" />
                   </SelectTrigger>
                   <SelectContent>
                     {RELIGION_OPTIONS.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
