@@ -23,6 +23,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useEmployee } from "@/hooks/use-employees";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { useAuth } from "@/components/providers/auth-context";
+import { AccountSection } from "@/components/employees/account-section";
+import { hasMinRole } from "@/lib/utils/permissions";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -124,6 +127,8 @@ function SectionHeader({
 export default function EmployeeDetailPage() {
   const params = useParams<{ id: string }>();
   const { employee, isLoading } = useEmployee(params.id);
+  const { role: viewerRole } = useAuth();
+  const canManageAccount = hasMinRole(viewerRole, "HR_ADMIN");
 
   if (isLoading) {
     return (
@@ -355,6 +360,14 @@ export default function EmployeeDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {canManageAccount && (
+        <AccountSection
+          employeeId={employee.id}
+          employeeEmail={employee.email}
+          viewerRole={viewerRole}
+        />
+      )}
     </div>
   );
 }
