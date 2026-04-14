@@ -104,6 +104,8 @@ NextAuth otomatis pakai prefix `__Secure-` di production mode. Browser akan meno
 #### M-02 — onDelete policy implisit
 4 dari 79 relasi punya `onDelete` eksplisit. Tambahkan `onDelete: Restrict` atau `Cascade` di setiap relasi untuk dokumentasi & prediktabilitas.
 
+**Status 2026-04-14**: DEFERRED. Prisma 6 default sudah sesuai kebutuhan (required FK → Restrict, optional FK → SetNull). Business layer pakai soft-delete (isDeleted flag) untuk Employee, jadi cascade di level DB tidak pernah trigger di jalur normal. Perubahan explicit `onDelete` tanpa SQL change (karena cocok dgn default) cuma dokumentasi — risiko vs nilai tidak seimbang dalam satu sesi. Dijadwalkan ulang sebagai sesi dedicated ketika ada kebutuhan hard-delete (mis. GDPR purge).
+
 #### M-03 — Audit log tidak ditulis
 Tabel `audit_logs` kosong. Tambah helper `logAudit(userId, action, entityType, entityId, oldVal, newVal)` dan panggil di setiap mutation route.
 
