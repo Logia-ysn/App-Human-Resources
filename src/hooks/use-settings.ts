@@ -27,6 +27,17 @@ export function useUpdateCompany() {
   return useSWRMutation("/api/company", updateCompany);
 }
 
+async function createCompany(
+  url: string,
+  { arg }: { arg: Record<string, unknown> }
+) {
+  return apiClient<Company>(url, { method: "POST", body: arg });
+}
+
+export function useCreateCompany() {
+  return useSWRMutation("/api/company", createCompany);
+}
+
 // ---------- App Config ----------
 
 export type AppConfigData = {

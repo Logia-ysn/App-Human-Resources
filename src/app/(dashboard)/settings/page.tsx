@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { useCompany, useUpdateCompany, useAppConfig, useUpdateAppConfig } from "@/hooks/use-settings";
+import { useCompany, useUpdateCompany, useCreateCompany, useAppConfig, useUpdateAppConfig } from "@/hooks/use-settings";
 import type { AppConfigData } from "@/hooks/use-settings";
 import type { Company } from "@prisma/client";
 import {
@@ -205,11 +205,15 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="perusahaan">
-          {company && <CompanyTab company={company} />}
+          <CompanyTab company={company} />
         </TabsContent>
 
         <TabsContent value="penggajian">
-          {company && <PayrollTab company={company} appConfig={config} />}
+          {company ? (
+            <PayrollTab company={company} appConfig={config} />
+          ) : (
+            <CompanyRequiredNotice />
+          )}
         </TabsContent>
 
         <TabsContent value="jam-kerja">
@@ -233,6 +237,23 @@ export default function SettingsPage() {
 }
 
 // =================================================================
+// Shared notice
+// =================================================================
+
+function CompanyRequiredNotice() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Data perusahaan belum tersedia</CardTitle>
+        <CardDescription>
+          Simpan data perusahaan di tab <strong>Perusahaan</strong> terlebih dahulu agar pengaturan ini bisa diakses.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  );
+}
+
+// =================================================================
 // Tab 1: Perusahaan
 // =================================================================
 
@@ -250,22 +271,24 @@ type CompanyForm = {
   logoUrl: string;
 };
 
-function CompanyTab({ company }: { company: Company }) {
+function CompanyTab({ company }: { company: Company | null }) {
   const { mutate } = useCompany();
   const updateCompany = useUpdateCompany();
+  const createCompany = useCreateCompany();
+  const isNew = !company;
 
   const [form, setForm] = useState<CompanyForm>({
-    name: company.name,
-    legalName: company.legalName,
-    npwp: company.npwp ?? "",
-    address: company.address,
-    city: company.city,
-    province: company.province,
-    postalCode: company.postalCode ?? "",
-    phone: company.phone ?? "",
-    email: company.email ?? "",
-    website: company.website ?? "",
-    logoUrl: company.logoUrl ?? "",
+    name: company?.name ?? "",
+    legalName: company?.legalName ?? "",
+    npwp: company?.npwp ?? "",
+    address: company?.address ?? "",
+    city: company?.city ?? "",
+    province: company?.province ?? "",
+    postalCode: company?.postalCode ?? "",
+    phone: company?.phone ?? "",
+    email: company?.email ?? "",
+    website: company?.website ?? "",
+    logoUrl: company?.logoUrl ?? "",
   });
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -276,11 +299,32 @@ function CompanyTab({ company }: { company: Company }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isNew) {
+      if (!form.name.trim() || !form.legalName.trim() || !form.address.trim() || !form.city.trim() || !form.province) {
+        toast.error("Lengkapi Nama, Legal, Alamat, Kota, dan Provinsi");
+        return;
+      }
+    }
     setSaving(true);
     try {
-      await updateCompany.trigger(form);
+      if (isNew) {
+        await createCompany.trigger({
+          ...form,
+          npwp: form.npwp || null,
+          postalCode: form.postalCode || null,
+          phone: form.phone || null,
+          email: form.email || null,
+          website: form.website || null,
+          logoUrl: form.logoUrl || null,
+          umrAmount: "0",
+          umrRegion: form.province,
+        });
+        toast.success("Perusahaan berhasil dibuat. Lengkapi UMR di tab Penggajian.");
+      } else {
+        await updateCompany.trigger(form);
+        toast.success("Informasi perusahaan berhasil disimpan");
+      }
       await mutate();
-      toast.success("Informasi perusahaan berhasil disimpan");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
     } finally {

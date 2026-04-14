@@ -11,7 +11,8 @@ type AuditAction =
   | "RESET_DATA"
   | "RESEED_DATA"
   | "CONFIG_UPDATE"
-  | "COMPANY_UPDATE";
+  | "COMPANY_UPDATE"
+  | "COMPANY_CREATE";
 
 type AuditEntry = {
   userId?: string | null;
