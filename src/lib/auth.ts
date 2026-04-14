@@ -78,6 +78,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as { role: Role }).role;
         token.employeeId = (user as { employeeId: string | null }).employeeId;
         token.mustChangePassword = (user as { mustChangePassword: boolean }).mustChangePassword;
+        return token;
+      }
+
+      // Refresh from DB only when the token still claims mustChangePassword=true.
+      // Once cleared, skip the DB hit on subsequent requests.
+      if (token.mustChangePassword && token.id) {
+        try {
+          const fresh = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { mustChangePassword: true, role: true, employeeId: true, isActive: true },
+          });
+          if (fresh && fresh.isActive) {
+            token.mustChangePassword = fresh.mustChangePassword;
+            token.role = fresh.role;
+            token.employeeId = fresh.employeeId;
+          }
+        } catch {
+          // swallow: stale token is better than broken auth
+        }
       }
       return token;
     },
