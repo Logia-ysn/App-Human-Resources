@@ -9,7 +9,11 @@ export const createEmployeeSchema = z.object({
   gender: z.enum(["MALE", "FEMALE"]),
   dateOfBirth: z.string().min(1, "Tanggal lahir wajib diisi"),
   placeOfBirth: z.string().min(1, "Tempat lahir wajib diisi"),
-  religion: z.enum(["ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU", "LAINNYA"]).optional(),
+  religion: z
+    .preprocess(
+      (v) => (v === "" || v === null ? undefined : v),
+      z.enum(["ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU", "LAINNYA"]).optional(),
+    ),
   maritalStatus: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"]),
   dependents: z.number().int().min(0).default(0),
   nik: z.string().min(16, "NIK harus 16 digit").max(16),
