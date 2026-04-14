@@ -1,18 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { overtimeRequestSchema } from "@/lib/validators/attendance";
 import { hasMinRole } from "@/lib/utils/permissions";
 
+const overtimeQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  employeeId: z.string().optional(),
+  status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
+});
+
 export async function GET(req: NextRequest) {
   const session = await apiGuard();
   if (isGuardError(session)) return session;
 
-  const employeeId = req.nextUrl.searchParams.get("employeeId");
-  const status = req.nextUrl.searchParams.get("status");
-  const page = parseInt(req.nextUrl.searchParams.get("page") ?? "1");
-  const limit = parseInt(req.nextUrl.searchParams.get("limit") ?? "20");
+  const params = Object.fromEntries(req.nextUrl.searchParams);
+  const parsed = overtimeQuerySchema.safeParse(params);
+  if (!parsed.success) {
+    return NextResponse.json(errorResponse("Parameter tidak valid"), { status: 400 });
+  }
+
+  const { page, limit, employeeId, status } = parsed.data;
   const skip = (page - 1) * limit;
 
   const isManagerUp = hasMinRole(session.user.role, "MANAGER");
@@ -22,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   const where = {
     ...(effectiveEmployeeId && { employeeId: effectiveEmployeeId }),
-    ...(status && { status: status as never }),
+    ...(status && { status: parsed.data.status }),
   };
 
   const [requests, total] = await Promise.all([
