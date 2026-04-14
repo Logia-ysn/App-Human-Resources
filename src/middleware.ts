@@ -82,7 +82,11 @@ export default auth((req) => {
   // Redirect unauthenticated users to login
   if (!req.auth) {
     const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    // Only accept internal paths: must start with "/" and must not be "//" (protocol-relative)
+    const isSafeCallback = pathname.startsWith("/") && !pathname.startsWith("//");
+    if (isSafeCallback) {
+      loginUrl.searchParams.set("callbackUrl", pathname);
+    }
     return NextResponse.redirect(loginUrl);
   }
 
