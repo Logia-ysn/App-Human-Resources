@@ -120,13 +120,13 @@ export const DEFAULT_APP_CONFIG: AppConfigData = {
 };
 
 export function useAppConfig() {
-  const { data, error, isLoading, mutate } = useSWR<AppConfigData>(
+  const { data, error, isLoading, mutate } = useSWR<Partial<AppConfigData> | null>(
     "/api/settings/app-config",
     fetcher
   );
 
   return {
-    config: data ?? DEFAULT_APP_CONFIG,
+    config: { ...DEFAULT_APP_CONFIG, ...(data ?? {}) } as AppConfigData,
     error,
     isLoading,
     mutate,
