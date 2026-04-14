@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { DateInput } from "@/components/shared/date-input";
 
 const STEPS = [
   { number: 1, label: "Data Pribadi", icon: User },
@@ -373,11 +374,10 @@ export function EmployeeForm({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="dateOfBirth">Tanggal Lahir</Label>
-                <Input
+                <DateInput
                   id="dateOfBirth"
-                  type="date"
                   value={form.dateOfBirth}
-                  onChange={(e) => handleChange("dateOfBirth", e.target.value)}
+                  onChange={(v) => handleChange("dateOfBirth", v)}
                 />
               </div>
               <div className="space-y-2">
@@ -657,21 +657,19 @@ export function EmployeeForm({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="joinDate">Tanggal Bergabung</Label>
-                <Input
+                <DateInput
                   id="joinDate"
-                  type="date"
                   value={form.joinDate}
-                  onChange={(e) => handleChange("joinDate", e.target.value)}
+                  onChange={(v) => handleChange("joinDate", v)}
                 />
               </div>
               {showEndDate && (
                 <div className="space-y-2">
                   <Label htmlFor="endDate">Tanggal Berakhir</Label>
-                  <Input
+                  <DateInput
                     id="endDate"
-                    type="date"
                     value={form.endDate}
-                    onChange={(e) => handleChange("endDate", e.target.value)}
+                    onChange={(v) => handleChange("endDate", v)}
                   />
                 </div>
               )}
