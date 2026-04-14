@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useLeaveRequests, useLeaveTypes, useLeaveBalances, useApproveLeave } from "@/hooks/use-leave";
+import { useLeaveRequests, useLeaveTypes, useLeaveBalances } from "@/hooks/use-leave";
+import { apiClient } from "@/lib/api-client";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,15 +86,11 @@ export default function LeavePage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newType, setNewType] = useState<LeaveTypeForm>(EMPTY_LEAVE_TYPE);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-
   const { requests, isLoading: requestsLoading, mutate: mutateRequests } = useLeaveRequests({
     status: statusFilter !== "ALL" ? statusFilter : undefined,
   });
   const { leaveTypes: types, isLoading: typesLoading } = useLeaveTypes();
   const { balances: leaveBalances, isLoading: balancesLoading } = useLeaveBalances();
-
-  const approveMutation = useApproveLeave(approvingId ?? "");
 
   const stats = useMemo(() => {
     const total = requests.length;
@@ -108,27 +105,23 @@ export default function LeavePage() {
   };
 
   async function handleApprove(id: string) {
-    setApprovingId(id);
     try {
-      await approveMutation.trigger({ status: "APPROVED" });
+      await apiClient(`/api/leave/requests/${id}/approve`, { method: "PATCH", body: { status: "APPROVED" } });
       toast.success("Pengajuan cuti berhasil disetujui");
       await mutateRequests();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Gagal menyetujui");
     }
-    setApprovingId(null);
   }
 
   async function handleReject(id: string) {
-    setApprovingId(id);
     try {
-      await approveMutation.trigger({ status: "REJECTED" });
+      await apiClient(`/api/leave/requests/${id}/approve`, { method: "PATCH", body: { status: "REJECTED" } });
       toast.error("Pengajuan cuti ditolak");
       await mutateRequests();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Gagal menolak");
     }
-    setApprovingId(null);
   }
 
   const handleAddType = () => {
