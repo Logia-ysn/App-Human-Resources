@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
       date: { gte: startOfYear, lt: endOfYear },
     },
     orderBy: { date: "asc" },
+    take: 500,
   });
 
   return NextResponse.json(successResponse(holidays));

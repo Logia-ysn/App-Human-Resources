@@ -16,6 +16,7 @@ export async function GET() {
       _count: { select: { employees: true, positions: true } },
     },
     orderBy: { name: "asc" },
+    take: 500,
   });
 
   return NextResponse.json(successResponse(departments));

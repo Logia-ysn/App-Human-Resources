@@ -4,12 +4,20 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse } from "@/types/api";
 import { hasMinRole } from "@/lib/utils/permissions";
 
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
+
 export async function GET(req: NextRequest) {
   const session = await apiGuard();
   if (isGuardError(session)) return session;
 
-  const employeeId = req.nextUrl.searchParams.get("employeeId");
-  const year = parseInt(req.nextUrl.searchParams.get("year") ?? String(new Date().getFullYear()));
+  const searchParams = req.nextUrl.searchParams;
+  const employeeId = searchParams.get("employeeId");
+  const year = parseInt(searchParams.get("year") ?? String(new Date().getFullYear()));
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const rawLimit = parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT));
+  const limit = Math.min(Math.max(1, rawLimit), MAX_LIMIT);
+  const skip = (page - 1) * limit;
 
   const isManagerUp = hasMinRole(session.user.role, "MANAGER");
 
@@ -26,14 +34,21 @@ export async function GET(req: NextRequest) {
     ...(effectiveEmployeeId && { employeeId: effectiveEmployeeId }),
   };
 
-  const balances = await prisma.leaveBalance.findMany({
-    where,
-    include: {
-      employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } },
-      leaveType: { select: { id: true, name: true, code: true, defaultQuota: true } },
-    },
-    orderBy: [{ employee: { firstName: "asc" } }, { leaveType: { name: "asc" } }],
-  });
+  const [balances, total] = await Promise.all([
+    prisma.leaveBalance.findMany({
+      where,
+      include: {
+        employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } },
+        leaveType: { select: { id: true, name: true, code: true, defaultQuota: true } },
+      },
+      orderBy: [{ employee: { firstName: "asc" } }, { leaveType: { name: "asc" } }],
+      skip,
+      take: limit,
+    }),
+    prisma.leaveBalance.count({ where }),
+  ]);
 
-  return NextResponse.json(successResponse(balances));
+  const meta = { total, page, limit, totalPages: Math.ceil(total / limit) };
+
+  return NextResponse.json(successResponse({ balances, meta }));
 }
