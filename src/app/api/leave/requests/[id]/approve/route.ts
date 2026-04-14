@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { approveLeaveSchema } from "@/lib/validators/leave";
+import { recordAudit, getRequestMeta } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -30,62 +31,74 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const { status, note } = parsed.data;
+  const { ipAddress, userAgent } = getRequestMeta(req.headers);
 
-  // Update leave request status
-  const updated = await prisma.leaveRequest.update({
-    where: { id },
-    data: {
-      status,
-      approverNote: note,
-    },
-    include: {
-      employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } },
-      leaveType: { select: { id: true, name: true, code: true } },
-    },
-  });
-
-  // Update leave balance
-  const year = leaveRequest.startDate.getFullYear();
-  const balance = await prisma.leaveBalance.findFirst({
-    where: {
-      employeeId: leaveRequest.employeeId,
-      leaveTypeId: leaveRequest.leaveTypeId,
-      year,
-    },
-  });
-
-  if (balance) {
-    const totalDays = Math.ceil(Number(leaveRequest.totalDays));
-    if (status === "APPROVED") {
-      await prisma.leaveBalance.update({
-        where: { id: balance.id },
-        data: {
-          used: { increment: totalDays },
-          pending: { decrement: totalDays },
-        },
-      });
-    } else {
-      // REJECTED — release pending
-      await prisma.leaveBalance.update({
-        where: { id: balance.id },
-        data: { pending: { decrement: totalDays } },
-      });
-    }
-  }
-
-  // Create leave approval record
-  if (session.user.employeeId) {
-    await prisma.leaveApproval.create({
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedRequest = await tx.leaveRequest.update({
+      where: { id },
       data: {
-        leaveRequestId: id,
-        approverId: session.user.employeeId,
-        sequence: 1,
         status,
-        note,
-        actionAt: new Date(),
+        approverNote: note,
+      },
+      include: {
+        employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } },
+        leaveType: { select: { id: true, name: true, code: true } },
       },
     });
-  }
+
+    const year = leaveRequest.startDate.getFullYear();
+    const balance = await tx.leaveBalance.findFirst({
+      where: {
+        employeeId: leaveRequest.employeeId,
+        leaveTypeId: leaveRequest.leaveTypeId,
+        year,
+      },
+    });
+
+    if (balance) {
+      const totalDays = Math.ceil(Number(leaveRequest.totalDays));
+      if (status === "APPROVED") {
+        await tx.leaveBalance.update({
+          where: { id: balance.id },
+          data: {
+            used: { increment: totalDays },
+            pending: { decrement: totalDays },
+          },
+        });
+      } else {
+        // REJECTED — release pending
+        await tx.leaveBalance.update({
+          where: { id: balance.id },
+          data: { pending: { decrement: totalDays } },
+        });
+      }
+    }
+
+    if (session.user.employeeId) {
+      await tx.leaveApproval.create({
+        data: {
+          leaveRequestId: id,
+          approverId: session.user.employeeId,
+          sequence: 1,
+          status,
+          note,
+          actionAt: new Date(),
+        },
+      });
+    }
+
+    return updatedRequest;
+  });
+
+  await recordAudit({
+    userId: session.user.id,
+    action: status === "APPROVED" ? "APPROVE_LEAVE" : "REJECT_LEAVE",
+    entityType: "LeaveRequest",
+    entityId: id,
+    newValues: { status, note },
+    ipAddress,
+    userAgent,
+  });
 
   return NextResponse.json(successResponse(updated));
 }

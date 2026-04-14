@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
   const where = {
     ...(effectiveEmployeeId && { employeeId: effectiveEmployeeId }),
-    ...(status && { status: status as never }),
+    ...(status && { status }),
     ...(leaveTypeId && { leaveTypeId }),
     ...(year && {
       startDate: {
@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
 
-  // Check leave balance
+  // Check leave balance outside transaction for early rejection
   const year = new Date(data.startDate).getFullYear();
-  const balance = await prisma.leaveBalance.findFirst({
+  const balancePre = await prisma.leaveBalance.findFirst({
     where: {
       employeeId: session.user.employeeId,
       leaveTypeId: data.leaveTypeId,
@@ -88,38 +88,57 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  if (balance) {
-    const available = balance.entitlement + balance.carried - balance.used - balance.pending;
+  if (balancePre) {
+    const available = balancePre.entitlement + balancePre.carried - balancePre.used - balancePre.pending;
     if (data.totalDays > available) {
       return NextResponse.json(errorResponse(`Sisa cuti tidak cukup (tersedia: ${available} hari)`), { status: 400 });
     }
   }
 
-  const request = await prisma.leaveRequest.create({
-    data: {
-      employeeId: session.user.employeeId,
-      leaveTypeId: data.leaveTypeId,
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
-      totalDays: data.totalDays,
-      isHalfDay: data.isHalfDay,
-      halfDayType: data.halfDayType,
-      reason: data.reason,
-      delegateToId: data.delegateToId,
-    },
-    include: {
-      employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } },
-      leaveType: { select: { id: true, name: true, code: true } },
-    },
-  });
-
-  // Update pending count in balance
-  if (balance) {
-    await prisma.leaveBalance.update({
-      where: { id: balance.id },
-      data: { pending: { increment: Math.ceil(data.totalDays) } },
+  const request = await prisma.$transaction(async (tx) => {
+    // Re-read balance inside transaction to prevent race conditions
+    const balance = await tx.leaveBalance.findFirst({
+      where: {
+        employeeId: session.user.employeeId!,
+        leaveTypeId: data.leaveTypeId,
+        year,
+      },
     });
-  }
+
+    if (balance) {
+      const available = balance.entitlement + balance.carried - balance.used - balance.pending;
+      if (data.totalDays > available) {
+        throw new Error(`Sisa cuti tidak cukup (tersedia: ${available} hari)`);
+      }
+    }
+
+    const created = await tx.leaveRequest.create({
+      data: {
+        employeeId: session.user.employeeId!,
+        leaveTypeId: data.leaveTypeId,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        totalDays: data.totalDays,
+        isHalfDay: data.isHalfDay,
+        halfDayType: data.halfDayType,
+        reason: data.reason,
+        delegateToId: data.delegateToId,
+      },
+      include: {
+        employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } },
+        leaveType: { select: { id: true, name: true, code: true } },
+      },
+    });
+
+    if (balance) {
+      await tx.leaveBalance.update({
+        where: { id: balance.id },
+        data: { pending: { increment: Math.ceil(data.totalDays) } },
+      });
+    }
+
+    return created;
+  });
 
   return NextResponse.json(successResponse(request), { status: 201 });
 }

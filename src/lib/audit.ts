@@ -12,7 +12,9 @@ type AuditAction =
   | "RESEED_DATA"
   | "CONFIG_UPDATE"
   | "COMPANY_UPDATE"
-  | "COMPANY_CREATE";
+  | "COMPANY_CREATE"
+  | "APPROVE_LEAVE"
+  | "REJECT_LEAVE";
 
 type AuditEntry = {
   userId?: string | null;
