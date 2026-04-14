@@ -344,6 +344,7 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("gender", val)
                   }
+                  items={GENDER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih jenis kelamin" />
@@ -398,6 +399,7 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("religion", val)
                   }
+                  items={RELIGION_OPTIONS.map((r) => ({ value: r, label: r }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih agama" />
@@ -418,6 +420,7 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("maritalStatus", val)
                   }
+                  items={MARITAL_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih status" />
@@ -550,6 +553,9 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("departmentId", val)
                   }
+                  items={departments
+                    .filter((d) => d.isActive)
+                    .map((dept) => ({ value: dept.id, label: dept.name }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih departemen" />
@@ -574,6 +580,10 @@ export function EmployeeForm({
                     val !== null && handleChange("positionId", val)
                   }
                   disabled={!form.departmentId}
+                  items={filteredPositions.map((pos) => ({
+                    value: pos.id,
+                    label: pos.name,
+                  }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue
@@ -603,6 +613,10 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("managerId", val)
                   }
+                  items={activeEmployees.map((emp) => ({
+                    value: emp.id,
+                    label: `${emp.firstName} ${emp.lastName} - ${emp.position.name}`,
+                  }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih atasan langsung" />
@@ -624,6 +638,7 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("type", val)
                   }
+                  items={TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih status kepegawaian" />
@@ -793,6 +808,7 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("ptkpStatus", val)
                   }
+                  items={PTKP_OPTIONS.map((o) => ({ value: o, label: o }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih status PTKP" />
@@ -815,6 +831,7 @@ export function EmployeeForm({
                 onValueChange={(val) =>
                   val !== null && handleChange("taxMethod", val)
                 }
+                items={TAX_METHOD_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pilih metode pajak" />
@@ -865,6 +882,7 @@ export function EmployeeForm({
                 onValueChange={(val) =>
                   val !== null && handleChange("bankName", val)
                 }
+                items={BANK_OPTIONS.map((b) => ({ value: b, label: b }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pilih bank" />
