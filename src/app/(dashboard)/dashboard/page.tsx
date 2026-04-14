@@ -52,14 +52,6 @@ function getFormattedDate(): string {
   return format(new Date(), "EEEE, dd MMMM yyyy", { locale: idLocale });
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
-
 // ============================================================
 //  GREETING BANNER (shared)
 // ============================================================
@@ -289,7 +281,6 @@ function AdminDashboard() {
   const isLoading = statsLoading || empLoading || deptLoading;
 
   const today = new Date();
-  const todayStr = format(today, "yyyy-MM-dd");
 
   const activeDepartments = departments.filter((d) => d.isActive);
 
@@ -304,6 +295,7 @@ function AdminDashboard() {
 
   // Attendance trend (last 7 days) from attendance records
   const attendanceTrend: AttendanceTrendPoint[] = useMemo(() => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
     const baseDate = new Date(todayStr + "T00:00:00");
     const days: AttendanceTrendPoint[] = [];
     for (let i = 6; i >= 0; i--) {
@@ -323,7 +315,7 @@ function AdminDashboard() {
       });
     }
     return days;
-  }, [attendanceRecords, todayStr]);
+  }, [attendanceRecords]);
 
   // Leave distribution
   const leaveDistribution: LeaveDistribution[] = useMemo(() => {
