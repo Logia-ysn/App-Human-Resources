@@ -25,11 +25,20 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <AuthProvider email={userEmail} role={userRole} employeeId={userEmployeeId}>
+        <a href="#main-content" className="skip-to-content">
+          Lewati ke konten utama
+        </a>
         <div className="flex min-h-screen w-full">
           <AppSidebar userRole={userRole} userEmail={userEmail} />
           <div className="flex flex-1 flex-col">
             <Header userEmail={userEmail} userRole={userRole} />
-            <main className="flex-1 overflow-auto bg-[#F5F7FA] p-4 md:p-6 lg:px-8">{children}</main>
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="flex-1 overflow-auto bg-muted/40 p-4 md:p-6 lg:px-8"
+            >
+              {children}
+            </main>
           </div>
         </div>
         <Toaster />

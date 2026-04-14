@@ -25,7 +25,6 @@ export const metadata: Metadata = {
   title: "HRIS - Human Resource Information System",
   description: "Sistem Informasi Manajemen Sumber Daya Manusia",
   manifest: "/manifest.json",
-  themeColor: "#4f46e5",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -39,7 +38,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5,
+  // WCAG 1.4.4 (Resize text): do NOT set maximumScale or userScalable:false.
+  // Allowing pinch-zoom is mandatory for accessibility.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1014" },
+  ],
 };
 
 export default function RootLayout({
@@ -56,7 +60,6 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
       </head>
       <body className="min-h-full flex flex-col">
         <PWARegister />
