@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { seedDatabase } from "@/lib/seed";
+import { resetActionSchema } from "@/lib/validators/settings";
 
 // Tables to truncate in dependency order (children first)
 const TRUNCATE_ORDER = [
@@ -84,24 +85,23 @@ export async function POST(req: NextRequest) {
   const session = await apiGuard({ minRole: "SUPER_ADMIN" });
   if (isGuardError(session)) return session;
 
-  const body = await req.json().catch(() => ({}));
-  const action = (body as { action?: string }).action;
+  const body = await req.json().catch(() => null);
+  const parsed = resetActionSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(errorResponse(parsed.error.issues[0].message), { status: 400 });
+  }
 
-  if (action === "reset") {
+  if (parsed.data.action === "reset") {
     await truncateAll(true);
     return NextResponse.json(successResponse({ message: "Semua data berhasil dihapus (akun login dipertahankan)" }));
   }
 
-  if (action === "reseed") {
-    await truncateAll(false);
-    try {
-      await seedDatabase(prisma);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Seed gagal";
-      return NextResponse.json(errorResponse(`Data dihapus tapi seed gagal: ${msg}`), { status: 500 });
-    }
-    return NextResponse.json(successResponse({ message: "Data demo berhasil dimuat ulang" }));
+  await truncateAll(false);
+  try {
+    await seedDatabase(prisma);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Seed gagal";
+    return NextResponse.json(errorResponse(`Data dihapus tapi seed gagal: ${msg}`), { status: 500 });
   }
-
-  return NextResponse.json(errorResponse("Action tidak valid. Gunakan 'reset' atau 'reseed'."), { status: 400 });
+  return NextResponse.json(successResponse({ message: "Data demo berhasil dimuat ulang" }));
 }
