@@ -46,7 +46,7 @@ export const employeeQuerySchema = z.object({
   departmentId: z.string().optional(),
   status: z.enum(["ACTIVE", "PROBATION", "RESIGNED", "TERMINATED", "RETIRED"]).optional(),
   type: z.enum(["PERMANENT", "CONTRACT", "PROBATION", "INTERNSHIP"]).optional(),
-  sort: z.string().default("employeeNumber"),
+  sort: z.enum(["employeeNumber", "firstName", "lastName", "joinDate", "status", "createdAt"]).default("createdAt"),
   order: z.enum(["asc", "desc"]).default("asc"),
 });
 
