@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
   const where = {
     ...(effectiveEmployeeId && { employeeId: effectiveEmployeeId }),
-    ...(status && { status: status as never }),
+    ...(status && { status: parsed.data.status }),
     ...(startDate && { date: { gte: new Date(startDate) } }),
     ...(endDate && { date: { ...((startDate ? { gte: new Date(startDate) } : {})), lte: new Date(endDate) } }),
   };
