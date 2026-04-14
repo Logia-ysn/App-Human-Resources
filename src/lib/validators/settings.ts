@@ -1,23 +1,5 @@
 import { z } from "zod";
 
-export const createCompanySchema = z.object({
-  name: z.string().min(1, "Nama perusahaan wajib diisi").max(200),
-  legalName: z.string().min(1, "Nama legal wajib diisi").max(200),
-  npwp: z.string().max(30).nullable().optional(),
-  address: z.string().min(1, "Alamat wajib diisi").max(500),
-  city: z.string().min(1, "Kota wajib diisi").max(100),
-  province: z.string().min(1, "Provinsi wajib diisi").max(100),
-  postalCode: z.string().max(10).nullable().optional(),
-  phone: z.string().max(30).nullable().optional(),
-  email: z.email("Format email tidak valid").nullable().optional(),
-  website: z.url("Format website tidak valid").nullable().optional(),
-  logoUrl: z.string().max(500).nullable().optional(),
-  umrAmount: z.union([z.number().nonnegative(), z.string().regex(/^\d+(\.\d+)?$/)]),
-  umrRegion: z.string().min(1, "Regional UMR wajib diisi").max(100),
-  cutOffDate: z.number().int().min(1).max(31).optional(),
-  payDate: z.number().int().min(1).max(31).optional(),
-});
-
 export const updateCompanySchema = z.object({
   name: z.string().min(1, "Nama perusahaan wajib diisi").max(200).optional(),
   legalName: z.string().min(1, "Nama legal wajib diisi").max(200).optional(),
@@ -47,7 +29,6 @@ export const resetActionSchema = z.object({
   action: z.literal("reset", { error: "Action harus 'reset'" }),
 });
 
-export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 export type UpdateAppConfigInput = z.infer<typeof updateAppConfigSchema>;
 export type ResetActionInput = z.infer<typeof resetActionSchema>;
