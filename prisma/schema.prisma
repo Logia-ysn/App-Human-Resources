@@ -348,10 +348,11 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  employee      Employee?      @relation(fields: [employeeId], references: [id])
-  sessions      Session[]
-  auditLogs     AuditLog[]
-  notifications Notification[]
+  employee          Employee?        @relation(fields: [employeeId], references: [id])
+  sessions          Session[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  uploadedDocuments EmployeeDocument[]
 
   @@map("users")
 }
@@ -367,6 +368,7 @@ model Session {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("sessions")
 }
 
@@ -435,6 +437,8 @@ model Department {
   employees   Employee[]   @relation("EmployeeDepartment")
   jobPostings JobPosting[]
 
+  @@index([parentId])
+  @@index([headEmployeeId])
   @@map("departments")
 }
 
@@ -455,6 +459,7 @@ model Position {
   employees   Employee[]   @relation("EmployeePosition")
   jobPostings JobPosting[]
 
+  @@index([departmentId])
   @@map("positions")
 }
 
@@ -539,10 +544,13 @@ model Employee {
   createdJobPostings  JobPosting[]            @relation("JobCreator")
   createdTrainings    TrainingProgram[]       @relation("TrainingCreator")
   shiftAssignments    ShiftAssignment[]
-  onboardings         EmployeeOnboarding[]
-  lifecycleEvents     LifecycleEvent[]
-  advances            EmployeeAdvance[]
-  expenseClaims       ExpenseClaim[]
+  onboardings              EmployeeOnboarding[]
+  lifecycleEvents          LifecycleEvent[]
+  approvedLifecycleEvents  LifecycleEvent[]     @relation("LifecycleApprover")
+  advances                 EmployeeAdvance[]
+  approvedAdvances         EmployeeAdvance[]    @relation("AdvanceApprover")
+  expenseClaims            ExpenseClaim[]
+  approvedExpenseClaims    ExpenseClaim[]       @relation("ExpenseClaimApprover")
 
   @@index([departmentId])
   @@index([positionId])
@@ -584,9 +592,11 @@ model EmployeeDocument {
   uploadedById String
   createdAt    DateTime  @default(now())
 
-  employee Employee @relation(fields: [employeeId], references: [id])
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  uploadedBy User     @relation(fields: [uploadedById], references: [id])
 
   @@index([employeeId])
+  @@index([uploadedById])
   @@map("employee_documents")
 }
 
@@ -671,6 +681,7 @@ model EmployeeSchedule {
   schedule WorkSchedule @relation(fields: [scheduleId], references: [id])
 
   @@index([employeeId])
+  @@index([scheduleId])
   @@map("employee_schedules")
 }
 
@@ -702,7 +713,8 @@ model Attendance {
   approvedBy Employee? @relation("AttendanceApprover", fields: [approvedById], references: [id])
 
   @@unique([employeeId, date])
-  @@index([date])
+  @@index([employeeId, status])
+  @@index([date, status])
   @@map("attendances")
 }
 
@@ -783,6 +795,7 @@ model LeaveBalance {
   leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
 
   @@unique([employeeId, leaveTypeId, year])
+  @@index([leaveTypeId])
   @@map("leave_balances")
 }
 
@@ -826,6 +839,8 @@ model LeaveApproval {
   leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id])
   approver     Employee     @relation(fields: [approverId], references: [id])
 
+  @@index([leaveRequestId])
+  @@index([approverId])
   @@map("leave_approvals")
 }
 
@@ -869,6 +884,7 @@ model EmployeeSalary {
   component SalaryComponent @relation(fields: [componentId], references: [id])
 
   @@index([employeeId])
+  @@index([componentId])
   @@map("employee_salaries")
 }
 
@@ -952,6 +968,7 @@ model PayslipDetail {
   component SalaryComponent @relation(fields: [componentId], references: [id])
 
   @@index([payslipId])
+  @@index([componentId])
   @@map("payslip_details")
 }
 
@@ -1075,6 +1092,7 @@ model InterviewSchedule {
   interviewer Employee  @relation("Interviewer", fields: [interviewerId], references: [id])
 
   @@index([applicantId])
+  @@index([interviewerId])
   @@map("interview_schedules")
 }
 
@@ -1139,6 +1157,7 @@ model PerformanceReview {
 
   @@unique([reviewCycleId, employeeId])
   @@index([employeeId])
+  @@index([reviewerId])
   @@map("performance_reviews")
 }
 
@@ -1191,6 +1210,9 @@ model TrainingProgram {
   participants   TrainingParticipant[]
   certifications EmployeeCertification[]
 
+  @@index([status])
+  @@index([createdById])
+  @@index([startDate])
   @@map("training_programs")
 }
 
@@ -1339,6 +1361,7 @@ model EmployeeOnboardingTask {
   task       OnboardingTask     @relation(fields: [taskId], references: [id])
 
   @@unique([onboardingId, taskId])
+  @@index([taskId])
   @@map("employee_onboarding_tasks")
 }
 
@@ -1358,13 +1381,15 @@ model LifecycleEvent {
   toSalary       Decimal?      @db.Decimal(15, 2)
   effectiveDate  DateTime
   reason         String
-  approvedBy     String
+  approvedById   String?
   createdAt      DateTime      @default(now())
 
-  employee Employee @relation(fields: [employeeId], references: [id])
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  approvedBy Employee? @relation("LifecycleApprover", fields: [approvedById], references: [id])
 
   @@index([employeeId])
   @@index([effectiveDate])
+  @@index([approvedById])
   @@map("lifecycle_events")
 }
 
@@ -1379,16 +1404,18 @@ model EmployeeAdvance {
   purpose        String
   requestDate    DateTime
   status         ExpenseStatus @default(PENDING)
-  approvedBy     String?
+  approvedById   String?
   approvedDate   DateTime?
   returnedAmount Decimal       @default(0) @db.Decimal(15, 2)
   notes          String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  employee Employee @relation(fields: [employeeId], references: [id])
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  approvedBy Employee? @relation("AdvanceApprover", fields: [approvedById], references: [id])
 
   @@index([employeeId])
+  @@index([approvedById])
   @@map("employee_advances")
 }
 
@@ -1399,15 +1426,17 @@ model ExpenseClaim {
   totalAmount   Decimal       @db.Decimal(15, 2)
   status        ExpenseStatus @default(DRAFT)
   submittedDate DateTime
-  approvedBy    String?
+  approvedById  String?
   approvedDate  DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  employee Employee       @relation(fields: [employeeId], references: [id])
-  items    ExpenseItem[]
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  approvedBy Employee? @relation("ExpenseClaimApprover", fields: [approvedById], references: [id])
+  items      ExpenseItem[]
 
   @@index([employeeId])
+  @@index([approvedById])
   @@map("expense_claims")
 }
 
