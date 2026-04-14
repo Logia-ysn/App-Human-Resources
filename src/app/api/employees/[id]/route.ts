@@ -4,6 +4,18 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { updateEmployeeSchema } from "@/lib/validators/employee";
 import { recordAudit, getRequestMeta } from "@/lib/audit";
+import { hasMinRole } from "@/lib/utils/permissions";
+
+const MANAGER_RESTRICTED_FIELDS = [
+  "nik",
+  "npwp",
+  "bpjsKesNumber",
+  "bpjsTkNumber",
+  "bankAccountNo",
+  "bankAccountName",
+  "salaryComponents",
+  "basicSalary",
+] as const;
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -30,6 +42,15 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   if (!employee) {
     return NextResponse.json(errorResponse("Karyawan tidak ditemukan"), { status: 404 });
+  }
+
+  // Filter sensitive PII fields for MANAGER role (HR_ADMIN+ sees everything)
+  if (!hasMinRole(session.user.role, "HR_ADMIN")) {
+    const filtered = { ...employee } as Record<string, unknown>;
+    for (const field of MANAGER_RESTRICTED_FIELDS) {
+      delete filtered[field];
+    }
+    return NextResponse.json(successResponse(filtered));
   }
 
   return NextResponse.json(successResponse(employee));
