@@ -32,8 +32,10 @@ yarn-error.log*
 
 # env files
 .env
+.env*
 .env.local
 .env.production.local
+.next/standalone/.env*
 
 # vercel
 .vercel
