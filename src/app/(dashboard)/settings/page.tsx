@@ -1,4 +1,5 @@
 "use client";
+import { LoadingState } from "@/components/shared/loading-state";
 
 import { useState, useRef } from "react";
 import { toast } from "sonner";
@@ -147,9 +148,7 @@ export default function SettingsPage() {
 
   if (compLoading || configLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
@@ -165,10 +164,10 @@ export default function SettingsPage() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">
+        <h1 className="mt-2 text-xl font-semibold tracking-tight">
           Pengaturan Perusahaan
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Kelola informasi dan konfigurasi perusahaan Anda.
         </p>
       </div>
@@ -371,7 +370,7 @@ function CompanyTab({ company }: { company: Company | null }) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-6">
-            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/30">
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-dashed border-border bg-muted/40">
               {form.logoUrl ? (
                 <>
                   <img
@@ -850,12 +849,12 @@ function PayrollTab({ company, appConfig }: { company: Company; appConfig: AppCo
               </div>
               <div className="space-y-2">
                 <Label>Lapisan Tarif PPh 21 (Tahunan)</Label>
-                <div className="rounded-md border">
+                <div className="rounded-sm border border-border">
                   <div className="grid grid-cols-2 gap-0 text-sm">
-                    <div className="border-b border-r bg-muted/50 px-3 py-2 font-medium">
+                    <div className="border-b border-r border-border bg-muted/60 px-3 py-2 font-medium">
                       Penghasilan Kena Pajak
                     </div>
-                    <div className="border-b bg-muted/50 px-3 py-2 font-medium">
+                    <div className="border-b border-border bg-muted/60 px-3 py-2 font-medium">
                       Tarif
                     </div>
                     <div className="border-b border-r px-3 py-2 text-muted-foreground">
@@ -1023,10 +1022,10 @@ function WorkHoursTab({ appConfig }: { appConfig: AppConfigData }) {
                     key={value}
                     type="button"
                     onClick={() => toggleWorkDay(value)}
-                    className={`inline-flex h-9 items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors ${
+                    className={`inline-flex h-9 items-center justify-center rounded-sm border px-3 text-sm font-medium transition-colors ${
                       active
                         ? "border-primary bg-primary text-primary-foreground"
-                        : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     }`}
                   >
                     {label}
@@ -1427,7 +1426,7 @@ function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
               </p>
             </div>
 
-            <div className="flex items-center justify-between rounded-md border p-3">
+            <div className="flex items-center justify-between rounded-sm border border-border p-3">
               <div className="space-y-0.5">
                 <Label htmlFor="allowOutOfSchedule">Izinkan Absensi di Luar Jadwal</Label>
                 <p className="text-xs text-muted-foreground">
@@ -1511,9 +1510,9 @@ function DataManagementSection() {
             />
             <DialogContent>
               <DialogHeader>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-sm border border-destructive/30 bg-destructive/5">
+                    <AlertTriangle className="h-4 w-4 text-destructive" strokeWidth={1.75} />
                   </div>
                   <DialogTitle>Hapus Semua Data</DialogTitle>
                 </div>

@@ -47,9 +47,9 @@ export default function ChangePasswordPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <KeyRound className="h-5 w-5 text-primary" />
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-sm border border-border bg-muted/60">
+            <KeyRound className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
           </div>
           <div>
             <CardTitle>Ganti Password</CardTitle>

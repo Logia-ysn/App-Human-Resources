@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useDepartments, useCreateDepartment, useUpdateDepartment, useDeleteDepartment } from "@/hooks/use-departments";
@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { LoadingState } from "@/components/shared/loading-state";
+import { EmptyRow } from "@/components/shared/empty-row";
 
 type DepartmentFormData = {
   name: string;
@@ -133,18 +135,20 @@ export default function DepartmentsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
-          Manajemen Departemen
-        </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="flex items-center gap-2.5">
+          <Building2 className="size-5 text-muted-foreground" strokeWidth={1.75} />
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Manajemen Departemen</h1>
+            <p className="text-xs text-muted-foreground">Kelola struktur departemen perusahaan</p>
+          </div>
+        </div>
         <Button onClick={openAddDialog} size="sm" className="sm:size-default">
           <Plus className="mr-1 h-4 w-4" />
           <span className="hidden sm:inline">Tambah Departemen</span>
@@ -163,7 +167,7 @@ export default function DepartmentsPage() {
               <div className="text-center py-8 text-muted-foreground">Belum ada departemen</div>
             ) : (
               departments.map((dept) => (
-                <div key={dept.id} className="rounded-lg border p-4 space-y-3">
+                <div key={dept.id} className="rounded-sm border border-border p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-medium">{dept.name}</p>
@@ -240,11 +244,7 @@ export default function DepartmentsPage() {
                 </TableRow>
               ))}
               {departments.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    Belum ada departemen
-                  </TableCell>
-                </TableRow>
+                <EmptyRow colSpan={7}>Belum ada departemen</EmptyRow>
               )}
             </TableBody>
           </Table>

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { LoadingState } from "@/components/shared/loading-state";
 
 function formatTime(dateStr: string | Date | null): string {
   if (!dateStr) return "-";
@@ -40,9 +41,7 @@ export default function EssAttendancePage() {
 
   if (todayLoading || historyLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
@@ -92,7 +91,13 @@ export default function EssAttendancePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg sm:text-2xl font-bold tracking-tight">Absensi Saya</h1>
+      <div className="flex items-center gap-2.5 border-b border-border pb-4">
+        <Clock className="size-5 text-muted-foreground" strokeWidth={1.75} />
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Absensi Saya</h1>
+          <p className="text-xs text-muted-foreground">Clock in/out dan riwayat kehadiran Anda</p>
+        </div>
+      </div>
 
       <Card>
         <CardHeader><CardTitle>Clock In / Clock Out</CardTitle></CardHeader>
@@ -135,7 +140,7 @@ export default function EssAttendancePage() {
         <CardContent>
           <div className="space-y-3 md:hidden">
             {myAttendance.map((a) => (
-              <div key={a.id} className="rounded-lg border p-3 space-y-1">
+              <div key={a.id} className="rounded-sm border border-border p-3 space-y-1">
                 <div className="flex items-center justify-between">
                   <p className="font-medium text-sm">
                     {format(new Date(a.date), "dd MMM yyyy", { locale: idLocale })}

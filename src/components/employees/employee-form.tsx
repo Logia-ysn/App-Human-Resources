@@ -183,8 +183,8 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 mt-0.5">
-        <Icon className="size-4 text-primary" />
+      <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-sm border border-border bg-muted/60">
+        <Icon className="size-4 text-muted-foreground" />
       </div>
       <div>
         <h3 className="text-base font-semibold">{title}</h3>

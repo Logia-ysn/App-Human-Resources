@@ -128,7 +128,7 @@ export function AccountSection({ employeeId, employeeEmail, viewerRole }: Props)
         </CardHeader>
         <CardContent>
           {!account ? (
-            <div className="rounded-lg border border-dashed p-6 text-center">
+            <div className="rounded-sm border border-dashed border-border p-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Karyawan ini belum memiliki akun login.
               </p>
@@ -298,7 +298,8 @@ function AccountView({
       </div>
 
       {account.mustChangePassword && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
+        <div className="flex items-center gap-2 rounded-sm border border-border bg-muted/60 p-3 text-sm text-muted-foreground">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--warning)]" aria-hidden />
           Karyawan akan diminta mengganti password saat login pertama.
         </div>
       )}
@@ -471,7 +472,7 @@ function CreateAccountDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2 rounded-md border p-3">
+          <div className="flex items-center gap-2 rounded-sm border border-border p-3">
             <Switch
               id="must-change"
               checked={mustChangePassword}
@@ -571,7 +572,7 @@ function ResetPasswordDialog({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-md border p-3">
+          <div className="flex items-center gap-2 rounded-sm border border-border p-3">
             <Switch
               id="reset-must-change"
               checked={mustChangePassword}

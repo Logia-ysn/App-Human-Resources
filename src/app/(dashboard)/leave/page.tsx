@@ -15,8 +15,10 @@ import {
 import { toast } from "sonner";
 
 import { useLeaveRequests, useLeaveTypes, useLeaveBalances } from "@/hooks/use-leave";
+import { useEmployees } from "@/hooks/use-employees";
 import { apiClient } from "@/lib/api-client";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { StatCard } from "@/components/shared/stat-card";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -49,6 +51,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { LoadingState } from "@/components/shared/loading-state";
+import { EmptyRow } from "@/components/shared/empty-row";
 
 const STATUS_OPTIONS = [
   { value: "ALL", label: "Semua Status" },
@@ -70,6 +74,21 @@ type LeaveTypeForm = {
   isActive: boolean;
 };
 
+type GenerateForm = {
+  year: number;
+  employeeId: string;
+  leaveTypeId: string;
+  carryOverFromPrevYear: boolean;
+};
+
+const CURRENT_YEAR = new Date().getFullYear();
+const EMPTY_GENERATE: GenerateForm = {
+  year: CURRENT_YEAR,
+  employeeId: "ALL",
+  leaveTypeId: "ALL",
+  carryOverFromPrevYear: false,
+};
+
 const EMPTY_LEAVE_TYPE: LeaveTypeForm = {
   name: "",
   code: "",
@@ -86,11 +105,15 @@ export default function LeavePage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newType, setNewType] = useState<LeaveTypeForm>(EMPTY_LEAVE_TYPE);
+  const [genOpen, setGenOpen] = useState(false);
+  const [genForm, setGenForm] = useState<GenerateForm>(EMPTY_GENERATE);
+  const [generating, setGenerating] = useState(false);
   const { requests, isLoading: requestsLoading, mutate: mutateRequests } = useLeaveRequests({
     status: statusFilter !== "ALL" ? statusFilter : undefined,
   });
   const { leaveTypes: types, isLoading: typesLoading } = useLeaveTypes();
-  const { balances: leaveBalances, isLoading: balancesLoading } = useLeaveBalances();
+  const { balances: leaveBalances, isLoading: balancesLoading, mutate: mutateBalances } = useLeaveBalances();
+  const { employees: allEmployees } = useEmployees({ limit: 200, status: "ACTIVE" });
 
   const stats = useMemo(() => {
     const total = requests.length;
@@ -124,6 +147,32 @@ export default function LeavePage() {
     }
   }
 
+  async function handleGenerateBalances() {
+    setGenerating(true);
+    try {
+      const res = await apiClient<{ created: number; skipped: number }>(
+        "/api/leave/balances/generate",
+        {
+          method: "POST",
+          body: {
+            year: genForm.year,
+            employeeId: genForm.employeeId === "ALL" ? undefined : genForm.employeeId,
+            leaveTypeId: genForm.leaveTypeId === "ALL" ? undefined : genForm.leaveTypeId,
+            carryOverFromPrevYear: genForm.carryOverFromPrevYear,
+          },
+        },
+      );
+      toast.success(`Berhasil: ${res.created} dibuat, ${res.skipped} dilewati`);
+      setGenOpen(false);
+      setGenForm(EMPTY_GENERATE);
+      await mutateBalances();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal generate saldo");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   const handleAddType = () => {
     if (!newType.name.trim() || !newType.code.trim()) {
       toast.error("Nama dan Kode wajib diisi");
@@ -142,21 +191,17 @@ export default function LeavePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-          <CalendarDays className="size-5 text-primary" />
-        </div>
+      <div className="flex items-center gap-2.5 border-b border-border pb-4">
+        <CalendarDays className="size-5 text-muted-foreground" strokeWidth={1.75} />
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Manajemen Cuti</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight">Manajemen Cuti</h1>
+          <p className="text-xs text-muted-foreground">
             Kelola pengajuan, saldo, dan tipe cuti karyawan
           </p>
         </div>
@@ -172,53 +217,10 @@ export default function LeavePage() {
         {/* TAB 1 — Pengajuan Cuti */}
         <TabsContent value="requests" className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-blue-500">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground">Total Pengajuan</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-yellow-500">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-100">
-                  <Clock className="h-4 w-4 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.pending}</p>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground">Menunggu</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-green-500">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-100">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.approved}</p>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground">Disetujui</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-red-500">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
-                  <XCircle className="h-4 w-4 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.rejected}</p>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground">Ditolak</p>
-                </div>
-              </div>
-            </Card>
+            <StatCard title="Total Pengajuan" value={stats.total} icon={FileText} />
+            <StatCard title="Menunggu" value={stats.pending} icon={Clock} />
+            <StatCard title="Disetujui" value={stats.approved} icon={CheckCircle2} />
+            <StatCard title="Ditolak" value={stats.rejected} icon={XCircle} />
           </div>
 
           <Card className="shadow-sm">
@@ -280,7 +282,7 @@ export default function LeavePage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1 border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                        className="flex-1"
                         onClick={() => handleApprove(req.id)}
                       >
                         <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
@@ -288,8 +290,8 @@ export default function LeavePage() {
                       </Button>
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="flex-1 border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                        variant="destructive"
+                        className="flex-1"
                         onClick={() => handleReject(req.id)}
                       >
                         <XCircle className="h-3.5 w-3.5 mr-1" />
@@ -325,11 +327,7 @@ export default function LeavePage() {
                   </TableHeader>
                   <TableBody>
                     {requests.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          Tidak ada pengajuan cuti ditemukan.
-                        </TableCell>
-                      </TableRow>
+                      <EmptyRow colSpan={7}>Tidak ada pengajuan cuti ditemukan.</EmptyRow>
                     ) : (
                       requests.map((req) => (
                         <TableRow key={req.id} className="hover:bg-muted/50">
@@ -353,7 +351,6 @@ export default function LeavePage() {
                                 <Button
                                   size="xs"
                                   variant="outline"
-                                  className="border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
                                   onClick={() => handleApprove(req.id)}
                                 >
                                   <CheckCircle2 data-icon="inline-start" />
@@ -361,8 +358,7 @@ export default function LeavePage() {
                                 </Button>
                                 <Button
                                   size="xs"
-                                  variant="outline"
-                                  className="border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                                  variant="destructive"
                                   onClick={() => handleReject(req.id)}
                                 >
                                   <XCircle data-icon="inline-start" />
@@ -387,6 +383,114 @@ export default function LeavePage() {
 
         {/* TAB 2 — Saldo Cuti */}
         <TabsContent value="balances" className="space-y-4">
+          <div className="flex justify-end">
+            <Dialog open={genOpen} onOpenChange={setGenOpen}>
+              <DialogTrigger render={<Button />}>
+                <Plus data-icon="inline-start" />
+                Generate Saldo
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Generate Saldo Cuti</DialogTitle>
+                  <DialogDescription>
+                    Buat saldo cuti untuk semua atau satu karyawan berdasarkan kuota default tipe cuti.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="gen-year">Tahun</Label>
+                    <Input
+                      id="gen-year"
+                      type="number"
+                      min={2000}
+                      max={2100}
+                      value={genForm.year}
+                      onChange={(e) =>
+                        setGenForm((p) => ({ ...p, year: Number(e.target.value) }))
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Karyawan</Label>
+                    <Select
+                      value={genForm.employeeId}
+                      onValueChange={(v: string | null) =>
+                        setGenForm((p) => ({ ...p, employeeId: v ?? "ALL" }))
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Karyawan Aktif</SelectItem>
+                        {allEmployees.map((emp) => (
+                          <SelectItem key={emp.id} value={emp.id}>
+                            {emp.employeeNumber} — {emp.firstName} {emp.lastName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Tipe Cuti</Label>
+                    <Select
+                      value={genForm.leaveTypeId}
+                      onValueChange={(v: string | null) =>
+                        setGenForm((p) => ({ ...p, leaveTypeId: v ?? "ALL" }))
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Tipe Aktif</SelectItem>
+                        {types
+                          .filter((t) => t.isActive)
+                          .map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name} ({t.defaultQuota} hari)
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Carry Over dari tahun sebelumnya</Label>
+                    <Select
+                      value={genForm.carryOverFromPrevYear ? "true" : "false"}
+                      onValueChange={(v: string | null) =>
+                        setGenForm((p) => ({
+                          ...p,
+                          carryOverFromPrevYear: v === "true",
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="false">Tidak</SelectItem>
+                        <SelectItem value="true">Ya (jika tipe mendukung)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Saldo yang sudah ada akan dilewati — tidak akan ditimpa.
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setGenOpen(false)}>
+                    Batal
+                  </Button>
+                  <Button onClick={handleGenerateBalances} disabled={generating}>
+                    {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Generate
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
           {/* Mobile card grid */}
           <div className="md:hidden space-y-3">
             {leaveBalances.length === 0 ? (
@@ -414,7 +518,7 @@ export default function LeavePage() {
                         <p className="text-xs text-muted-foreground">{bal.leaveType.name}</p>
                       </div>
                       <div className="text-right">
-                        <span className={`text-lg font-bold ${remaining <= 2 ? "text-red-600" : ""}`}>
+                        <span className={`text-lg font-bold ${remaining <= 2 ? "text-destructive" : ""}`}>
                           {remaining}
                         </span>
                         <p className="text-[11px] text-muted-foreground">sisa hari</p>
@@ -424,10 +528,10 @@ export default function LeavePage() {
                       <div
                         className={`h-2 rounded-full transition-all ${
                           usedPercentage >= 80
-                            ? "bg-red-500"
+                            ? "bg-destructive"
                             : usedPercentage >= 50
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
+                              ? "bg-[var(--warning)]"
+                              : "bg-[var(--success)]"
                         }`}
                         style={{ width: `${Math.min(usedPercentage, 100)}%` }}
                       />
@@ -444,9 +548,10 @@ export default function LeavePage() {
                       <div>
                         <p className="font-semibold">
                           {bal.pending > 0 ? (
-                            <Badge variant="outline" className="text-yellow-700 border-yellow-300 text-xs px-1.5">
+                            <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-1.5 py-0.5 text-[11px] font-medium">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)]" />
                               {bal.pending}
-                            </Badge>
+                            </span>
                           ) : (
                             bal.pending
                           )}
@@ -481,11 +586,7 @@ export default function LeavePage() {
                   </TableHeader>
                   <TableBody>
                     {leaveBalances.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          Tidak ada data saldo cuti.
-                        </TableCell>
-                      </TableRow>
+                      <EmptyRow colSpan={7}>Tidak ada data saldo cuti.</EmptyRow>
                     ) : (
                       leaveBalances.map((bal) => {
                         const remaining = computeRemaining(bal);
@@ -506,26 +607,27 @@ export default function LeavePage() {
                             <TableCell className="text-center">{bal.used}</TableCell>
                             <TableCell className="text-center">
                               {bal.pending > 0 ? (
-                                <Badge variant="outline" className="text-yellow-700 border-yellow-300">
+                                <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)]" />
                                   {bal.pending}
-                                </Badge>
+                                </span>
                               ) : (
                                 bal.pending
                               )}
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="flex flex-col items-center gap-1">
-                                <span className={remaining <= 2 ? "font-bold text-red-600" : "font-bold"}>
+                                <span className={remaining <= 2 ? "font-bold text-destructive" : "font-bold"}>
                                   {remaining}
                                 </span>
                                 <div className="h-1.5 w-16 rounded-full bg-muted">
                                   <div
                                     className={`h-1.5 rounded-full transition-all ${
                                       usedPercentage >= 80
-                                        ? "bg-red-500"
+                                        ? "bg-destructive"
                                         : usedPercentage >= 50
-                                          ? "bg-yellow-500"
-                                          : "bg-green-500"
+                                          ? "bg-[var(--warning)]"
+                                          : "bg-[var(--success)]"
                                     }`}
                                     style={{ width: `${Math.min(usedPercentage, 100)}%` }}
                                   />
@@ -699,15 +801,10 @@ export default function LeavePage() {
                           {lt.code}
                         </Badge>
                       </div>
-                      {lt.isActive ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          Aktif
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                          Nonaktif
-                        </Badge>
-                      )}
+                      <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium">
+                        <span className={`h-1.5 w-1.5 rounded-full ${lt.isActive ? "bg-[var(--success)]" : "bg-muted-foreground/60"}`} />
+                        {lt.isActive ? "Aktif" : "Nonaktif"}
+                      </span>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-xs mt-2">
                       <div>
@@ -745,11 +842,7 @@ export default function LeavePage() {
                   </TableHeader>
                   <TableBody>
                     {types.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          Tidak ada tipe cuti.
-                        </TableCell>
-                      </TableRow>
+                      <EmptyRow colSpan={7}>Tidak ada tipe cuti.</EmptyRow>
                     ) : (
                       types.map((lt) => (
                         <TableRow key={lt.id} className="hover:bg-muted/50">
@@ -763,15 +856,10 @@ export default function LeavePage() {
                             {lt.defaultQuota} hari
                           </TableCell>
                           <TableCell className="text-center">
-                            {lt.isPaid ? (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Ya
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                                Tidak
-                              </Badge>
-                            )}
+                            <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium">
+                              <span className={`h-1.5 w-1.5 rounded-full ${lt.isPaid ? "bg-[var(--success)]" : "bg-muted-foreground/60"}`} />
+                              {lt.isPaid ? "Ya" : "Tidak"}
+                            </span>
                           </TableCell>
                           <TableCell className="text-center">
                             {lt.isCarryOver ? (
@@ -782,21 +870,16 @@ export default function LeavePage() {
                           </TableCell>
                           <TableCell className="text-center">
                             {lt.requiresDoc ? (
-                              <CalendarDays className="mx-auto h-4 w-4 text-blue-600" />
+                              <CalendarDays className="mx-auto h-4 w-4 text-primary" strokeWidth={1.75} />
                             ) : (
                               <span className="text-sm text-muted-foreground">&mdash;</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
-                            {lt.isActive ? (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Aktif
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                                Nonaktif
-                              </Badge>
-                            )}
+                            <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium">
+                              <span className={`h-1.5 w-1.5 rounded-full ${lt.isActive ? "bg-[var(--success)]" : "bg-muted-foreground/60"}`} />
+                              {lt.isActive ? "Aktif" : "Nonaktif"}
+                            </span>
                           </TableCell>
                         </TableRow>
                       ))

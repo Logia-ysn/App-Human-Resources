@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { UserCircle, Briefcase, MapPin, Phone, Mail, Shield, Loader2 } from "lucide-react";
+import { UserCircle, Briefcase, MapPin, Phone, Mail, Shield } from "lucide-react";
+import { LoadingState } from "@/components/shared/loading-state";
 
 const GENDER_LABEL: Record<string, string> = { MALE: "Laki-laki", FEMALE: "Perempuan" };
 const RELIGION_LABEL: Record<string, string> = { ISLAM: "Islam", KRISTEN: "Kristen", KATOLIK: "Katolik", HINDU: "Hindu", BUDDHA: "Buddha", KONGHUCU: "Konghucu", LAINNYA: "Lainnya" };
@@ -29,9 +30,7 @@ export default function EssProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
@@ -58,37 +57,34 @@ export default function EssProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-          <UserCircle className="h-5 w-5 text-primary" />
-        </div>
+      <div className="flex items-center gap-2.5 border-b border-border pb-4">
+        <UserCircle className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Profil Saya</h1>
-          <p className="text-sm text-muted-foreground">Informasi profil dan data kepegawaian Anda</p>
+          <h1 className="text-xl font-semibold tracking-tight">Profil Saya</h1>
+          <p className="text-xs text-muted-foreground">Informasi profil dan data kepegawaian Anda</p>
         </div>
       </div>
 
-      <Card className="shadow-sm overflow-hidden">
-        <div className="h-24 bg-gradient-to-r from-primary/80 to-primary/40" />
-        <CardContent className="relative pt-0 pb-6 px-6">
-          <div className="flex items-end gap-5 -mt-10">
-            <Avatar className="h-20 w-20 text-2xl border-4 border-background shadow-md">
-              <AvatarFallback className="bg-primary text-primary-foreground font-bold">{initials}</AvatarFallback>
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <Avatar className="h-16 w-16 rounded-sm">
+              <AvatarFallback className="rounded-sm bg-primary text-primary-foreground font-semibold text-xl">{initials}</AvatarFallback>
             </Avatar>
-            <div className="flex-1 pb-1">
-              <h2 className="text-xl font-bold">{emp.firstName} {emp.lastName}</h2>
-              <p className="text-muted-foreground">{positionName} — {departmentName}</p>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-semibold tracking-tight">{emp.firstName} {emp.lastName}</h2>
+              <p className="text-sm text-muted-foreground">{positionName} — {departmentName}</p>
             </div>
-            <div className="flex gap-2 pb-1">
+            <div className="flex flex-wrap gap-2">
               <StatusBadge status={emp.status} />
               <Badge variant="outline" className="font-medium">{emp.type === "PERMANENT" ? "Tetap (PKWTT)" : emp.type}</Badge>
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" />{emp.email}</span>
-            <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{emp.phone}</span>
-            <span className="flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" />{emp.employeeNumber}</span>
-            <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{emp.city}, {emp.province}</span>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" strokeWidth={1.75} />{emp.email}</span>
+            <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" strokeWidth={1.75} />{emp.phone}</span>
+            <span className="flex items-center gap-1.5 font-mono font-tabular"><Briefcase className="h-3.5 w-3.5" strokeWidth={1.75} />{emp.employeeNumber}</span>
+            <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />{emp.city}, {emp.province}</span>
           </div>
         </CardContent>
       </Card>

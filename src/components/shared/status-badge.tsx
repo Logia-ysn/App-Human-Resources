@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type StatusVariant = "default" | "success" | "warning" | "destructive" | "secondary";
@@ -36,35 +35,26 @@ const STATUS_MAP: Record<string, { label: string; variant: StatusVariant }> = {
   WITHDRAWN: { label: "Mengundurkan", variant: "secondary" },
 };
 
-const VARIANT_STYLES: Record<StatusVariant, string> = {
-  default: "bg-blue-50 text-blue-700 border-blue-200/80",
-  success: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-  warning: "bg-amber-50 text-amber-700 border-amber-200/80",
-  destructive: "bg-red-50 text-red-700 border-red-200/80",
-  secondary: "bg-slate-50 text-slate-600 border-slate-200/80",
-};
-
 const DOT_STYLES: Record<StatusVariant, string> = {
-  default: "bg-blue-500",
-  success: "bg-emerald-500",
-  warning: "bg-amber-500",
-  destructive: "bg-red-500",
-  secondary: "bg-slate-400",
+  default: "bg-[var(--info)]",
+  success: "bg-[var(--success)]",
+  warning: "bg-[var(--warning)]",
+  destructive: "bg-destructive",
+  secondary: "bg-muted-foreground/60",
 };
 
 export function StatusBadge({ status }: { status: string }) {
   const config = STATUS_MAP[status] || { label: status, variant: "secondary" as StatusVariant };
 
   return (
-    <Badge
-      variant="outline"
+    <span
       className={cn(
-        "gap-1.5 font-medium text-[11px] px-2 py-0.5 rounded-full",
-        VARIANT_STYLES[config.variant]
+        "inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 py-0.5",
+        "text-[11px] font-medium text-foreground tracking-tight whitespace-nowrap"
       )}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full", DOT_STYLES[config.variant])} />
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", DOT_STYLES[config.variant])} />
       {config.label}
-    </Badge>
+    </span>
   );
 }

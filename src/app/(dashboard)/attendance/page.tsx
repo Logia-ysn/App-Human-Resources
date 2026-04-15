@@ -1,16 +1,18 @@
 "use client";
+import { LoadingState } from "@/components/shared/loading-state";
 
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { Clock, CheckCircle, XCircle, AlertTriangle, Plus, Loader2 } from "lucide-react";
+import { Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAttendanceRecords, useOvertimeRequests } from "@/hooks/use-attendance";
 import { useHolidays } from "@/hooks/use-holidays";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { StatCard } from "@/components/shared/stat-card";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -38,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptyRow } from "@/components/shared/empty-row";
 
 const HOLIDAY_TYPE_LABELS: Record<string, string> = {
   NATIONAL: "Nasional",
@@ -116,23 +119,19 @@ export default function AttendancePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-          <Clock className="size-5 text-primary" />
-        </div>
+      <div className="flex items-center gap-2.5 border-b border-border pb-4">
+        <Clock className="size-5 text-muted-foreground" strokeWidth={1.75} />
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+          <h1 className="text-xl font-semibold tracking-tight">
             Manajemen Absensi
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Kelola kehadiran, overtime, dan hari libur karyawan
           </p>
         </div>
@@ -149,53 +148,10 @@ export default function AttendancePage() {
         <TabsContent value="kehadiran">
           <div className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-green-500">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-100">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-xl sm:text-2xl font-bold">{summary.hadir}</p>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground">Hadir</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-yellow-500">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-100">
-                    <Clock className="h-4 w-4 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-xl sm:text-2xl font-bold">{summary.terlambat}</p>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground">Terlambat</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-red-500">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
-                    <XCircle className="h-4 w-4 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-xl sm:text-2xl font-bold">{summary.tidakHadir}</p>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground">Tidak Hadir</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-3 sm:p-4 shadow-sm border-l-4 border-l-blue-500">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100">
-                    <AlertTriangle className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xl sm:text-2xl font-bold">{summary.cutiSakitDinas}</p>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground">Cuti/Sakit/Dinas</p>
-                  </div>
-                </div>
-              </Card>
+              <StatCard title="Hadir" value={summary.hadir} icon={CheckCircle} />
+              <StatCard title="Terlambat" value={summary.terlambat} icon={Clock} />
+              <StatCard title="Tidak Hadir" value={summary.tidakHadir} icon={XCircle} />
+              <StatCard title="Cuti/Sakit/Dinas" value={summary.cutiSakitDinas} icon={AlertTriangle} />
             </div>
 
             {/* Mobile card view */}
@@ -232,9 +188,10 @@ export default function AttendancePage() {
                         <p className="text-[11px] text-muted-foreground">Terlambat</p>
                         <p className="font-medium">
                           {record.lateMinutes && record.lateMinutes > 0 ? (
-                            <Badge variant="outline" className="text-yellow-700 border-yellow-300 bg-yellow-50 text-xs">
+                            <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)]" />
                               {record.lateMinutes} menit
-                            </Badge>
+                            </span>
                           ) : (
                             "-"
                           )}
@@ -264,11 +221,7 @@ export default function AttendancePage() {
                     </TableHeader>
                     <TableBody>
                       {todayRecords.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                            Tidak ada data kehadiran hari ini.
-                          </TableCell>
-                        </TableRow>
+                        <EmptyRow colSpan={7}>Tidak ada data kehadiran hari ini.</EmptyRow>
                       ) : (
                         todayRecords.map((record) => (
                           <TableRow key={record.id} className="hover:bg-muted/50">
@@ -279,9 +232,10 @@ export default function AttendancePage() {
                             <TableCell>{formatTime(record.checkOut)}</TableCell>
                             <TableCell>
                               {record.lateMinutes && record.lateMinutes > 0 ? (
-                                <Badge variant="outline" className="text-yellow-700 border-yellow-300 bg-yellow-50">
+                                <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)]" />
                                   {record.lateMinutes}
-                                </Badge>
+                                </span>
                               ) : (
                                 "-"
                               )}
@@ -377,11 +331,7 @@ export default function AttendancePage() {
                   </TableHeader>
                   <TableBody>
                     {overtimeList.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          Tidak ada data overtime.
-                        </TableCell>
-                      </TableRow>
+                      <EmptyRow colSpan={7}>Tidak ada data overtime.</EmptyRow>
                     ) : (
                       overtimeList.map((ot) => (
                         <TableRow key={ot.id} className="hover:bg-muted/50">
@@ -534,11 +484,7 @@ export default function AttendancePage() {
                     </TableHeader>
                     <TableBody>
                       {sortedHolidays.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                            Tidak ada data hari libur.
-                          </TableCell>
-                        </TableRow>
+                        <EmptyRow colSpan={3}>Tidak ada data hari libur.</EmptyRow>
                       ) : (
                         sortedHolidays.map((holiday) => (
                           <TableRow key={holiday.id} className="hover:bg-muted/50">

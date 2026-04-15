@@ -72,7 +72,6 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.employee.findFirst({
     where: {
       OR: [
-        { employeeNumber: data.employeeNumber },
         { email: data.email },
         { nik: data.nik },
       ],
@@ -80,27 +79,66 @@ export async function POST(req: NextRequest) {
   });
 
   if (existing) {
-    const field = existing.employeeNumber === data.employeeNumber
-      ? "Nomor karyawan"
-      : existing.email === data.email
-        ? "Email"
-        : "NIK";
+    const field = existing.email === data.email ? "Email" : "NIK";
     return NextResponse.json(errorResponse(`${field} sudah terdaftar`), { status: 409 });
   }
 
-  const employee = await prisma.employee.create({
-    data: {
-      ...data,
-      dateOfBirth: new Date(data.dateOfBirth),
-      joinDate: new Date(data.joinDate),
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
-    },
-    include: {
-      department: { select: { id: true, name: true, code: true } },
-      position: { select: { id: true, name: true, code: true } },
-      manager: { select: { id: true, firstName: true, lastName: true } },
-    },
-  });
+  async function nextEmployeeNumber(): Promise<string> {
+    const latest = await prisma.employee.findFirst({
+      where: { employeeNumber: { startsWith: "EMP-" } },
+      orderBy: { employeeNumber: "desc" },
+      select: { employeeNumber: true },
+    });
+    const match = latest?.employeeNumber.match(/EMP-(\d+)/);
+    const next = (match ? parseInt(match[1], 10) : 0) + 1;
+    return `EMP-${String(next).padStart(4, "0")}`;
+  }
+
+  let employee;
+  let attempts = 0;
+  while (true) {
+    attempts += 1;
+    const employeeNumber = data.employeeNumber?.trim() || (await nextEmployeeNumber());
+    try {
+      employee = await prisma.employee.create({
+        data: {
+          ...data,
+          employeeNumber,
+          dateOfBirth: new Date(data.dateOfBirth),
+          joinDate: new Date(data.joinDate),
+          endDate: data.endDate ? new Date(data.endDate) : undefined,
+        },
+        include: {
+          department: { select: { id: true, name: true, code: true } },
+          position: { select: { id: true, name: true, code: true } },
+          manager: { select: { id: true, firstName: true, lastName: true } },
+        },
+      });
+      break;
+    } catch (err: unknown) {
+      const isUniqueErr =
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code?: string }).code === "P2002";
+      const target = isUniqueErr ? (err as { meta?: { target?: string[] } }).meta?.target ?? [] : [];
+      const onEmployeeNumber = target.includes("employeeNumber");
+      if (isUniqueErr && onEmployeeNumber && !data.employeeNumber && attempts < 5) {
+        continue;
+      }
+      if (isUniqueErr) {
+        const field = onEmployeeNumber
+          ? "Nomor karyawan"
+          : target.includes("email")
+            ? "Email"
+            : target.includes("nik")
+              ? "NIK"
+              : "Data";
+        return NextResponse.json(errorResponse(`${field} sudah terdaftar`), { status: 409 });
+      }
+      throw err;
+    }
+  }
 
   await recordAudit({
     userId: session.user.id,

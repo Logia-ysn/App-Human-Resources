@@ -64,7 +64,7 @@ export function DataTable<TData, TValue>({
               </div>
             ))
           ) : (
-            <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
+            <div className="rounded-sm border border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
               Tidak ada data.
             </div>
           )}
@@ -73,7 +73,7 @@ export function DataTable<TData, TValue>({
 
       {/* Desktop table view */}
       <div className={mobileCard ? "hidden md:block" : ""}>
-        <div className="rounded-md border overflow-x-auto">
+        <div className="rounded-sm border border-border overflow-x-auto bg-card">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

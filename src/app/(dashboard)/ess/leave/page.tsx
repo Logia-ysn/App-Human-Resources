@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dialog";
 import { CalendarDays, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { LoadingState } from "@/components/shared/loading-state";
+import { EmptyRow } from "@/components/shared/empty-row";
 
 type LeaveFormData = {
   leaveTypeId: string;
@@ -111,9 +113,7 @@ export default function EssLeavePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
@@ -133,8 +133,14 @@ export default function EssLeavePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between">
-        <h1 className="text-lg sm:text-2xl font-bold tracking-tight">Cuti Saya</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="flex items-center gap-2.5">
+          <CalendarDays className="size-5 text-muted-foreground" strokeWidth={1.75} />
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Cuti Saya</h1>
+            <p className="text-xs text-muted-foreground">Riwayat dan pengajuan cuti Anda</p>
+          </div>
+        </div>
         <Button onClick={handleOpenDialog}>
           <Plus className="mr-1 h-4 w-4" />
           Ajukan Cuti
@@ -167,7 +173,7 @@ export default function EssLeavePage() {
               <div className="text-center py-8 text-muted-foreground">Belum ada pengajuan cuti.</div>
             ) : (
               myRequests.map((r) => (
-                <div key={r.id} className="rounded-lg border p-3 space-y-2">
+                <div key={r.id} className="rounded-sm border border-border p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-sm">{r.leaveType.name}</p>
                     <StatusBadge status={r.status} />
@@ -193,7 +199,7 @@ export default function EssLeavePage() {
               </TableHeader>
               <TableBody>
                 {myRequests.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada pengajuan cuti.</TableCell></TableRow>
+                  <EmptyRow colSpan={5}>Belum ada pengajuan cuti.</EmptyRow>
                 ) : (
                   myRequests.map((r) => (
                     <TableRow key={r.id}>

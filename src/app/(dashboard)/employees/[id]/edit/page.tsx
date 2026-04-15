@@ -1,10 +1,11 @@
 "use client";
+import { LoadingState } from "@/components/shared/loading-state";
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import {  } from "lucide-react";
 import { toast } from "sonner";
 import type { PtkpStatus } from "@prisma/client";
 
@@ -176,9 +177,7 @@ export default function EditEmployeePage() {
 
   if (empLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 

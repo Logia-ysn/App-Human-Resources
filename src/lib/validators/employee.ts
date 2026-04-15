@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createEmployeeSchema = z.object({
-  employeeNumber: z.string().min(1, "Nomor karyawan wajib diisi"),
+  employeeNumber: z.string().optional(),
   firstName: z.string().min(1, "Nama depan wajib diisi"),
   lastName: z.string().min(1, "Nama belakang wajib diisi"),
   email: z.string().email("Email tidak valid"),

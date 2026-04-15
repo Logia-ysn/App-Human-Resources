@@ -4,18 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Filter,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Filter, Pencil, Plus, Search, Trash2, Upload, Download, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -65,6 +54,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmployeeImportDialog } from "@/components/employees/employee-import-dialog";
+import { LoadingState } from "@/components/shared/loading-state";
+import { EmptyRow } from "@/components/shared/empty-row";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -238,32 +230,59 @@ export default function EmployeesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-            <Users className="size-5 text-primary" />
-          </div>
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="flex items-center gap-2.5">
+          <Users className="size-5 text-muted-foreground" strokeWidth={1.75} />
           <div>
-            <h1 className="text-xl font-bold tracking-tight md:text-2xl">Data Karyawan</h1>
-            <p className="hidden text-sm text-muted-foreground sm:block">
+            <h1 className="text-xl font-semibold tracking-tight">Data Karyawan</h1>
+            <p className="hidden text-xs text-muted-foreground sm:block">
               Kelola data dan informasi seluruh karyawan
             </p>
           </div>
         </div>
         {canEdit && (
-          <Link href="/employees/new" className={cn(buttonVariants(), "hidden md:inline-flex")}>
-            <Plus data-icon="inline-start" />
-            Tambah Karyawan
-          </Link>
+          <div className="hidden md:flex items-center gap-2">
+            <EmployeeImportDialog onDone={() => window.location.reload()} />
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/employees/export");
+                  if (!res.ok) {
+                    const msg = res.status === 403
+                      ? "Tidak memiliki akses (butuh role HR Admin)"
+                      : `Gagal export (status ${res.status})`;
+                    toast.error(msg);
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `employees-${new Date().toISOString().split("T")[0]}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success("Export berhasil");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Gagal export");
+                }
+              }}
+            >
+              <Download data-icon="inline-start" />
+              Export
+            </Button>
+            <Link href="/employees/new" className={cn(buttonVariants())}>
+              <Plus data-icon="inline-start" />
+              Tambah Karyawan
+            </Link>
+          </div>
         )}
       </div>
 
@@ -432,11 +451,7 @@ export default function EmployeesPage() {
             </TableHeader>
             <TableBody>
               {employees.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                    Tidak ada data karyawan ditemukan.
-                  </TableCell>
-                </TableRow>
+                <EmptyRow colSpan={8}>Tidak ada data karyawan ditemukan.</EmptyRow>
               ) : (
                 employees.map((emp) => (
                   <TableRow

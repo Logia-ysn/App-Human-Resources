@@ -116,7 +116,7 @@ export function Header({ userEmail, userRole }: HeaderProps) {
   const parent = getParent(pathname);
 
   return (
-    <header className="flex h-12 items-center gap-3 border-b bg-background px-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+    <header className="flex h-11 items-center gap-3 border-b bg-background px-4">
       <SidebarTrigger />
       <Separator orientation="vertical" className="h-5" />
 
@@ -127,20 +127,20 @@ export function Header({ userEmail, userRole }: HeaderProps) {
           {pageTitle}
         </h1>
         {/* Desktop: breadcrumb style */}
-        <nav className="hidden md:flex items-center gap-1.5 text-sm">
+        <nav className="hidden md:flex items-center gap-1.5 text-[13px]">
           {parent ? (
             <>
               <Link
                 href={parent.href}
-                className="text-muted-foreground hover:text-foreground transition-colors duration-150"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 {parent.label}
               </Link>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-              <span className="font-semibold text-foreground">{pageTitle}</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
+              <span className="font-medium text-foreground">{pageTitle}</span>
             </>
           ) : (
-            <span className="font-semibold text-foreground">{pageTitle}</span>
+            <span className="font-medium text-foreground">{pageTitle}</span>
           )}
         </nav>
       </div>
@@ -152,22 +152,21 @@ export function Header({ userEmail, userRole }: HeaderProps) {
         className="h-8 w-8"
         onClick={handleSearchClick}
       >
-        <Search className="h-4 w-4" />
+        <Search className="h-4 w-4" strokeWidth={1.75} />
       </Button>
 
       {/* Notification bell with badge */}
       <Link href="/notifications">
         <Button variant="ghost" size="icon" className="relative h-8 w-8">
-          <Bell className="h-4 w-4" />
-          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500" />
+          <Bell className="h-4 w-4" strokeWidth={1.75} />
+          <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
         </Button>
       </Link>
 
-      {/* User avatar with hover ring animation */}
       <DropdownMenu>
         <DropdownMenuTrigger>
-          <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-transparent transition-all duration-200 hover:ring-blue-400/50 hover:ring-offset-1">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">
+          <Avatar className="h-8 w-8 cursor-pointer rounded-sm">
+            <AvatarFallback className="rounded-sm bg-primary text-primary-foreground text-xs font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>

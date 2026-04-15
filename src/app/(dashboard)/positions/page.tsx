@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { usePositions, useCreatePosition, useUpdatePosition, useDeletePosition } from "@/hooks/use-positions";
 import { useDepartments } from "@/hooks/use-departments";
+import { LoadingState } from "@/components/shared/loading-state";
 
 const LEVELS = ["STAFF", "SUPERVISOR", "MANAGER", "DIRECTOR"] as const;
 
@@ -175,22 +176,19 @@ export default function PositionsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
-            Manajemen Jabatan
-          </h1>
-          <p className="text-muted-foreground">
-            Kelola jabatan dan posisi di perusahaan
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="flex items-center gap-2.5">
+          <Briefcase className="size-5 text-muted-foreground" strokeWidth={1.75} />
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Manajemen Jabatan</h1>
+            <p className="text-xs text-muted-foreground">Kelola jabatan dan posisi di perusahaan</p>
+          </div>
         </div>
         <Button onClick={openCreate}>
           <Plus className="size-4" data-icon="inline-start" />
@@ -227,7 +225,7 @@ export default function PositionsPage() {
               <div className="text-center py-8 text-muted-foreground">Tidak ada data jabatan.</div>
             ) : (
               positions.map((pos) => (
-                <div key={pos.id} className="rounded-lg border p-4 space-y-2">
+                <div key={pos.id} className="rounded-sm border border-border p-4 space-y-2">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-medium">{pos.name}</p>
@@ -258,7 +256,7 @@ export default function PositionsPage() {
             )}
           </div>
           <div className="hidden md:block">
-          <div className="rounded-md border">
+          <div className="rounded-sm border border-border">
             <Table>
               <TableHeader>
                 <TableRow>

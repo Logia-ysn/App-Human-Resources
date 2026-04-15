@@ -29,18 +29,16 @@ export function PageHeader({
   action,
 }: PageHeaderProps) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 border-b border-border pb-4">
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumb className="hidden sm:block">
-          <BreadcrumbList>
+          <BreadcrumbList className="text-[11px]">
             {breadcrumbs.map((item, index) => (
               <span key={item.label} className="flex items-center gap-1.5">
                 {index > 0 && <BreadcrumbSeparator />}
                 <BreadcrumbItem>
                   {item.href ? (
-                    <BreadcrumbLink
-                      render={<a href={item.href} />}
-                    >
+                    <BreadcrumbLink render={<a href={item.href} />}>
                       {item.label}
                     </BreadcrumbLink>
                   ) : (
@@ -52,21 +50,24 @@ export function PageHeader({
           </BreadcrumbList>
         </Breadcrumb>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
           {Icon && (
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary/10">
-              <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-            </div>
+            <Icon
+              className="h-5 w-5 shrink-0 text-muted-foreground"
+              strokeWidth={1.75}
+            />
           )}
-          <div>
-            <h1 className="text-lg sm:text-xl font-semibold tracking-tight">{title}</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground truncate">
+              {title}
+            </h1>
             {subtitle && (
-              <p className="text-xs sm:text-sm text-muted-foreground">{subtitle}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
             )}
           </div>
         </div>
-        {action && <div>{action}</div>}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
     </div>
   );

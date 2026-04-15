@@ -69,6 +69,11 @@ export function useLeaveTypes() {
   return { leaveTypes: data ?? [], error, isLoading };
 }
 
+type LeaveBalanceListResponse = {
+  balances: LeaveBalanceWithRelations[];
+  meta: PaginationMeta;
+};
+
 export function useLeaveBalances(params: {
   employeeId?: string | null;
   year?: number;
@@ -78,12 +83,12 @@ export function useLeaveBalances(params: {
     ...(params.year && { year: params.year }),
   });
 
-  const { data, error, isLoading, mutate } = useSWR<LeaveBalanceWithRelations[]>(
+  const { data, error, isLoading, mutate } = useSWR<LeaveBalanceListResponse>(
     `/api/leave/balances${query}`,
     fetcher
   );
 
-  return { balances: data ?? [], error, isLoading, mutate };
+  return { balances: data?.balances ?? [], meta: data?.meta, error, isLoading, mutate };
 }
 
 async function createLeaveRequest(

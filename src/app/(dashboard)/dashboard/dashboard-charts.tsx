@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -15,6 +14,7 @@ import {
   Area,
   AreaChart,
 } from "recharts";
+
 type AttendanceTrendPoint = {
   date: string;
   hadir: number;
@@ -29,12 +29,21 @@ type LeaveDistribution = {
   color: string;
 };
 
-const CHART_COLORS = {
-  blue: "#3B82F6",
-  emerald: "#10B981",
-  amber: "#F59E0B",
-  red: "#EF4444",
-  purple: "#8B5CF6",
+const SERIES = {
+  hadir: "var(--primary)",
+  terlambat: "var(--warning)",
+  tidakHadir: "var(--destructive)",
+  cuti: "var(--info)",
+} as const;
+
+const TOOLTIP_STYLE = {
+  backgroundColor: "var(--popover)",
+  color: "var(--popover-foreground)",
+  border: "1px solid var(--border)",
+  borderRadius: "4px",
+  fontSize: "12px",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+  padding: "6px 8px",
 } as const;
 
 type AttendanceChartProps = {
@@ -44,89 +53,85 @@ type AttendanceChartProps = {
 export function AttendanceChart({ data }: AttendanceChartProps) {
   return (
     <div className="h-[220px] sm:h-[280px]">
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart
-        data={[...data]}
-        margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
-      >
-        <defs>
-          <linearGradient id="gradHadir" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.15} />
-            <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="gradTerlambat" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={CHART_COLORS.amber} stopOpacity={0.15} />
-            <stop offset="95%" stopColor={CHART_COLORS.amber} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-        <XAxis
-          dataKey="date"
-          tick={{ fontSize: 12, fill: "#6B7280" }}
-          axisLine={{ stroke: "#E5E7EB" }}
-          tickLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 12, fill: "#6B7280" }}
-          axisLine={false}
-          tickLine={false}
-          allowDecimals={false}
-        />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "#fff",
-            border: "1px solid #E5E7EB",
-            borderRadius: "8px",
-            fontSize: "12px",
-            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-          }}
-        />
-        <Area
-          type="monotone"
-          dataKey="hadir"
-          name="Hadir"
-          stroke={CHART_COLORS.blue}
-          strokeWidth={2}
-          fill="url(#gradHadir)"
-          dot={{ r: 3, fill: CHART_COLORS.blue, strokeWidth: 0 }}
-          activeDot={{ r: 5, strokeWidth: 0 }}
-        />
-        <Area
-          type="monotone"
-          dataKey="terlambat"
-          name="Terlambat"
-          stroke={CHART_COLORS.amber}
-          strokeWidth={2}
-          fill="url(#gradTerlambat)"
-          dot={{ r: 3, fill: CHART_COLORS.amber, strokeWidth: 0 }}
-          activeDot={{ r: 5, strokeWidth: 0 }}
-        />
-        <Line
-          type="monotone"
-          dataKey="tidakHadir"
-          name="Tidak Hadir"
-          stroke={CHART_COLORS.red}
-          strokeWidth={2}
-          dot={{ r: 3, fill: CHART_COLORS.red, strokeWidth: 0 }}
-          activeDot={{ r: 5, strokeWidth: 0 }}
-        />
-        <Line
-          type="monotone"
-          dataKey="cuti"
-          name="Cuti"
-          stroke={CHART_COLORS.purple}
-          strokeWidth={2}
-          strokeDasharray="5 5"
-          dot={{ r: 3, fill: CHART_COLORS.purple, strokeWidth: 0 }}
-          activeDot={{ r: 5, strokeWidth: 0 }}
-        />
-        <Legend
-          iconType="circle"
-          iconSize={8}
-          wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={[...data]}
+          margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
+        >
+          <defs>
+            <linearGradient id="gradHadir" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={SERIES.hadir} stopOpacity={0.18} />
+              <stop offset="95%" stopColor={SERIES.hadir} stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="gradTerlambat" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={SERIES.terlambat} stopOpacity={0.15} />
+              <stop offset="95%" stopColor={SERIES.terlambat} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="var(--border)"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+            axisLine={{ stroke: "var(--border)" }}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+            axisLine={false}
+            tickLine={false}
+            allowDecimals={false}
+          />
+          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "var(--border)" }} />
+          <Area
+            type="monotone"
+            dataKey="hadir"
+            name="Hadir"
+            stroke={SERIES.hadir}
+            strokeWidth={1.75}
+            fill="url(#gradHadir)"
+            dot={{ r: 2.5, fill: SERIES.hadir, strokeWidth: 0 }}
+            activeDot={{ r: 4, strokeWidth: 0 }}
+          />
+          <Area
+            type="monotone"
+            dataKey="terlambat"
+            name="Terlambat"
+            stroke={SERIES.terlambat}
+            strokeWidth={1.75}
+            fill="url(#gradTerlambat)"
+            dot={{ r: 2.5, fill: SERIES.terlambat, strokeWidth: 0 }}
+            activeDot={{ r: 4, strokeWidth: 0 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="tidakHadir"
+            name="Tidak Hadir"
+            stroke={SERIES.tidakHadir}
+            strokeWidth={1.75}
+            dot={{ r: 2.5, fill: SERIES.tidakHadir, strokeWidth: 0 }}
+            activeDot={{ r: 4, strokeWidth: 0 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="cuti"
+            name="Cuti"
+            stroke={SERIES.cuti}
+            strokeWidth={1.75}
+            strokeDasharray="4 4"
+            dot={{ r: 2.5, fill: SERIES.cuti, strokeWidth: 0 }}
+            activeDot={{ r: 4, strokeWidth: 0 }}
+          />
+          <Legend
+            iconType="circle"
+            iconSize={8}
+            wrapperStyle={{ fontSize: "11px", paddingTop: "8px", color: "var(--muted-foreground)" }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -143,44 +148,39 @@ export function LeaveChart({ data }: LeaveChartProps) {
   return (
     <div className="flex flex-col items-center">
       <div className="h-[180px] w-full sm:h-[220px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={[...data]}
-            cx="50%"
-            cy="50%"
-            innerRadius="40%"
-            outerRadius="65%"
-            paddingAngle={3}
-            dataKey="value"
-            stroke="none"
-          >
-            {data.map((entry) => (
-              <Cell key={entry.name} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "#fff",
-              border: "1px solid #E5E7EB",
-              borderRadius: "8px",
-              fontSize: "12px",
-              boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-            }}
-            formatter={(value) => [`${value} hari`, ""]}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={[...data]}
+              cx="50%"
+              cy="50%"
+              innerRadius="48%"
+              outerRadius="72%"
+              paddingAngle={2}
+              dataKey="value"
+              stroke="var(--card)"
+              strokeWidth={1}
+            >
+              {data.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              formatter={(value) => [`${value} hari`, ""]}
+            />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
       <div className="mt-1 grid w-full grid-cols-2 gap-x-4 gap-y-1.5 px-2">
         {data.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2 text-xs">
             <span
-              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+              className="inline-block h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-muted-foreground">{entry.name}</span>
-            <span className="ml-auto font-medium">
+            <span className="ml-auto font-medium tabular-nums">
               {Math.round((entry.value / total) * 100)}%
             </span>
           </div>

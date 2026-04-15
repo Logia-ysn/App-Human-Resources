@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type StatCardProps = {
   title: string;
@@ -11,73 +12,44 @@ type StatCardProps = {
   href?: string;
 };
 
-const COLOR_MAP = {
-  blue: {
-    iconBg: "bg-blue-100",
-    iconText: "text-blue-600",
-  },
-  emerald: {
-    iconBg: "bg-emerald-100",
-    iconText: "text-emerald-600",
-  },
-  amber: {
-    iconBg: "bg-amber-100",
-    iconText: "text-amber-600",
-  },
-  rose: {
-    iconBg: "bg-rose-100",
-    iconText: "text-rose-600",
-  },
-  violet: {
-    iconBg: "bg-violet-100",
-    iconText: "text-violet-600",
-  },
-  indigo: {
-    iconBg: "bg-indigo-100",
-    iconText: "text-indigo-600",
-  },
-} as const;
-
 export function StatCard({
   title,
   value,
   subtitle,
   icon: Icon,
-  color = "blue",
   trend,
 }: StatCardProps) {
-  const colors = COLOR_MAP[color];
-
   return (
-    <Card className="shadow-card hover:shadow-soft transition-shadow duration-200">
+    <Card className="rounded-sm border border-border shadow-xs hover:shadow-sm transition-shadow duration-150">
       <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${colors.iconBg}`}
-          >
-            <Icon className={`h-5 w-5 ${colors.iconText}`} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground truncate">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground truncate">
               {title}
             </p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold leading-tight">{value}</p>
+            <div className="mt-1.5 flex items-baseline gap-2">
+              <p className="font-tabular text-2xl font-semibold leading-none tracking-tight">
+                {value}
+              </p>
               {trend && (
                 <span
-                  className={`text-xs font-semibold ${
-                    trend.positive ? "text-emerald-600" : "text-rose-600"
-                  }`}
+                  className={cn(
+                    "font-tabular text-xs font-semibold",
+                    trend.positive ? "text-[var(--success)]" : "text-destructive"
+                  )}
                 >
                   {trend.value}
                 </span>
               )}
             </div>
             {subtitle && (
-              <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
+              <p className="mt-1.5 text-xs text-muted-foreground truncate">
                 {subtitle}
               </p>
             )}
+          </div>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border bg-muted/60">
+            <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
           </div>
         </div>
       </CardContent>

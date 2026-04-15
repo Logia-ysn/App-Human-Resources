@@ -1,11 +1,38 @@
 "use client";
 
 import { useAuth } from "@/components/providers/auth-context";
-import { Card, CardContent } from "@/components/ui/card";
+import { usePayslips } from "@/hooks/use-payroll";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Wallet } from "lucide-react";
+import { LoadingState } from "@/components/shared/loading-state";
+import { EmptyRow } from "@/components/shared/empty-row";
+
+const MONTH_LABELS = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+function formatCurrency(amount: string | number): string {
+  const num = typeof amount === "string" ? Number(amount) : amount;
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(num || 0);
+}
 
 export default function EssPayslipsPage() {
   const { employeeId } = useAuth();
+  const { payslips, isLoading } = usePayslips({ employeeId: employeeId ?? undefined });
 
   if (!employeeId) {
     return (
@@ -21,16 +48,73 @@ export default function EssPayslipsPage() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <LoadingState />
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-lg sm:text-2xl font-bold tracking-tight">Slip Gaji Saya</h1>
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-          <Wallet className="h-12 w-12 text-muted-foreground/30 mb-4" />
-          <p className="text-lg font-semibold">Fitur Slip Gaji</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Modul slip gaji sedang dalam proses migrasi ke database.
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex items-center gap-2.5 border-b border-border pb-4">
+        <Wallet className="size-5 text-muted-foreground" strokeWidth={1.75} />
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Slip Gaji Saya</h1>
+          <p className="text-xs text-muted-foreground">
+            Riwayat slip gaji Anda
           </p>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Riwayat Slip Gaji</CardTitle>
+        </CardHeader>
+        <CardContent className="px-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead>Periode</TableHead>
+                <TableHead className="text-center">Hadir / Kerja</TableHead>
+                <TableHead className="text-right">Gaji Pokok</TableHead>
+                <TableHead className="text-right">Gross</TableHead>
+                <TableHead className="text-right">Potongan</TableHead>
+                <TableHead className="text-right">Net</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payslips.length === 0 ? (
+                <EmptyRow colSpan={7}>Belum ada slip gaji.</EmptyRow>
+              ) : (
+                payslips.map((s) => (
+                  <TableRow key={s.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">
+                      {MONTH_LABELS[s.payrollPeriod.month - 1]} {s.payrollPeriod.year}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {s.presentDays} / {s.workDays}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatCurrency(s.basicSalary)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatCurrency(s.grossSalary)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-destructive">
+                      {formatCurrency(s.totalDeductions)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-semibold">
+                      {formatCurrency(s.netSalary)}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={s.paidAt ? "PAID" : s.payrollPeriod.status} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

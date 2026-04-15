@@ -82,16 +82,9 @@ export default function NewEmployeePage() {
       return;
     }
 
-    const maxNum = allEmployees.reduce((max, e) => {
-      const match = e.employeeNumber?.match(/EMP-(\d+)/);
-      return match ? Math.max(max, parseInt(match[1], 10)) : max;
-    }, 0);
-    const empNumber = `EMP-${String(maxNum + 1).padStart(4, "0")}`;
-
     setSaving(true);
     try {
       await createMutation.trigger({
-        employeeNumber: empNumber,
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim(),

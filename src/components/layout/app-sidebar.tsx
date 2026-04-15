@@ -125,7 +125,7 @@ function NavSection({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+      <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -138,11 +138,15 @@ function NavSection({
                   render={<Link href={item.url} />}
                   isActive={isActive}
                   className={cn(
-                    "transition-all duration-200 ease-in-out hover:bg-accent/80 hover:translate-x-0.5",
-                    isActive && "bg-blue-50 text-blue-700 font-medium border-l-2 border-blue-600"
+                    "rounded-sm transition-colors duration-150 hover:bg-accent",
+                    isActive &&
+                      "bg-accent text-sidebar-accent-foreground font-medium border-l-2 border-primary rounded-l-none"
                   )}
                 >
-                  <item.icon className={cn("h-4 w-4 transition-colors duration-200", isActive && "text-blue-600")} />
+                  <item.icon
+                    className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")}
+                    strokeWidth={1.75}
+                  />
                   <span>{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -177,15 +181,15 @@ export function AppSidebar({
       <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           {logoUrl ? (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-white border border-border">
               <img src={logoUrl} alt="Logo" className="h-7 w-7 object-contain" />
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
-              <Building2 className="h-4 w-4 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-primary">
+              <Building2 className="h-4 w-4 text-primary-foreground" strokeWidth={2} />
             </div>
           )}
-          <span className="text-sm font-bold text-sidebar-foreground tracking-tight truncate">
+          <span className="text-sm font-semibold text-sidebar-foreground tracking-tight truncate">
             {companyName || "HRIS"}
           </span>
         </Link>
@@ -202,18 +206,15 @@ export function AppSidebar({
 
       <SidebarFooter className="border-t border-sidebar-border px-4 py-2.5">
         <div className="flex items-center gap-2.5">
-          <div className="relative shrink-0">
-            <div className="absolute -inset-0.5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 opacity-75" />
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-medium text-white">
-              {userEmail.charAt(0).toUpperCase()}
-            </div>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-primary text-xs font-semibold text-primary-foreground">
+            {userEmail.charAt(0).toUpperCase()}
           </div>
           <div className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium text-sidebar-foreground">
+            <span className="truncate text-xs font-medium text-sidebar-foreground">
               <span className="sm:hidden">{getFirstName(userEmail)}</span>
               <span className="hidden sm:inline">{userEmail}</span>
             </span>
-            <span className="text-[10px] font-medium text-blue-600">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               {ROLE_LABEL[userRole]}
             </span>
           </div>

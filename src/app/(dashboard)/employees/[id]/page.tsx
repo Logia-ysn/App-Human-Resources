@@ -4,21 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import {
-  ArrowLeft,
-  Mail,
-  Phone,
-  MapPin,
-  Building2,
-  Briefcase,
-  Calendar,
-  User,
-  CreditCard,
-  Shield,
-  Landmark,
-  Contact,
-  Loader2,
-} from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Building2, Briefcase, Calendar, User, CreditCard, Shield, Landmark, Contact } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useEmployee } from "@/hooks/use-employees";
@@ -33,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { LoadingState } from "@/components/shared/loading-state";
 
 const GENDER_LABELS: Record<string, string> = {
   MALE: "Laki-laki",
@@ -132,9 +119,7 @@ export default function EmployeeDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingState />
     );
   }
 
@@ -179,29 +164,28 @@ export default function EmployeeDetailPage() {
 
       {/* Profile header */}
       <Card className="overflow-hidden">
-        <div className="h-20 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 sm:h-28" />
-        <CardContent className="relative pb-6">
-          <div className="-mt-10 mb-3 flex flex-col items-center sm:-mt-14 sm:mb-4 sm:flex-row sm:items-end sm:gap-4">
-            <Avatar className="size-20 border-4 border-background shadow-lg sm:size-24">
-              <AvatarFallback className="text-xl font-semibold bg-primary text-primary-foreground sm:text-2xl">
+        <CardContent className="py-4">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <Avatar className="size-16 rounded-sm sm:size-18">
+              <AvatarFallback className="rounded-sm text-xl font-semibold bg-primary text-primary-foreground">
                 {getInitials(employee.firstName, employee.lastName)}
               </AvatarFallback>
             </Avatar>
 
-            <div className="hidden sm:block sm:pb-1">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight">{fullName}</h1>
+            <div className="hidden sm:block">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-semibold tracking-tight">{fullName}</h1>
                 <StatusBadge status={employee.status} />
                 <Badge variant="outline">{TYPE_LABELS[employee.type] ?? employee.type}</Badge>
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground font-mono">
+              <p className="mt-0.5 text-xs text-muted-foreground font-mono font-tabular">
                 {employee.employeeNumber}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col items-center text-center sm:hidden">
-            <h1 className="text-xl font-bold tracking-tight">{fullName}</h1>
+          <div className="mt-3 flex flex-col items-center text-center sm:hidden">
+            <h1 className="text-lg font-semibold tracking-tight">{fullName}</h1>
             <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
               <StatusBadge status={employee.status} />
               <Badge variant="outline">{TYPE_LABELS[employee.type] ?? employee.type}</Badge>
