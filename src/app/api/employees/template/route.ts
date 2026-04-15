@@ -3,9 +3,8 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { buildXlsx, type XlsxColumn } from "@/lib/utils/xlsx";
 
 const COLUMNS: XlsxColumn[] = [
+  { key: "namaLengkap", header: "namaLengkap", width: 28 },
   { key: "employeeNumber", header: "employeeNumber", width: 14, type: "text" },
-  { key: "firstName", header: "firstName", width: 16 },
-  { key: "lastName", header: "lastName", width: 16 },
   { key: "email", header: "email", width: 28 },
   { key: "phone", header: "phone", width: 16, type: "text" },
   { key: "gender", header: "gender", width: 10 },
@@ -40,9 +39,8 @@ const COLUMNS: XlsxColumn[] = [
 ];
 
 const EXAMPLE_ROW = {
+  namaLengkap: "Budi Santoso",
   employeeNumber: "",
-  firstName: "Budi",
-  lastName: "Santoso",
   email: "budi@contoh.com",
   phone: "081234567890",
   gender: "MALE",

@@ -4,9 +4,8 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { buildXlsx, type XlsxColumn } from "@/lib/utils/xlsx";
 
 const COLUMNS: XlsxColumn[] = [
+  { key: "namaLengkap", header: "namaLengkap", width: 28 },
   { key: "employeeNumber", header: "employeeNumber", width: 14, type: "text" },
-  { key: "firstName", header: "firstName", width: 16 },
-  { key: "lastName", header: "lastName", width: 16 },
   { key: "email", header: "email", width: 28 },
   { key: "phone", header: "phone", width: 16, type: "text" },
   { key: "gender", header: "gender", width: 10 },
@@ -60,9 +59,8 @@ export async function GET() {
   });
 
   const rows = employees.map((e) => ({
+    namaLengkap: `${e.firstName} ${e.lastName}`.trim(),
     employeeNumber: e.employeeNumber,
-    firstName: e.firstName,
-    lastName: e.lastName,
     email: e.email,
     phone: e.phone ?? "",
     gender: e.gender,

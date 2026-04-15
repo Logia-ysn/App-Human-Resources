@@ -21,6 +21,13 @@ function normalizeEnum(v: string, allowed: readonly string[], fallback?: string)
   return undefined;
 }
 
+function splitFullName(full: string): { firstName: string; lastName: string } {
+  const parts = full.trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) return { firstName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0], lastName: "-" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
+
 async function nextEmployeeNumber(): Promise<string> {
   const latest = await prisma.employee.findFirst({
     where: { employeeNumber: { startsWith: "EMP-" } },
@@ -30,6 +37,18 @@ async function nextEmployeeNumber(): Promise<string> {
   const match = latest?.employeeNumber.match(/EMP-(\d+)/);
   const next = (match ? parseInt(match[1], 10) : 0) + 1;
   return `EMP-${String(next).padStart(4, "0")}`;
+}
+
+function genPlaceholderNik(empNumber: string): string {
+  const digits = empNumber.replace(/\D/g, "").padStart(8, "0").slice(-8);
+  const rand = Math.floor(Math.random() * 1e8)
+    .toString()
+    .padStart(8, "0");
+  return `9${digits}${rand}`.slice(0, 16);
+}
+
+function todayYmd(): string {
+  return new Date().toISOString().split("T")[0];
 }
 
 export async function POST(req: NextRequest) {
@@ -61,11 +80,27 @@ export async function POST(req: NextRequest) {
   }
 
   const [departments, positions] = await Promise.all([
-    prisma.department.findMany({ select: { id: true, code: true } }),
-    prisma.position.findMany({ select: { id: true, code: true, departmentId: true } }),
+    prisma.department.findMany({
+      where: { isActive: true },
+      select: { id: true, code: true },
+      orderBy: { code: "asc" },
+    }),
+    prisma.position.findMany({
+      where: { isActive: true },
+      select: { id: true, code: true, departmentId: true },
+      orderBy: { code: "asc" },
+    }),
   ]);
   const deptByCode = new Map(departments.map((d) => [d.code.toUpperCase(), d]));
   const posByCode = new Map(positions.map((p) => [p.code.toUpperCase(), p]));
+
+  const defaultDept = departments[0];
+  const defaultPosForDept = new Map<string, (typeof positions)[number]>();
+  for (const p of positions) {
+    if (!defaultPosForDept.has(p.departmentId)) {
+      defaultPosForDept.set(p.departmentId, p);
+    }
+  }
 
   const results: RowResult[] = [];
   let created = 0;
@@ -76,28 +111,50 @@ export async function POST(req: NextRequest) {
     const lineNum = i + 2;
 
     try {
-      if (!r.firstName?.trim() || !r.lastName?.trim() || !r.email?.trim() || !r.nik?.trim()) {
-        results.push({ row: lineNum, status: "error", message: "firstName/lastName/email/nik wajib diisi" });
+      const fullName = r.namaLengkap?.trim() || r.fullName?.trim() || "";
+      let firstName = r.firstName?.trim() || "";
+      let lastName = r.lastName?.trim() || "";
+      if (fullName) {
+        const split = splitFullName(fullName);
+        firstName = firstName || split.firstName;
+        lastName = lastName || split.lastName;
+      }
+      if (!firstName) {
+        results.push({ row: lineNum, status: "error", message: "Nama lengkap wajib diisi" });
         errors += 1;
         continue;
       }
+      if (!lastName) lastName = "-";
 
       const deptCode = r.departmentCode?.trim().toUpperCase();
       const posCode = r.positionCode?.trim().toUpperCase();
-      const dept = deptCode ? deptByCode.get(deptCode) : undefined;
-      const pos = posCode ? posByCode.get(posCode) : undefined;
+      let dept = deptCode ? deptByCode.get(deptCode) : undefined;
+      let pos = posCode ? posByCode.get(posCode) : undefined;
+
+      if (!dept && !deptCode) dept = defaultDept;
       if (!dept) {
-        results.push({ row: lineNum, status: "error", message: `Departemen '${deptCode ?? ""}' tidak ditemukan` });
+        results.push({ row: lineNum, status: "error", message: `Departemen '${deptCode}' tidak ditemukan` });
         errors += 1;
         continue;
       }
+      if (!pos && !posCode) pos = defaultPosForDept.get(dept.id);
       if (!pos) {
-        results.push({ row: lineNum, status: "error", message: `Jabatan '${posCode ?? ""}' tidak ditemukan` });
+        results.push({
+          row: lineNum,
+          status: "error",
+          message: posCode
+            ? `Jabatan '${posCode}' tidak ditemukan`
+            : `Departemen '${dept.code}' belum punya jabatan aktif`,
+        });
         errors += 1;
         continue;
       }
       if (pos.departmentId !== dept.id) {
-        results.push({ row: lineNum, status: "error", message: `Jabatan '${posCode}' tidak milik departemen '${deptCode}'` });
+        results.push({
+          row: lineNum,
+          status: "error",
+          message: `Jabatan '${posCode}' tidak milik departemen '${deptCode ?? dept.code}'`,
+        });
         errors += 1;
         continue;
       }
@@ -116,11 +173,15 @@ export async function POST(req: NextRequest) {
         managerId = manager.id;
       }
 
+      const employeeNumber = r.employeeNumber?.trim() || (await nextEmployeeNumber());
+      const email = r.email?.trim() || `${employeeNumber.toLowerCase()}@noemail.local`;
+      const nik = r.nik?.trim() || genPlaceholderNik(employeeNumber);
+
       const existing = await prisma.employee.findFirst({
         where: {
           OR: [
-            { email: r.email.trim() },
-            { nik: r.nik.trim() },
+            { email },
+            { nik },
             ...(r.employeeNumber?.trim() ? [{ employeeNumber: r.employeeNumber.trim() }] : []),
           ],
         },
@@ -131,7 +192,7 @@ export async function POST(req: NextRequest) {
         const field =
           existing.employeeNumber === r.employeeNumber?.trim()
             ? "nomor karyawan"
-            : existing.email === r.email.trim()
+            : existing.email === email
               ? "email"
               : "NIK";
         results.push({
@@ -144,14 +205,14 @@ export async function POST(req: NextRequest) {
       }
 
       const payload = {
-        employeeNumber: r.employeeNumber?.trim() || (await nextEmployeeNumber()),
-        firstName: r.firstName.trim(),
-        lastName: r.lastName.trim(),
-        email: r.email.trim(),
+        employeeNumber,
+        firstName,
+        lastName,
+        email,
         phone: r.phone?.trim() || undefined,
-        gender: normalizeEnum(r.gender ?? "", ["MALE", "FEMALE"]) as "MALE" | "FEMALE" | undefined,
-        dateOfBirth: r.dateOfBirth?.trim() || "",
-        placeOfBirth: r.placeOfBirth?.trim() || "",
+        gender: (normalizeEnum(r.gender ?? "", ["MALE", "FEMALE"]) ?? "MALE") as "MALE" | "FEMALE",
+        dateOfBirth: r.dateOfBirth?.trim() || "1970-01-01",
+        placeOfBirth: r.placeOfBirth?.trim() || "-",
         religion: normalizeEnum(r.religion ?? "", [
           "ISLAM",
           "KRISTEN",
@@ -161,14 +222,10 @@ export async function POST(req: NextRequest) {
           "KONGHUCU",
           "LAINNYA",
         ]) as "ISLAM" | "KRISTEN" | "KATOLIK" | "HINDU" | "BUDDHA" | "KONGHUCU" | "LAINNYA" | undefined,
-        maritalStatus: normalizeEnum(r.maritalStatus ?? "", ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"]) as
-          | "SINGLE"
-          | "MARRIED"
-          | "DIVORCED"
-          | "WIDOWED"
-          | undefined,
+        maritalStatus: (normalizeEnum(r.maritalStatus ?? "", ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"]) ??
+          "SINGLE") as "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED",
         dependents: r.dependents ? Number(r.dependents) : 0,
-        nik: r.nik.trim(),
+        nik,
         npwp: r.npwp?.trim() || undefined,
         bpjsKesNumber: r.bpjsKesNumber?.trim() || undefined,
         bpjsTkNumber: r.bpjsTkNumber?.trim() || undefined,
@@ -192,15 +249,14 @@ export async function POST(req: NextRequest) {
           "TERMINATED",
           "RETIRED",
         ]) ?? "ACTIVE") as "ACTIVE" | "PROBATION" | "RESIGNED" | "TERMINATED" | "RETIRED",
-        type: normalizeEnum(r.type ?? "", ["PERMANENT", "CONTRACT", "PROBATION", "INTERNSHIP"]) as
+        type: (normalizeEnum(r.type ?? "", ["PERMANENT", "CONTRACT", "PROBATION", "INTERNSHIP"]) ?? "PERMANENT") as
           | "PERMANENT"
           | "CONTRACT"
           | "PROBATION"
-          | "INTERNSHIP"
-          | undefined,
-        joinDate: r.joinDate?.trim() || "",
+          | "INTERNSHIP",
+        joinDate: r.joinDate?.trim() || todayYmd(),
         endDate: r.endDate?.trim() || null,
-        ptkpStatus: normalizeEnum(r.ptkpStatus ?? "", [
+        ptkpStatus: (normalizeEnum(r.ptkpStatus ?? "", [
           "TK0",
           "TK1",
           "TK2",
@@ -213,7 +269,7 @@ export async function POST(req: NextRequest) {
           "KI1",
           "KI2",
           "KI3",
-        ]) as
+        ]) ?? "TK0") as
           | "TK0"
           | "TK1"
           | "TK2"
@@ -225,8 +281,7 @@ export async function POST(req: NextRequest) {
           | "KI0"
           | "KI1"
           | "KI2"
-          | "KI3"
-          | undefined,
+          | "KI3",
         taxMethod: (normalizeEnum(r.taxMethod ?? "", ["GROSS", "GROSS_UP", "NETT"]) ?? "GROSS") as
           | "GROSS"
           | "GROSS_UP"
@@ -245,7 +300,6 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      const employeeNumber = parsed.data.employeeNumber || payload.employeeNumber;
       await prisma.employee.create({
         data: {
           ...parsed.data,

@@ -143,9 +143,9 @@ export function EmployeeImportDialog({ onDone }: { onDone?: () => void }) {
                 <>
                   <Upload className="h-8 w-8 text-muted-foreground" />
                   <p className="text-sm font-medium">Klik untuk pilih file .xlsx atau .csv</p>
-                  <p className="text-xs text-muted-foreground">
-                    Kolom wajib: firstName, lastName, email, nik, dateOfBirth, placeOfBirth, gender,
-                    maritalStatus, departmentCode, positionCode, joinDate, type, ptkpStatus
+                  <p className="text-xs text-muted-foreground text-center">
+                    Wajib: <span className="font-medium">namaLengkap</span>. Kolom lain opsional —
+                    akan diisi default otomatis.
                   </p>
                 </>
               )}
