@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { buildXlsx, type XlsxColumn } from "@/lib/utils/xlsx";
 
@@ -40,69 +39,53 @@ const COLUMNS: XlsxColumn[] = [
   { key: "taxMethod", header: "taxMethod", width: 12 },
 ];
 
-function toYmd(d: Date | null | undefined): string {
-  if (!d) return "";
-  return d.toISOString().split("T")[0];
-}
+const EXAMPLE_ROW = {
+  employeeNumber: "",
+  firstName: "Budi",
+  lastName: "Santoso",
+  email: "budi@contoh.com",
+  phone: "081234567890",
+  gender: "MALE",
+  dateOfBirth: "1990-05-15",
+  placeOfBirth: "Jakarta",
+  religion: "ISLAM",
+  maritalStatus: "MARRIED",
+  dependents: 2,
+  nik: "3171234567890001",
+  npwp: "",
+  bpjsKesNumber: "",
+  bpjsTkNumber: "",
+  bankName: "",
+  bankAccountNo: "",
+  bankAccountName: "",
+  address: "",
+  city: "Jakarta",
+  province: "DKI Jakarta",
+  postalCode: "",
+  emergencyName: "",
+  emergencyPhone: "",
+  emergencyRelation: "",
+  departmentCode: "IT",
+  positionCode: "IT-STAFF",
+  managerEmployeeNumber: "",
+  status: "ACTIVE",
+  type: "PERMANENT",
+  joinDate: "2024-01-15",
+  endDate: "",
+  ptkpStatus: "K2",
+  taxMethod: "GROSS",
+};
 
 export async function GET() {
   const session = await apiGuard({ minRole: "HR_ADMIN" });
   if (isGuardError(session)) return session;
 
-  const employees = await prisma.employee.findMany({
-    where: { isDeleted: false },
-    include: {
-      department: { select: { code: true } },
-      position: { select: { code: true } },
-      manager: { select: { employeeNumber: true } },
-    },
-    orderBy: { employeeNumber: "asc" },
-  });
-
-  const rows = employees.map((e) => ({
-    employeeNumber: e.employeeNumber,
-    firstName: e.firstName,
-    lastName: e.lastName,
-    email: e.email,
-    phone: e.phone ?? "",
-    gender: e.gender,
-    dateOfBirth: toYmd(e.dateOfBirth),
-    placeOfBirth: e.placeOfBirth,
-    religion: e.religion ?? "",
-    maritalStatus: e.maritalStatus,
-    dependents: e.dependents,
-    nik: e.nik,
-    npwp: e.npwp ?? "",
-    bpjsKesNumber: e.bpjsKesNumber ?? "",
-    bpjsTkNumber: e.bpjsTkNumber ?? "",
-    bankName: e.bankName ?? "",
-    bankAccountNo: e.bankAccountNo ?? "",
-    bankAccountName: e.bankAccountName ?? "",
-    address: e.address ?? "",
-    city: e.city ?? "",
-    province: e.province ?? "",
-    postalCode: e.postalCode ?? "",
-    emergencyName: e.emergencyName ?? "",
-    emergencyPhone: e.emergencyPhone ?? "",
-    emergencyRelation: e.emergencyRelation ?? "",
-    departmentCode: e.department.code,
-    positionCode: e.position.code,
-    managerEmployeeNumber: e.manager?.employeeNumber ?? "",
-    status: e.status,
-    type: e.type,
-    joinDate: toYmd(e.joinDate),
-    endDate: toYmd(e.endDate),
-    ptkpStatus: e.ptkpStatus,
-    taxMethod: e.taxMethod,
-  }));
-
-  const buffer = await buildXlsx(COLUMNS, rows, "Karyawan");
-  const filename = `employees-${new Date().toISOString().split("T")[0]}.xlsx`;
+  const buffer = await buildXlsx(COLUMNS, [EXAMPLE_ROW], "Template");
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `attachment; filename="template-employees.xlsx"`,
     },
   });
 }

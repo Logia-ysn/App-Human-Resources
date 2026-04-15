@@ -266,7 +266,7 @@ export default function EmployeesPage() {
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `employees-${new Date().toISOString().split("T")[0]}.csv`;
+                  a.download = `employees-${new Date().toISOString().split("T")[0]}.xlsx`;
                   a.click();
                   URL.revokeObjectURL(url);
                   toast.success("Export berhasil");

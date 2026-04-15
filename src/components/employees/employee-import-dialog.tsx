@@ -32,91 +32,30 @@ type ImportResult = {
   results: RowResult[];
 };
 
-const TEMPLATE_HEADERS = [
-  "employeeNumber",
-  "firstName",
-  "lastName",
-  "email",
-  "phone",
-  "gender",
-  "dateOfBirth",
-  "placeOfBirth",
-  "religion",
-  "maritalStatus",
-  "dependents",
-  "nik",
-  "npwp",
-  "bpjsKesNumber",
-  "bpjsTkNumber",
-  "bankName",
-  "bankAccountNo",
-  "bankAccountName",
-  "address",
-  "city",
-  "province",
-  "postalCode",
-  "emergencyName",
-  "emergencyPhone",
-  "emergencyRelation",
-  "departmentCode",
-  "positionCode",
-  "managerEmployeeNumber",
-  "status",
-  "type",
-  "joinDate",
-  "endDate",
-  "ptkpStatus",
-  "taxMethod",
-];
-
-const TEMPLATE_EXAMPLE = [
-  "",
-  "Budi",
-  "Santoso",
-  "budi@contoh.com",
-  "081234567890",
-  "MALE",
-  "1990-05-15",
-  "Jakarta",
-  "ISLAM",
-  "MARRIED",
-  "2",
-  "3171234567890001",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "Jakarta",
-  "DKI Jakarta",
-  "",
-  "",
-  "",
-  "",
-  "IT",
-  "IT-STAFF",
-  "",
-  "ACTIVE",
-  "PERMANENT",
-  "2024-01-15",
-  "",
-  "K2",
-  "GROSS",
-];
-
-function downloadTemplate() {
-  const bom = "\uFEFF";
-  const csv =
-    TEMPLATE_HEADERS.join(",") + "\r\n" + TEMPLATE_EXAMPLE.map((v) => (v.includes(",") ? `"${v}"` : v)).join(",");
-  const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8" });
+async function downloadTemplate() {
+  const res = await fetch("/api/employees/template");
+  if (!res.ok) {
+    toast.error(res.status === 403 ? "Tidak memiliki akses" : `Gagal download template (${res.status})`);
+    return;
+  }
+  const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "template-employees.csv";
+  a.download = "template-employees.xlsx";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 }
 
 export function EmployeeImportDialog({ onDone }: { onDone?: () => void }) {
@@ -128,10 +67,13 @@ export function EmployeeImportDialog({ onDone }: { onDone?: () => void }) {
     setUploading(true);
     setResult(null);
     try {
-      const csv = await file.text();
+      const isXlsx = /\.xlsx$/i.test(file.name) || file.type.includes("spreadsheetml");
+      const body = isXlsx
+        ? { xlsxBase64: await fileToBase64(file) }
+        : { csv: await file.text() };
       const res = await apiClient<ImportResult>("/api/employees/import", {
         method: "POST",
-        body: { csv },
+        body,
       });
       setResult(res);
       if (res.created > 0) {
@@ -163,9 +105,9 @@ export function EmployeeImportDialog({ onDone }: { onDone?: () => void }) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Import Karyawan dari CSV</DialogTitle>
+          <DialogTitle>Import Karyawan</DialogTitle>
           <DialogDescription>
-            Upload file CSV untuk menambahkan banyak karyawan sekaligus. Email & NIK duplikat akan dilewati.
+            Upload file Excel (.xlsx) atau CSV untuk menambahkan banyak karyawan sekaligus. Email & NIK duplikat akan dilewati.
           </DialogDescription>
         </DialogHeader>
 
@@ -175,9 +117,9 @@ export function EmployeeImportDialog({ onDone }: { onDone?: () => void }) {
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-muted-foreground" />
                 <div className="text-sm">
-                  <p className="font-medium">Template CSV</p>
+                  <p className="font-medium">Template Excel</p>
                   <p className="text-xs text-muted-foreground">
-                    Download template dan isi sesuai format
+                    Download template .xlsx lalu isi sesuai format
                   </p>
                 </div>
               </div>
@@ -200,7 +142,7 @@ export function EmployeeImportDialog({ onDone }: { onDone?: () => void }) {
               ) : (
                 <>
                   <Upload className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm font-medium">Klik untuk pilih file CSV</p>
+                  <p className="text-sm font-medium">Klik untuk pilih file .xlsx atau .csv</p>
                   <p className="text-xs text-muted-foreground">
                     Kolom wajib: firstName, lastName, email, nik, dateOfBirth, placeOfBirth, gender,
                     maritalStatus, departmentCode, positionCode, joinDate, type, ptkpStatus
@@ -210,7 +152,7 @@ export function EmployeeImportDialog({ onDone }: { onDone?: () => void }) {
               <input
                 id="csv-upload"
                 type="file"
-                accept=".csv,text/csv"
+                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 disabled={uploading}
                 className="hidden"
                 onChange={(e) => {

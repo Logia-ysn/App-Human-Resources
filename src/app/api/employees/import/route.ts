@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { parseCSV } from "@/lib/utils/csv";
+import { parseXlsx } from "@/lib/utils/xlsx";
 import { createEmployeeSchema } from "@/lib/validators/employee";
 
 type RowResult = {
@@ -37,19 +38,26 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const csvText = typeof body?.csv === "string" ? body.csv : "";
-  if (!csvText.trim()) {
-    return NextResponse.json(errorResponse("File CSV kosong"), { status: 400 });
+  const xlsxBase64 = typeof body?.xlsxBase64 === "string" ? body.xlsxBase64 : "";
+
+  if (!csvText.trim() && !xlsxBase64.trim()) {
+    return NextResponse.json(errorResponse("File kosong"), { status: 400 });
   }
 
   let rows: Array<Record<string, string>>;
   try {
-    rows = parseCSV(csvText);
+    if (xlsxBase64.trim()) {
+      const buf = Buffer.from(xlsxBase64, "base64");
+      rows = await parseXlsx(buf);
+    } else {
+      rows = parseCSV(csvText);
+    }
   } catch {
-    return NextResponse.json(errorResponse("Format CSV tidak valid"), { status: 400 });
+    return NextResponse.json(errorResponse("Format file tidak valid"), { status: 400 });
   }
 
   if (rows.length === 0) {
-    return NextResponse.json(errorResponse("Tidak ada baris data di CSV"), { status: 400 });
+    return NextResponse.json(errorResponse("Tidak ada baris data di file"), { status: 400 });
   }
 
   const [departments, positions] = await Promise.all([
