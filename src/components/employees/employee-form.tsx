@@ -250,7 +250,13 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
 
 type Department = { id: string; name: string; isActive: boolean };
 type Position = { id: string; name: string; departmentId: string; isActive: boolean };
-type ActiveEmployee = { id: string; firstName: string; lastName: string; position: { name: string } };
+type ActiveEmployee = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  position: { name: string };
+  department: { name: string };
+};
 
 interface EmployeeFormProps {
   mode: "new" | "edit";
@@ -281,6 +287,11 @@ export function EmployeeForm({
   handlePrevious,
   handleSubmit,
 }: EmployeeFormProps) {
+  const sortedManagers = [...activeEmployees].sort((a, b) => {
+    const byDept = a.department.name.localeCompare(b.department.name);
+    if (byDept !== 0) return byDept;
+    return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+  });
   return (
     <Card>
       <CardContent className="pt-6">
@@ -613,18 +624,25 @@ export function EmployeeForm({
                   onValueChange={(val) =>
                     val !== null && handleChange("managerId", val)
                   }
-                  items={activeEmployees.map((emp) => ({
+                  items={sortedManagers.map((emp) => ({
                     value: emp.id,
-                    label: `${emp.firstName} ${emp.lastName} - ${emp.position.name}`,
+                    label: `${emp.firstName} ${emp.lastName} — ${emp.position.name} (${emp.department.name})`,
                   }))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih atasan langsung" />
+                    <SelectValue placeholder="Pilih atasan (lintas departemen)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {activeEmployees.map((emp) => (
+                    {sortedManagers.map((emp) => (
                       <SelectItem key={emp.id} value={emp.id}>
-                        {emp.firstName} {emp.lastName} - {emp.position.name}
+                        <span className="flex flex-col">
+                          <span>
+                            {emp.firstName} {emp.lastName} — {emp.position.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {emp.department.name}
+                          </span>
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
