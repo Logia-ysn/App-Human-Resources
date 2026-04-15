@@ -248,14 +248,29 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
   );
 }
 
+type PositionLevel = "STAFF" | "SUPERVISOR" | "MANAGER" | "DIRECTOR";
 type Department = { id: string; name: string; isActive: boolean };
-type Position = { id: string; name: string; departmentId: string; isActive: boolean };
+type Position = { id: string; name: string; departmentId: string; isActive: boolean; level: PositionLevel };
 type ActiveEmployee = {
   id: string;
   firstName: string;
   lastName: string;
-  position: { name: string };
+  position: { name: string; level: PositionLevel };
   department: { name: string };
+};
+
+const LEVEL_RANK: Record<PositionLevel, number> = {
+  DIRECTOR: 4,
+  MANAGER: 3,
+  SUPERVISOR: 2,
+  STAFF: 1,
+};
+
+const LEVEL_LABEL: Record<PositionLevel, string> = {
+  DIRECTOR: "Direktur",
+  MANAGER: "Manajer",
+  SUPERVISOR: "Supervisor",
+  STAFF: "Staf",
 };
 
 interface EmployeeFormProps {
@@ -287,7 +302,17 @@ export function EmployeeForm({
   handlePrevious,
   handleSubmit,
 }: EmployeeFormProps) {
-  const sortedManagers = [...activeEmployees].sort((a, b) => {
+  const selectedPosition = filteredPositions.find((p) => p.id === form.positionId);
+  const selfLevel = selectedPosition?.level;
+  const selfRank = selfLevel ? LEVEL_RANK[selfLevel] : 0;
+
+  const eligibleManagers = selfRank
+    ? activeEmployees.filter((e) => LEVEL_RANK[e.position.level] >= selfRank)
+    : activeEmployees;
+
+  const sortedManagers = [...eligibleManagers].sort((a, b) => {
+    const byLevel = LEVEL_RANK[b.position.level] - LEVEL_RANK[a.position.level];
+    if (byLevel !== 0) return byLevel;
     const byDept = a.department.name.localeCompare(b.department.name);
     if (byDept !== 0) return byDept;
     return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
@@ -626,25 +651,38 @@ export function EmployeeForm({
                   }
                   items={sortedManagers.map((emp) => ({
                     value: emp.id,
-                    label: `${emp.firstName} ${emp.lastName} — ${emp.position.name} (${emp.department.name})`,
+                    label: `${emp.firstName} ${emp.lastName} — ${emp.position.name} (${LEVEL_LABEL[emp.position.level]}, ${emp.department.name})`,
                   }))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih atasan (lintas departemen)" />
+                    <SelectValue
+                      placeholder={
+                        selfLevel
+                          ? `Pilih atasan (level ≥ ${LEVEL_LABEL[selfLevel]}, lintas departemen)`
+                          : "Pilih atasan (lintas departemen)"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {sortedManagers.map((emp) => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        <span className="flex flex-col">
-                          <span>
-                            {emp.firstName} {emp.lastName} — {emp.position.name}
+                    {sortedManagers.length === 0 ? (
+                      <div className="px-2 py-3 text-xs text-muted-foreground">
+                        Belum ada kandidat dengan level ≥{" "}
+                        {selfLevel ? LEVEL_LABEL[selfLevel] : "-"}.
+                      </div>
+                    ) : (
+                      sortedManagers.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          <span className="flex flex-col">
+                            <span>
+                              {emp.firstName} {emp.lastName} — {emp.position.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {LEVEL_LABEL[emp.position.level]} · {emp.department.name}
+                            </span>
                           </span>
-                          <span className="text-xs text-muted-foreground">
-                            {emp.department.name}
-                          </span>
-                        </span>
-                      </SelectItem>
-                    ))}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>

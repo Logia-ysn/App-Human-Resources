@@ -8,7 +8,7 @@ import type { CreateEmployeeInput, UpdateEmployeeInput } from "@/lib/validators/
 
 type EmployeeWithRelations = Employee & {
   department: { id: string; name: string; code: string };
-  position: { id: string; name: string; code: string };
+  position: { id: string; name: string; code: string; level: "STAFF" | "SUPERVISOR" | "MANAGER" | "DIRECTOR" };
   manager: { id: string; firstName: string; lastName: string } | null;
 };
 
