@@ -13,6 +13,19 @@ function timestamp(): string {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
 }
 
+function sanitizePgUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    u.searchParams.delete("schema");
+    u.searchParams.delete("pgbouncer");
+    u.searchParams.delete("connection_limit");
+    u.searchParams.delete("pool_timeout");
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
+
 export async function GET(_req: NextRequest) {
   const session = await apiGuard({ minRole: "SUPER_ADMIN" });
   if (isGuardError(session)) return session;
@@ -30,7 +43,7 @@ export async function GET(_req: NextRequest) {
       "--no-owner",
       "--no-privileges",
       "--format=plain",
-      databaseUrl,
+      sanitizePgUrl(databaseUrl),
     ],
     { stdio: ["ignore", "pipe", "pipe"] }
   );

@@ -19,6 +19,19 @@ type RestoreResult = {
   exitCode: number | null;
 };
 
+function sanitizePgUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    u.searchParams.delete("schema");
+    u.searchParams.delete("pgbouncer");
+    u.searchParams.delete("connection_limit");
+    u.searchParams.delete("pool_timeout");
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
+
 async function runRestore(sqlFilePath: string, isGzip: boolean): Promise<RestoreResult> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL tidak dikonfigurasi");
@@ -27,7 +40,7 @@ async function runRestore(sqlFilePath: string, isGzip: boolean): Promise<Restore
     const psql = spawn("psql", [
       "--quiet",
       "--set=ON_ERROR_STOP=1",
-      databaseUrl,
+      sanitizePgUrl(databaseUrl),
     ]);
 
     let stdout = "";
