@@ -1,19 +1,24 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { useAuth } from "@/components/providers/auth-context";
-import { useEmployee } from "@/hooks/use-employees";
+import { useEmployee, useUpdateEmployeePhoto } from "@/hooks/use-employees";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { UserCircle, Briefcase, MapPin, Phone, Mail, Shield } from "lucide-react";
+import { UserCircle, Briefcase, MapPin, Phone, Mail, Shield, Camera, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { LoadingState } from "@/components/shared/loading-state";
 
 const GENDER_LABEL: Record<string, string> = { MALE: "Laki-laki", FEMALE: "Perempuan" };
 const RELIGION_LABEL: Record<string, string> = { ISLAM: "Islam", KRISTEN: "Kristen", KATOLIK: "Katolik", HINDU: "Hindu", BUDDHA: "Buddha", KONGHUCU: "Konghucu", LAINNYA: "Lainnya" };
 const MARITAL_LABEL: Record<string, string> = { SINGLE: "Belum Menikah", MARRIED: "Menikah", DIVORCED: "Cerai Hidup", WIDOWED: "Cerai Mati" };
+
+const MAX_PHOTO_MB = 2;
 
 function InfoItem({ label, value }: { label: string; value: string | number | null | undefined }) {
   return (
@@ -26,7 +31,10 @@ function InfoItem({ label, value }: { label: string; value: string | number | nu
 
 export default function EssProfilePage() {
   const { employeeId } = useAuth();
-  const { employee: emp, isLoading } = useEmployee(employeeId);
+  const { employee: emp, isLoading, mutate } = useEmployee(employeeId);
+  const updatePhoto = useUpdateEmployeePhoto(employeeId ?? "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   if (isLoading) {
     return (
@@ -55,6 +63,53 @@ export default function EssProfilePage() {
     ? `${emp.manager.firstName} ${emp.manager.lastName}`
     : null;
 
+  function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("File harus berupa gambar");
+      return;
+    }
+    if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
+      toast.error(`Ukuran foto maksimal ${MAX_PHOTO_MB}MB`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string;
+      if (!dataUrl) return;
+
+      setUploading(true);
+      try {
+        await updatePhoto.trigger({ photoUrl: dataUrl });
+        await mutate();
+        toast.success("Foto profil berhasil diperbarui");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Gagal mengunggah foto");
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handleRemovePhoto() {
+    setUploading(true);
+    try {
+      await updatePhoto.trigger({ photoUrl: null });
+      await mutate();
+      toast.success("Foto profil dihapus");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus foto");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2.5 border-b border-border pb-4">
@@ -68,12 +123,48 @@ export default function EssProfilePage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <Avatar className="h-16 w-16 rounded-sm">
-              <AvatarFallback className="rounded-sm bg-primary text-primary-foreground font-semibold text-xl">{initials}</AvatarFallback>
-            </Avatar>
+            <div className="relative shrink-0">
+              <Avatar className="h-20 w-20 rounded-sm">
+                {emp.photoUrl ? (
+                  <AvatarImage src={emp.photoUrl} alt={`Foto ${emp.firstName}`} className="rounded-sm" />
+                ) : null}
+                <AvatarFallback className="rounded-sm bg-primary text-primary-foreground font-semibold text-2xl">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+                title="Ubah foto profil"
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+            </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold tracking-tight">{emp.firstName} {emp.lastName}</h2>
               <p className="text-sm text-muted-foreground">{positionName} — {departmentName}</p>
+              {emp.photoUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={handleRemovePhoto}
+                  className="mt-1 h-auto px-2 py-1 text-xs text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Hapus foto
+                </Button>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <StatusBadge status={emp.status} />

@@ -93,3 +93,17 @@ export function useUpdateEmployee(id: string) {
 export function useDeleteEmployee(id: string) {
   return useSWRMutation(`/api/employees/${id}`, deleteEmployee);
 }
+
+async function updateEmployeePhoto(
+  url: string,
+  { arg }: { arg: { photoUrl: string | null } }
+) {
+  return apiClient<{ id: string; photoUrl: string | null }>(url, {
+    method: "PATCH",
+    body: arg,
+  });
+}
+
+export function useUpdateEmployeePhoto(id: string) {
+  return useSWRMutation(`/api/employees/${id}/photo`, updateEmployeePhoto);
+}
