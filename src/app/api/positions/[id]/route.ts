@@ -15,6 +15,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     where: { id, isActive: true },
     include: {
       department: { select: { id: true, name: true, code: true } },
+      orgLevel: { select: { id: true, rank: true, name: true, code: true } },
       _count: { select: { employees: true } },
     },
   });
@@ -54,6 +55,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     data: parsed.data,
     include: {
       department: { select: { id: true, name: true, code: true } },
+      orgLevel: { select: { id: true, rank: true, name: true, code: true } },
       _count: { select: { employees: true } },
     },
   });

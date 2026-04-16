@@ -10,7 +10,7 @@ type OrgNode = {
   lastName: string;
   email: string;
   department: { id: string; name: string };
-  position: { id: string; name: string };
+  position: { id: string; name: string; orgLevel: { rank: number; name: string } };
   managerId: string | null;
   children: OrgNode[];
 };
@@ -37,7 +37,7 @@ export async function GET(_req: NextRequest) {
 
   const employees = await prisma.employee.findMany({
     where: { isDeleted: false, status: { in: ["ACTIVE", "PROBATION"] } },
-    orderBy: [{ position: { level: "asc" } }, { firstName: "asc" }],
+    orderBy: [{ position: { orgLevel: { rank: "asc" } } }, { firstName: "asc" }],
     select: {
       id: true,
       employeeNumber: true,
@@ -46,7 +46,7 @@ export async function GET(_req: NextRequest) {
       email: true,
       managerId: true,
       department: { select: { id: true, name: true } },
-      position: { select: { id: true, name: true } },
+      position: { select: { id: true, name: true, orgLevel: { select: { rank: true, name: true } } } },
     },
   });
 

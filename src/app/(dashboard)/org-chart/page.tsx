@@ -37,6 +37,9 @@ function NodeCard({ node, depth }: { node: OrgNode; depth: number }) {
             <Badge variant="outline" className="text-[11px] h-5 px-1.5">
               {node.position.name}
             </Badge>
+            <span className="text-[11px] text-muted-foreground font-medium">
+              {node.position.orgLevel.name}
+            </span>
             <span className="text-xs text-muted-foreground">{node.department.name}</span>
           </div>
           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">

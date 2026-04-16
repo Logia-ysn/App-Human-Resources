@@ -37,16 +37,8 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { usePositions, useCreatePosition, useUpdatePosition, useDeletePosition } from "@/hooks/use-positions";
 import { useDepartments } from "@/hooks/use-departments";
+import { useOrgLevels } from "@/hooks/use-org-levels";
 import { LoadingState } from "@/components/shared/loading-state";
-
-const LEVELS = ["STAFF", "SUPERVISOR", "MANAGER", "DIRECTOR"] as const;
-
-const LEVEL_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
-  STAFF: "secondary",
-  SUPERVISOR: "outline",
-  MANAGER: "default",
-  DIRECTOR: "default",
-};
 
 const currencyFormat = new Intl.NumberFormat("id-ID", {
   style: "currency",
@@ -59,7 +51,7 @@ type FormData = {
   name: string;
   code: string;
   departmentId: string;
-  level: (typeof LEVELS)[number];
+  orgLevelId: string;
   minSalary: string;
   maxSalary: string;
   description: string;
@@ -70,7 +62,7 @@ const EMPTY_FORM: FormData = {
   name: "",
   code: "",
   departmentId: "",
-  level: "STAFF",
+  orgLevelId: "",
   minSalary: "",
   maxSalary: "",
   description: "",
@@ -81,6 +73,7 @@ export default function PositionsPage() {
   const [filterDept, setFilterDept] = useState<string>("all");
   const { positions, isLoading, mutate } = usePositions(filterDept === "all" ? undefined : filterDept);
   const { departments } = useDepartments();
+  const { levels: orgLevels } = useOrgLevels();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -106,7 +99,7 @@ export default function PositionsPage() {
       name: pos.name,
       code: pos.code,
       departmentId: pos.departmentId,
-      level: pos.level as (typeof LEVELS)[number],
+      orgLevelId: pos.orgLevelId,
       minSalary: pos.minSalary?.toString() ?? "",
       maxSalary: pos.maxSalary?.toString() ?? "",
       description: pos.description ?? "",
@@ -129,8 +122,8 @@ export default function PositionsPage() {
   }
 
   async function handleSubmit() {
-    if (!form.name.trim() || !form.code.trim() || !form.departmentId) {
-      toast.error("Nama, kode, dan departemen wajib diisi");
+    if (!form.name.trim() || !form.code.trim() || !form.departmentId || !form.orgLevelId) {
+      toast.error("Nama, kode, departemen, dan level wajib diisi");
       return;
     }
 
@@ -140,7 +133,7 @@ export default function PositionsPage() {
         name: form.name.trim(),
         code: form.code.trim(),
         departmentId: form.departmentId,
-        level: form.level,
+        orgLevelId: form.orgLevelId,
         minSalary: form.minSalary ? Number(form.minSalary) : null,
         maxSalary: form.maxSalary ? Number(form.maxSalary) : null,
         description: form.description.trim(),
@@ -234,8 +227,8 @@ export default function PositionsPage() {
                     <StatusBadge status={pos.isActive ? "ACTIVE" : "RESIGNED"} />
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant={LEVEL_VARIANT[pos.level] ?? "default"}>{pos.level}</Badge>
-                    <Badge variant="outline">{pos.department.name}</Badge>
+                    <Badge variant="outline">{pos.orgLevel.name}</Badge>
+                    <Badge variant="secondary">{pos.department.name}</Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <div className="space-y-1">
@@ -288,8 +281,8 @@ export default function PositionsPage() {
                       <TableCell className="font-medium">{pos.name}</TableCell>
                       <TableCell>{pos.department.name}</TableCell>
                       <TableCell>
-                        <Badge variant={LEVEL_VARIANT[pos.level] ?? "default"}>
-                          {pos.level}
+                        <Badge variant="outline">
+                          {pos.orgLevel.name}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -395,13 +388,13 @@ export default function PositionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Level</Label>
+                <Label>Level Organisasi</Label>
                 <Select
-                  value={form.level}
+                  value={form.orgLevelId || undefined}
                   onValueChange={(val) =>
                     setForm((prev) => ({
                       ...prev,
-                      level: val as (typeof LEVELS)[number],
+                      orgLevelId: val as string,
                     }))
                   }
                 >
@@ -409,9 +402,12 @@ export default function PositionsPage() {
                     <SelectValue placeholder="Pilih level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {LEVELS.map((lvl) => (
-                      <SelectItem key={lvl} value={lvl}>
-                        {lvl}
+                    {orgLevels.map((lvl) => (
+                      <SelectItem key={lvl.id} value={lvl.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="text-muted-foreground font-mono text-xs">{lvl.rank}</span>
+                          {lvl.name}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     where: { id, isDeleted: false },
     include: {
       department: { select: { id: true, name: true, code: true } },
-      position: { select: { id: true, name: true, code: true, level: true } },
+      position: { select: { id: true, name: true, code: true, orgLevel: { select: { id: true, rank: true, name: true, code: true } } } },
       manager: { select: { id: true, firstName: true, lastName: true } },
       salaryComponents: {
         where: { isCurrent: true },
@@ -91,7 +91,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     },
     include: {
       department: { select: { id: true, name: true, code: true } },
-      position: { select: { id: true, name: true, code: true, level: true } },
+      position: { select: { id: true, name: true, code: true, orgLevel: { select: { id: true, rank: true, name: true, code: true } } } },
       manager: { select: { id: true, firstName: true, lastName: true } },
     },
   });

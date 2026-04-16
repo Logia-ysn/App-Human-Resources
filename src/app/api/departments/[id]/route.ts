@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       head: { select: { id: true, firstName: true, lastName: true } },
       parent: { select: { id: true, name: true, code: true } },
       children: { select: { id: true, name: true, code: true } },
-      positions: { where: { isActive: true }, select: { id: true, name: true, code: true, level: true } },
+      positions: { where: { isActive: true }, select: { id: true, name: true, code: true, orgLevel: { select: { id: true, rank: true, name: true, code: true } } } },
       _count: { select: { employees: true, positions: true } },
     },
   });

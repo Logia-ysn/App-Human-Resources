@@ -10,7 +10,7 @@ export type OrgNode = {
   lastName: string;
   email: string;
   department: { id: string; name: string };
-  position: { id: string; name: string };
+  position: { id: string; name: string; orgLevel: { rank: number; name: string } };
   managerId: string | null;
   children: OrgNode[];
 };

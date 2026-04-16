@@ -248,29 +248,15 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
   );
 }
 
-type PositionLevel = "STAFF" | "SUPERVISOR" | "MANAGER" | "DIRECTOR";
+type OrgLevelInfo = { rank: number; name: string };
 type Department = { id: string; name: string; isActive: boolean };
-type Position = { id: string; name: string; departmentId: string; isActive: boolean; level: PositionLevel };
+type Position = { id: string; name: string; departmentId: string; isActive: boolean; orgLevel: OrgLevelInfo };
 type ActiveEmployee = {
   id: string;
   firstName: string;
   lastName: string;
-  position: { name: string; level: PositionLevel };
+  position: { name: string; orgLevel: OrgLevelInfo };
   department: { name: string };
-};
-
-const LEVEL_RANK: Record<PositionLevel, number> = {
-  DIRECTOR: 4,
-  MANAGER: 3,
-  SUPERVISOR: 2,
-  STAFF: 1,
-};
-
-const LEVEL_LABEL: Record<PositionLevel, string> = {
-  DIRECTOR: "Direktur",
-  MANAGER: "Manajer",
-  SUPERVISOR: "Supervisor",
-  STAFF: "Staf",
 };
 
 interface EmployeeFormProps {
@@ -303,15 +289,14 @@ export function EmployeeForm({
   handleSubmit,
 }: EmployeeFormProps) {
   const selectedPosition = filteredPositions.find((p) => p.id === form.positionId);
-  const selfLevel = selectedPosition?.level;
-  const selfRank = selfLevel ? LEVEL_RANK[selfLevel] : 0;
+  const selfRank = selectedPosition?.orgLevel.rank ?? Infinity;
 
-  const eligibleManagers = selfRank
-    ? activeEmployees.filter((e) => LEVEL_RANK[e.position.level] >= selfRank)
+  const eligibleManagers = selfRank < Infinity
+    ? activeEmployees.filter((e) => e.position.orgLevel.rank <= selfRank)
     : activeEmployees;
 
   const sortedManagers = [...eligibleManagers].sort((a, b) => {
-    const byLevel = LEVEL_RANK[b.position.level] - LEVEL_RANK[a.position.level];
+    const byLevel = a.position.orgLevel.rank - b.position.orgLevel.rank;
     if (byLevel !== 0) return byLevel;
     const byDept = a.department.name.localeCompare(b.department.name);
     if (byDept !== 0) return byDept;
@@ -651,14 +636,14 @@ export function EmployeeForm({
                   }
                   items={sortedManagers.map((emp) => ({
                     value: emp.id,
-                    label: `${emp.firstName} ${emp.lastName} — ${emp.position.name} (${LEVEL_LABEL[emp.position.level]}, ${emp.department.name})`,
+                    label: `${emp.firstName} ${emp.lastName} — ${emp.position.name} (${emp.position.orgLevel.name}, ${emp.department.name})`,
                   }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue
                       placeholder={
-                        selfLevel
-                          ? `Pilih atasan (level ≥ ${LEVEL_LABEL[selfLevel]}, lintas departemen)`
+                        selectedPosition
+                          ? `Pilih atasan (level ≥ ${selectedPosition.orgLevel.name}, lintas departemen)`
                           : "Pilih atasan (lintas departemen)"
                       }
                     />
@@ -667,7 +652,7 @@ export function EmployeeForm({
                     {sortedManagers.length === 0 ? (
                       <div className="px-2 py-3 text-xs text-muted-foreground">
                         Belum ada kandidat dengan level ≥{" "}
-                        {selfLevel ? LEVEL_LABEL[selfLevel] : "-"}.
+                        {selectedPosition?.orgLevel.name ?? "-"}.
                       </div>
                     ) : (
                       sortedManagers.map((emp) => (
@@ -677,7 +662,7 @@ export function EmployeeForm({
                               {emp.firstName} {emp.lastName} — {emp.position.name}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {LEVEL_LABEL[emp.position.level]} · {emp.department.name}
+                              {emp.position.orgLevel.name} · {emp.department.name}
                             </span>
                           </span>
                         </SelectItem>

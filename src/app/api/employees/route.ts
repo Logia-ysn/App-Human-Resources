@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       where,
       include: {
         department: { select: { id: true, name: true, code: true } },
-        position: { select: { id: true, name: true, code: true, level: true } },
+        position: { select: { id: true, name: true, code: true, orgLevel: { select: { id: true, rank: true, name: true, code: true } } } },
         manager: { select: { id: true, firstName: true, lastName: true } },
       },
       orderBy: { [sort]: order },
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         },
         include: {
           department: { select: { id: true, name: true, code: true } },
-          position: { select: { id: true, name: true, code: true, level: true } },
+          position: { select: { id: true, name: true, code: true, orgLevel: { select: { id: true, rank: true, name: true, code: true } } } },
           manager: { select: { id: true, firstName: true, lastName: true } },
         },
       });

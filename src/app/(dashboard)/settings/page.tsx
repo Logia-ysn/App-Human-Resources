@@ -4,6 +4,7 @@ import { LoadingState } from "@/components/shared/loading-state";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useCompany, useUpdateCompany, useCreateCompany, useAppConfig, useUpdateAppConfig } from "@/hooks/use-settings";
+import { useOrgLevels, useCreateOrgLevel, useUpdateOrgLevel, useDeleteOrgLevel } from "@/hooks/use-org-levels";
 import type { AppConfigData } from "@/hooks/use-settings";
 import type { Company } from "@prisma/client";
 import {
@@ -56,6 +57,10 @@ import {
   Trash2,
   Database,
   AlertTriangle,
+  Network,
+  Plus,
+  Pencil,
+  GripVertical,
 } from "lucide-react";
 
 // ---------- Constants ----------
@@ -196,6 +201,10 @@ export default function SettingsPage() {
             <ClipboardList className="mr-1.5 h-4 w-4" />
             Absensi
           </TabsTrigger>
+          <TabsTrigger value="organisasi">
+            <Building2 className="mr-1.5 h-4 w-4" />
+            Organisasi
+          </TabsTrigger>
           <TabsTrigger value="sistem">
             <Settings className="mr-1.5 h-4 w-4" />
             Sistem
@@ -224,6 +233,10 @@ export default function SettingsPage() {
 
         <TabsContent value="absensi">
           <AttendanceTab appConfig={config} />
+        </TabsContent>
+
+        <TabsContent value="organisasi">
+          <OrgLevelTab />
         </TabsContent>
 
         <TabsContent value="sistem">
@@ -1540,6 +1553,238 @@ function DataManagementSection() {
           </Dialog>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// =================================================================
+// OrgLevel Tab — Hirarki Organisasi
+// =================================================================
+
+type OrgLevelFormData = {
+  rank: string;
+  name: string;
+  code: string;
+};
+
+const EMPTY_ORG_LEVEL_FORM: OrgLevelFormData = { rank: "", name: "", code: "" };
+
+function OrgLevelTab() {
+  const { levels, isLoading, mutate } = useOrgLevels();
+  const createLevel = useCreateOrgLevel();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<OrgLevelFormData>(EMPTY_ORG_LEVEL_FORM);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const updateLevel = useUpdateOrgLevel(editingId ?? "");
+  const deleteLevel = useDeleteOrgLevel(deleteTargetId ?? "");
+
+  function openCreate() {
+    const nextRank = levels.length > 0 ? Math.max(...levels.map((l) => l.rank)) + 1 : 0;
+    setEditingId(null);
+    setForm({ rank: String(nextRank), name: "", code: "" });
+    setDialogOpen(true);
+  }
+
+  function openEdit(lvl: (typeof levels)[0]) {
+    setEditingId(lvl.id);
+    setForm({ rank: String(lvl.rank), name: lvl.name, code: lvl.code });
+    setDialogOpen(true);
+  }
+
+  async function handleSubmit() {
+    if (!form.name.trim() || !form.code.trim() || form.rank === "") {
+      toast.error("Rank, nama, dan kode wajib diisi");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        rank: parseInt(form.rank, 10),
+        name: form.name.trim(),
+        code: form.code.trim().toUpperCase(),
+      };
+
+      if (editingId) {
+        await updateLevel.trigger(payload);
+        toast.success("Level berhasil diperbarui");
+      } else {
+        await createLevel.trigger(payload);
+        toast.success("Level berhasil ditambahkan");
+      }
+      await mutate();
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    try {
+      await deleteLevel.trigger();
+      toast.success("Level berhasil dihapus");
+      await mutate();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus");
+    }
+    setDeleteTargetId(null);
+  }
+
+  const deleteTarget = levels.find((l) => l.id === deleteTargetId);
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Network className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <CardTitle>Hirarki Organisasi</CardTitle>
+                <CardDescription>
+                  Kelola level/jenjang organisasi. Rank 0 = tertinggi.
+                </CardDescription>
+              </div>
+            </div>
+            <Button onClick={openCreate}>
+              <Plus className="size-4" data-icon="inline-start" />
+              Tambah Level
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-sm border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left w-16">Rank</th>
+                  <th className="px-3 py-2 text-left">Nama</th>
+                  <th className="px-3 py-2 text-left">Kode</th>
+                  <th className="px-3 py-2 text-center">Jabatan</th>
+                  <th className="px-3 py-2 text-right w-24">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {levels.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                      Belum ada level organisasi.
+                    </td>
+                  </tr>
+                ) : (
+                  levels.map((lvl) => (
+                    <tr key={lvl.id} className="border-b last:border-0 hover:bg-muted/40 transition-colors">
+                      <td className="px-3 py-2">
+                        <span className="inline-flex items-center gap-1">
+                          <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
+                          <span className="font-mono font-semibold">{lvl.rank}</span>
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 font-medium">{lvl.name}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{lvl.code}</td>
+                      <td className="px-3 py-2 text-center tabular-nums">{lvl._count.positions}</td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon-sm" onClick={() => openEdit(lvl)}>
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={lvl._count.positions > 0}
+                            onClick={() => setDeleteTargetId(lvl.id)}
+                          >
+                            <Trash2 className="size-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit Level" : "Tambah Level"}</DialogTitle>
+            <DialogDescription>
+              Rank menentukan urutan hirarki (0 = paling tinggi).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="ol-rank">Rank</Label>
+              <Input
+                id="ol-rank"
+                type="number"
+                min={0}
+                placeholder="0"
+                value={form.rank}
+                onChange={(e) => setForm((prev) => ({ ...prev, rank: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ol-name">Nama</Label>
+              <Input
+                id="ol-name"
+                placeholder="Contoh: Direktur Utama"
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ol-code">Kode</Label>
+              <Input
+                id="ol-code"
+                placeholder="Contoh: DIRUT"
+                value={form.code}
+                onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingId ? "Simpan" : "Tambah"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTargetId(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Hapus Level</DialogTitle>
+            <DialogDescription>
+              Hapus level <span className="font-semibold text-foreground">{deleteTarget?.name}</span>?
+              Level yang masih digunakan jabatan tidak bisa dihapus.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTargetId(null)}>Batal</Button>
+            <Button variant="destructive" onClick={confirmDelete}>Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

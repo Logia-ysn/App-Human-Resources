@@ -8,6 +8,7 @@ import type { CreatePositionInput, UpdatePositionInput } from "@/lib/validators/
 
 type PositionWithRelations = Position & {
   department: { id: string; name: string; code: string };
+  orgLevel: { id: string; rank: number; name: string; code: string };
   _count: { employees: number };
 };
 

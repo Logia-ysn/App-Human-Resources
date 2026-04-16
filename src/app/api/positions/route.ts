@@ -17,9 +17,10 @@ export async function GET(req: NextRequest) {
     },
     include: {
       department: { select: { id: true, name: true, code: true } },
+      orgLevel: { select: { id: true, rank: true, name: true, code: true } },
       _count: { select: { employees: true } },
     },
-    orderBy: [{ department: { name: "asc" } }, { name: "asc" }],
+    orderBy: [{ orgLevel: { rank: "asc" } }, { department: { name: "asc" } }, { name: "asc" }],
   });
 
   return NextResponse.json(successResponse(positions));
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
     data: parsed.data,
     include: {
       department: { select: { id: true, name: true, code: true } },
+      orgLevel: { select: { id: true, rank: true, name: true, code: true } },
       _count: { select: { employees: true } },
     },
   });
