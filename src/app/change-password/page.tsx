@@ -8,21 +8,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, KeyRound } from "lucide-react";
+import { Loader2, KeyRound, Eye, EyeOff } from "lucide-react";
+
+type FieldError = Partial<Record<"current" | "new" | "confirm", string>>;
 
 export default function ChangePasswordPage() {
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldError>({});
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      toast.error("Konfirmasi password tidak cocok");
+  function validate(): FieldError {
+    const next: FieldError = {};
+    if (!currentPassword) next.current = "Password lama wajib diisi";
+    if (!newPassword) {
+      next.new = "Password baru wajib diisi";
+    } else if (newPassword.length < 8) {
+      next.new = "Password minimal 8 karakter";
+    } else if (!/[A-Za-z]/.test(newPassword)) {
+      next.new = "Password harus mengandung huruf";
+    } else if (!/[0-9]/.test(newPassword)) {
+      next.new = "Password harus mengandung angka";
+    } else if (newPassword === currentPassword) {
+      next.new = "Password baru harus berbeda dari password lama";
+    }
+    if (!confirmPassword) {
+      next.confirm = "Konfirmasi password wajib diisi";
+    } else if (newPassword !== confirmPassword) {
+      next.confirm = "Konfirmasi password tidak cocok";
+    }
+    return next;
+  }
+
+  async function submit() {
+    if (loading) return;
+    const fieldErrors = validate();
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      const first = Object.values(fieldErrors)[0];
+      if (first) toast.error(first);
       return;
     }
+    setErrors({});
     setLoading(true);
     try {
       const res = await fetch("/api/auth/change-password", {
@@ -44,6 +74,11 @@ export default function ChangePasswordPage() {
     }
   }
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void submit();
+  }
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -58,7 +93,7 @@ export default function ChangePasswordPage() {
         </div>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
             <Label htmlFor="current">Password Lama</Label>
             <Input
@@ -66,40 +101,63 @@ export default function ChangePasswordPage() {
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              required
               autoComplete="current-password"
+              aria-invalid={Boolean(errors.current)}
+              disabled={loading}
             />
+            {errors.current && (
+              <p className="text-xs text-destructive">{errors.current}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="new">Password Baru</Label>
-            <Input
-              id="new"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-              minLength={8}
-            />
-            <p className="text-xs text-muted-foreground">
-              Minimal 8 karakter, mengandung huruf dan angka.
-            </p>
+            <div className="relative">
+              <Input
+                id="new"
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.new)}
+                disabled={loading}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew((v) => !v)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition-colors hover:text-foreground"
+                aria-label={showNew ? "Sembunyikan password" : "Tampilkan password"}
+                tabIndex={-1}
+              >
+                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.new ? (
+              <p className="text-xs text-destructive">{errors.new}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Minimal 8 karakter, mengandung huruf dan angka.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm">Konfirmasi Password Baru</Label>
             <Input
               id="confirm"
-              type="password"
+              type={showNew ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              required
               autoComplete="new-password"
-              minLength={8}
+              aria-invalid={Boolean(errors.confirm)}
+              disabled={loading}
             />
+            {errors.confirm && (
+              <p className="text-xs text-destructive">{errors.confirm}</p>
+            )}
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Simpan Password Baru
+            {loading ? "Menyimpan..." : "Simpan Password Baru"}
           </Button>
         </form>
       </CardContent>
