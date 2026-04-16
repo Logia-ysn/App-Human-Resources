@@ -1142,22 +1142,12 @@ function LeaveTab({ appConfig }: { appConfig: AppConfigData }) {
       | "leaveWaitingPeriodMonths"
       | "maxCarryOverDays"
       | "collectiveLeaveDays"
-      | "weddingLeaveDays"
-      | "maternityLeaveDays"
-      | "paternityLeaveDays"
-      | "bereavementLeaveDays"
-      | "sickWithoutNoteDays"
     >
   >({
     annualLeaveEntitlement: appConfig.annualLeaveEntitlement,
     leaveWaitingPeriodMonths: appConfig.leaveWaitingPeriodMonths,
     maxCarryOverDays: appConfig.maxCarryOverDays,
     collectiveLeaveDays: appConfig.collectiveLeaveDays,
-    weddingLeaveDays: appConfig.weddingLeaveDays,
-    maternityLeaveDays: appConfig.maternityLeaveDays,
-    paternityLeaveDays: appConfig.paternityLeaveDays,
-    bereavementLeaveDays: appConfig.bereavementLeaveDays,
-    sickWithoutNoteDays: appConfig.sickWithoutNoteDays,
   });
   const [saving, setSaving] = useState(false);
 
@@ -1237,95 +1227,6 @@ function LeaveTab({ appConfig }: { appConfig: AppConfigData }) {
               value={form.collectiveLeaveDays}
               onChange={(e) => handleNumberChange("collectiveLeaveDays", e.target.value)}
             />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Cuti Khusus (Default Hari)</CardTitle>
-          <CardDescription>
-            Atur jumlah hari default untuk setiap jenis cuti khusus.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="weddingLeaveDays">Cuti Menikah</Label>
-            <div className="relative">
-              <Input
-                id="weddingLeaveDays"
-                type="number"
-                min="0"
-                value={form.weddingLeaveDays}
-                onChange={(e) => handleNumberChange("weddingLeaveDays", e.target.value)}
-              />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                hari
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="maternityLeaveDays">Cuti Melahirkan</Label>
-            <div className="relative">
-              <Input
-                id="maternityLeaveDays"
-                type="number"
-                min="0"
-                value={form.maternityLeaveDays}
-                onChange={(e) => handleNumberChange("maternityLeaveDays", e.target.value)}
-              />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                hari
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="paternityLeaveDays">Cuti Ayah</Label>
-            <div className="relative">
-              <Input
-                id="paternityLeaveDays"
-                type="number"
-                min="0"
-                value={form.paternityLeaveDays}
-                onChange={(e) => handleNumberChange("paternityLeaveDays", e.target.value)}
-              />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                hari
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="bereavementLeaveDays">Cuti Duka</Label>
-            <div className="relative">
-              <Input
-                id="bereavementLeaveDays"
-                type="number"
-                min="0"
-                value={form.bereavementLeaveDays}
-                onChange={(e) => handleNumberChange("bereavementLeaveDays", e.target.value)}
-              />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                hari
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="sickWithoutNoteDays">Cuti Sakit Tanpa Surat</Label>
-            <div className="relative">
-              <Input
-                id="sickWithoutNoteDays"
-                type="number"
-                min="0"
-                value={form.sickWithoutNoteDays}
-                onChange={(e) => handleNumberChange("sickWithoutNoteDays", e.target.value)}
-              />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                hari
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Maks. hari berturut tanpa surat dokter
-            </p>
           </div>
         </CardContent>
       </Card>
