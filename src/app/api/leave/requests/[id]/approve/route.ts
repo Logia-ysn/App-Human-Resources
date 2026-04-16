@@ -4,6 +4,9 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { approveLeaveSchema } from "@/lib/validators/leave";
 import { recordAudit, getRequestMeta } from "@/lib/audit";
+import { notifyEmployee } from "@/lib/notify";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -99,6 +102,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     ipAddress,
     userAgent,
   });
+
+  const rangeText = `${format(leaveRequest.startDate, "dd MMM", { locale: idLocale })} – ${format(leaveRequest.endDate, "dd MMM yyyy", { locale: idLocale })}`;
+  await notifyEmployee({
+    employeeId: leaveRequest.employeeId,
+    title: status === "APPROVED" ? "Pengajuan Cuti Disetujui" : "Pengajuan Cuti Ditolak",
+    message: `${updated.leaveType.name} ${rangeText} — ${status === "APPROVED" ? "disetujui" : "ditolak"}${note ? `. Catatan: ${note}` : ""}.`,
+    type: status === "APPROVED" ? "LEAVE_APPROVED" : "LEAVE_REJECTED",
+    actionUrl: "/ess/leave",
+  }).catch(() => undefined);
 
   return NextResponse.json(successResponse(updated));
 }

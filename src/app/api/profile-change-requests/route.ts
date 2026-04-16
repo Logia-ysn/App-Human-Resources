@@ -4,6 +4,7 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { createProfileChangeRequestSchema } from "@/lib/validators/profile-change-request";
 import { hasMinRole } from "@/lib/utils/permissions";
+import { notifyAdmins } from "@/lib/notify";
 
 export async function GET(req: NextRequest) {
   const session = await apiGuard();
@@ -80,27 +81,15 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Notify all HR_ADMIN and SUPER_ADMIN users
-  const admins = await prisma.user.findMany({
-    where: {
-      role: { in: ["HR_ADMIN", "SUPER_ADMIN"] },
-      isActive: true,
-    },
-    select: { id: true },
-  });
-
-  if (admins.length > 0) {
-    const fullName = `${employee.firstName} ${employee.lastName}`;
-    await prisma.notification.createMany({
-      data: admins.map((admin) => ({
-        userId: admin.id,
-        title: "Permintaan Perubahan Profil",
-        message: `${fullName} (${employee.employeeNumber}) mengajukan perubahan profil.`,
-        type: "GENERAL" as const,
-        actionUrl: "/profile-requests",
-      })),
-    });
-  }
+  const fullName = `${employee.firstName} ${employee.lastName}`;
+  await notifyAdmins({
+    title: "Permintaan Perubahan Profil",
+    message: `${fullName} (${employee.employeeNumber}) mengajukan perubahan profil.`,
+    type: "GENERAL",
+    actionUrl: "/profile-requests",
+    roles: ["HR_ADMIN", "SUPER_ADMIN"],
+    excludeUserId: session.user.id,
+  }).catch(() => undefined);
 
   return NextResponse.json(successResponse(created), { status: 201 });
 }

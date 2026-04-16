@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { resolveProfileChangeRequestSchema } from "@/lib/validators/profile-change-request";
+import { notifyEmployee } from "@/lib/notify";
 
 export async function PATCH(
   req: NextRequest,
@@ -56,26 +57,20 @@ export async function PATCH(
     },
   });
 
-  // Notify the requesting employee about the outcome
-  const requesterUserId = existing.employee.user?.id;
-  if (requesterUserId) {
-    const resolved = parsed.data.status === "RESOLVED";
-    await prisma.notification.create({
-      data: {
-        userId: requesterUserId,
-        title: resolved
-          ? "Permintaan Perubahan Profil Disetujui"
-          : "Permintaan Perubahan Profil Ditolak",
-        message: resolved
-          ? "Permintaan perubahan profil Anda sudah diproses oleh HR."
-          : `Permintaan perubahan profil Anda ditolak.${
-              parsed.data.handledNote ? ` Catatan: ${parsed.data.handledNote}` : ""
-            }`,
-        type: "GENERAL",
-        actionUrl: "/ess/profile",
-      },
-    });
-  }
+  const resolved = parsed.data.status === "RESOLVED";
+  await notifyEmployee({
+    employeeId: existing.employee.id,
+    title: resolved
+      ? "Permintaan Perubahan Profil Disetujui"
+      : "Permintaan Perubahan Profil Ditolak",
+    message: resolved
+      ? "Permintaan perubahan profil Anda sudah diproses oleh HR."
+      : `Permintaan perubahan profil Anda ditolak.${
+          parsed.data.handledNote ? ` Catatan: ${parsed.data.handledNote}` : ""
+        }`,
+    type: "GENERAL",
+    actionUrl: "/ess/profile",
+  }).catch(() => undefined);
 
   return NextResponse.json(successResponse(updated));
 }

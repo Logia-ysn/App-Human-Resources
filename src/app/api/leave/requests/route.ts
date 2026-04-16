@@ -4,6 +4,9 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { createLeaveRequestSchema, leaveQuerySchema } from "@/lib/validators/leave";
 import { hasMinRole } from "@/lib/utils/permissions";
+import { notifyAdmins } from "@/lib/notify";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 export async function GET(req: NextRequest) {
   const session = await apiGuard();
@@ -140,6 +143,16 @@ export async function POST(req: NextRequest) {
 
     return created;
   });
+
+  const fullName = `${request.employee.firstName} ${request.employee.lastName}`;
+  const rangeText = `${format(new Date(data.startDate), "dd MMM", { locale: idLocale })} – ${format(new Date(data.endDate), "dd MMM yyyy", { locale: idLocale })}`;
+  await notifyAdmins({
+    title: "Pengajuan Cuti Baru",
+    message: `${fullName} (${request.employee.employeeNumber}) mengajukan ${request.leaveType.name} ${rangeText} · ${data.totalDays} hari.`,
+    type: "LEAVE_REQUEST",
+    actionUrl: "/leave",
+    excludeUserId: session.user.id,
+  }).catch(() => undefined);
 
   return NextResponse.json(successResponse(request), { status: 201 });
 }
