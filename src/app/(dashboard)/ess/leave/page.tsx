@@ -239,6 +239,7 @@ export default function EssLeavePage() {
               ) : (
                 <Select
                   value={form.leaveTypeId || undefined}
+                  items={Object.fromEntries(activeLeaveTypes.map((lt) => [lt.id, lt.name]))}
                   onValueChange={(val) =>
                     setForm((prev) => ({ ...prev, leaveTypeId: val as string }))
                   }
