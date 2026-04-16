@@ -62,6 +62,9 @@ import {
   Plus,
   Pencil,
   GripVertical,
+  Download,
+  Upload,
+  ShieldAlert,
 } from "lucide-react";
 
 // ---------- Constants ----------
@@ -1714,6 +1717,208 @@ function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
 // Tab 6: Sistem (Data Management)
 // =================================================================
 
+const RESTORE_CONFIRM_PHRASE = "PULIHKAN DATA";
+const RESTORE_MAX_BYTES = 200 * 1024 * 1024;
+
+function BackupRestoreCard() {
+  const [downloading, setDownloading] = useState(false);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/settings/backup");
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Gagal membuat backup (HTTP ${res.status})`);
+      }
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="?([^"]+)"?/i);
+      const filename = match?.[1] ?? `hris-backup-${Date.now()}.sql.gz`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Backup berhasil diunduh");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengunduh backup");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  function resetRestoreForm() {
+    setRestoreFile(null);
+    setConfirmText("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handleRestore() {
+    if (!restoreFile) {
+      toast.error("Pilih file backup terlebih dahulu");
+      return;
+    }
+    if (confirmText !== RESTORE_CONFIRM_PHRASE) {
+      toast.error(`Ketik "${RESTORE_CONFIRM_PHRASE}" untuk konfirmasi`);
+      return;
+    }
+    if (restoreFile.size > RESTORE_MAX_BYTES) {
+      toast.error("Ukuran file melebihi 200MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", restoreFile);
+      fd.append("confirm", confirmText);
+      const res = await fetch("/api/settings/restore", {
+        method: "POST",
+        body: fd,
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Restore gagal");
+      }
+      toast.success(json.data?.message ?? "Restore berhasil");
+      setRestoreOpen(false);
+      resetRestoreForm();
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Restore gagal");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Database className="h-5 w-5 text-muted-foreground" />
+          <CardTitle>Backup &amp; Restore Database</CardTitle>
+        </div>
+        <CardDescription>
+          Unduh salinan lengkap database untuk arsip atau pindah server. Gunakan
+          restore untuk memulihkan data dari file backup (.sql atau .sql.gz).
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleDownload}
+            disabled={downloading}
+          >
+            {downloading ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-1.5 h-4 w-4" />
+            )}
+            Unduh Backup
+          </Button>
+
+          <Dialog
+            open={restoreOpen}
+            onOpenChange={(open) => {
+              setRestoreOpen(open);
+              if (!open) resetRestoreForm();
+            }}
+          >
+            <DialogTrigger
+              render={
+                <Button variant="destructive" size="lg">
+                  <Upload className="mr-1.5 h-4 w-4" />
+                  Pulihkan dari File
+                </Button>
+              }
+            />
+            <DialogContent>
+              <DialogHeader>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-sm border border-destructive/30 bg-destructive/5">
+                    <ShieldAlert className="h-4 w-4 text-destructive" strokeWidth={1.75} />
+                  </div>
+                  <DialogTitle>Pulihkan Database</DialogTitle>
+                </div>
+                <DialogDescription>
+                  Restore akan <strong>mengganti seluruh data</strong> saat ini
+                  dengan isi file backup. Operasi ini tidak dapat dibatalkan.
+                  Pastikan Anda sudah mengunduh backup terbaru sebelum
+                  melanjutkan.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="restore-file">File Backup (.sql atau .sql.gz)</Label>
+                  <Input
+                    ref={fileInputRef}
+                    id="restore-file"
+                    type="file"
+                    accept=".sql,.sql.gz,application/gzip,application/sql"
+                    onChange={(e) => setRestoreFile(e.target.files?.[0] ?? null)}
+                    disabled={uploading}
+                  />
+                  {restoreFile && (
+                    <p className="text-xs text-muted-foreground">
+                      {restoreFile.name} — {(restoreFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="restore-confirm">
+                    Ketik <code className="rounded bg-muted px-1 py-0.5 text-xs">{RESTORE_CONFIRM_PHRASE}</code> untuk konfirmasi
+                  </Label>
+                  <Input
+                    id="restore-confirm"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder={RESTORE_CONFIRM_PHRASE}
+                    disabled={uploading}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose render={<Button variant="outline" disabled={uploading} />}>
+                  Batal
+                </DialogClose>
+                <Button
+                  variant="destructive"
+                  onClick={handleRestore}
+                  disabled={
+                    uploading ||
+                    !restoreFile ||
+                    confirmText !== RESTORE_CONFIRM_PHRASE
+                  }
+                >
+                  {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Pulihkan Sekarang
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Backup berisi seluruh tabel (karyawan, absensi, cuti, payroll, dll).
+          Simpan file backup di tempat aman karena memuat data pribadi karyawan.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 function DataManagementSection() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -1742,6 +1947,7 @@ function DataManagementSection() {
 
   return (
     <div className="space-y-6">
+      <BackupRestoreCard />
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
