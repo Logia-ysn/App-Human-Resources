@@ -182,6 +182,8 @@ export function AppSidebar({
         <Link href="/dashboard" className="flex items-center gap-2.5">
           {logoUrl ? (
             <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-white border border-border">
+              {/* Logo disimpan sebagai base64 data URL — next/image tidak relevan. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={logoUrl} alt="Logo" className="h-7 w-7 object-contain" />
             </div>
           ) : (

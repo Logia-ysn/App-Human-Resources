@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
-import { successResponse } from "@/types/api";
+import { successResponse, errorResponse } from "@/types/api";
+import { createHolidaySchema } from "@/lib/validators/holiday";
 
 export async function GET(req: NextRequest) {
   const session = await apiGuard();
@@ -20,4 +21,30 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(successResponse(holidays));
+}
+
+export async function POST(req: NextRequest) {
+  const session = await apiGuard({ minRole: "HR_ADMIN" });
+  if (isGuardError(session)) return session;
+
+  const body = await req.json().catch(() => null);
+  const parsed = createHolidaySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      errorResponse(parsed.error.issues[0]?.message ?? "Input tidak valid"),
+      { status: 400 }
+    );
+  }
+
+  const { name, date, type, isRecurring } = parsed.data;
+  const created = await prisma.holiday.create({
+    data: {
+      name,
+      date: new Date(`${date}T00:00:00.000Z`),
+      type,
+      isRecurring,
+    },
+  });
+
+  return NextResponse.json(successResponse(created), { status: 201 });
 }

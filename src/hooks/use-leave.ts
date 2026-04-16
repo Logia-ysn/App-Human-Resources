@@ -4,7 +4,11 @@ import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import { fetcher, apiClient } from "@/lib/api-client";
 import type { LeaveRequest, LeaveBalance, LeaveType } from "@prisma/client";
-import type { CreateLeaveRequestInput, ApproveLeaveInput } from "@/lib/validators/leave";
+import type {
+  CreateLeaveRequestInput,
+  ApproveLeaveInput,
+  CreateLeaveTypeInput,
+} from "@/lib/validators/leave";
 
 type LeaveRequestWithRelations = LeaveRequest & {
   employee: {
@@ -61,12 +65,20 @@ export function useLeaveRequests(params: {
 }
 
 export function useLeaveTypes() {
-  const { data, error, isLoading } = useSWR<LeaveType[]>(
+  const { data, error, isLoading, mutate } = useSWR<LeaveType[]>(
     "/api/leave/types",
     fetcher
   );
 
-  return { leaveTypes: data ?? [], error, isLoading };
+  return { leaveTypes: data ?? [], error, isLoading, mutate };
+}
+
+async function createLeaveType(url: string, { arg }: { arg: CreateLeaveTypeInput }) {
+  return apiClient<LeaveType>(url, { method: "POST", body: arg });
+}
+
+export function useCreateLeaveType() {
+  return useSWRMutation("/api/leave/types", createLeaveType);
 }
 
 type LeaveBalanceListResponse = {

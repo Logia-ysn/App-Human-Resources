@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Eye, Filter, Pencil, Plus, Search, Trash2, Upload, Download, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Filter, Pencil, Plus, Search, Trash2, Download, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";

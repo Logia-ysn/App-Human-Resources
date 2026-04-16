@@ -14,7 +14,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useLeaveRequests, useLeaveTypes, useLeaveBalances } from "@/hooks/use-leave";
+import {
+  useLeaveRequests,
+  useLeaveTypes,
+  useLeaveBalances,
+  useCreateLeaveType,
+} from "@/hooks/use-leave";
 import { useEmployees } from "@/hooks/use-employees";
 import { apiClient } from "@/lib/api-client";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -111,7 +116,8 @@ export default function LeavePage() {
   const { requests, isLoading: requestsLoading, mutate: mutateRequests } = useLeaveRequests({
     status: statusFilter !== "ALL" ? statusFilter : undefined,
   });
-  const { leaveTypes: types, isLoading: typesLoading } = useLeaveTypes();
+  const { leaveTypes: types, isLoading: typesLoading, mutate: mutateTypes } = useLeaveTypes();
+  const { trigger: triggerCreateLeaveType, isMutating: creatingLeaveType } = useCreateLeaveType();
   const { balances: leaveBalances, isLoading: balancesLoading, mutate: mutateBalances } = useLeaveBalances();
   const { employees: allEmployees } = useEmployees({ limit: 200, status: "ACTIVE" });
 
@@ -173,15 +179,30 @@ export default function LeavePage() {
     }
   }
 
-  const handleAddType = () => {
+  const handleAddType = async () => {
     if (!newType.name.trim() || !newType.code.trim()) {
       toast.error("Nama dan Kode wajib diisi");
       return;
     }
-    // TODO: Call API to create leave type when endpoint is ready
-    toast.info("Fitur tambah tipe cuti via API belum tersedia");
-    setNewType(EMPTY_LEAVE_TYPE);
-    setDialogOpen(false);
+    try {
+      await triggerCreateLeaveType({
+        name: newType.name.trim(),
+        code: newType.code.trim().toUpperCase(),
+        defaultQuota: newType.defaultQuota,
+        isPaid: newType.isPaid,
+        isCarryOver: newType.isCarryOver,
+        maxCarryOver: newType.maxCarryOver,
+        requiresDoc: newType.requiresDoc,
+        allowHalfDay: newType.allowHalfDay,
+        isActive: newType.isActive,
+      });
+      toast.success("Tipe cuti berhasil ditambahkan");
+      await mutateTypes();
+      setNewType(EMPTY_LEAVE_TYPE);
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menambah tipe cuti");
+    }
   };
 
   const computeRemaining = (b: { entitlement: number; carried: number; used: number; pending: number }) =>
@@ -779,7 +800,9 @@ export default function LeavePage() {
                     <Button variant="outline" onClick={() => setDialogOpen(false)}>
                       Batal
                     </Button>
-                    <Button onClick={handleAddType}>Simpan</Button>
+                    <Button onClick={handleAddType} disabled={creatingLeaveType}>
+                      {creatingLeaveType ? "Menyimpan..." : "Simpan"}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

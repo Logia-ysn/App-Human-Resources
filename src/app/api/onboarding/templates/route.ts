@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse } from "@/types/api";
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const session = await apiGuard({ minRole: "MANAGER" });
   if (isGuardError(session)) return session;
 

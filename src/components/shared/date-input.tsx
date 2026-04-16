@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -64,22 +64,23 @@ export function DateInput({
   max,
 }: Props) {
   const [display, setDisplay] = useState(() => isoToDisplay(value));
-  const lastIso = useRef(value);
+  const [prevValue, setPrevValue] = useState(value);
   const nativeRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (value !== lastIso.current) {
+  // Sync external value changes into display, but preserve mid-typing state
+  // when the incoming value matches what our current display would derive to.
+  if (value !== prevValue) {
+    setPrevValue(value);
+    if (value !== displayToIso(display)) {
       setDisplay(isoToDisplay(value));
-      lastIso.current = value;
     }
-  }, [value]);
+  }
 
   function handleChange(raw: string) {
     const formatted = autoFormat(raw);
     setDisplay(formatted);
     const iso = displayToIso(formatted);
-    if (iso !== lastIso.current) {
-      lastIso.current = iso;
+    if (iso !== value) {
       onChange(iso);
     }
   }
@@ -129,7 +130,6 @@ export function DateInput({
         value={value}
         onChange={(e) => {
           const iso = e.target.value;
-          lastIso.current = iso;
           setDisplay(isoToDisplay(iso));
           onChange(iso);
         }}

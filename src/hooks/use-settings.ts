@@ -4,6 +4,7 @@ import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import { fetcher, apiClient } from "@/lib/api-client";
 import type { Company } from "@prisma/client";
+import type { UpdateCompanyInput } from "@/lib/validators/settings";
 
 // ---------- Company ----------
 
@@ -18,7 +19,7 @@ export function useCompany() {
 
 async function updateCompany(
   url: string,
-  { arg }: { arg: Partial<Company> }
+  { arg }: { arg: UpdateCompanyInput }
 ) {
   return apiClient<Company>(url, { method: "PATCH", body: arg });
 }

@@ -8,7 +8,7 @@ import { Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAttendanceRecords, useOvertimeRequests } from "@/hooks/use-attendance";
-import { useHolidays } from "@/hooks/use-holidays";
+import { useHolidays, useCreateHoliday } from "@/hooks/use-holidays";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { StatCard } from "@/components/shared/stat-card";
 
@@ -76,7 +76,8 @@ export default function AttendancePage() {
     limit: 100,
   });
   const { requests: overtimeList, isLoading: overtimeLoading } = useOvertimeRequests();
-  const { holidays: holidayList, isLoading: holidaysLoading } = useHolidays();
+  const { holidays: holidayList, isLoading: holidaysLoading, mutate: mutateHolidays } = useHolidays();
+  const { trigger: triggerCreateHoliday, isMutating: creatingHoliday } = useCreateHoliday();
 
   const [holidayDialogOpen, setHolidayDialogOpen] = useState(false);
   const [newHolidayName, setNewHolidayName] = useState("");
@@ -98,14 +99,24 @@ export default function AttendancePage() {
     return { hadir, terlambat, tidakHadir, cutiSakitDinas };
   }, [todayRecords]);
 
-  const handleAddHoliday = () => {
+  const handleAddHoliday = async () => {
     if (!newHolidayName.trim() || !newHolidayDate) return;
-    // TODO: Call API to create holiday when endpoint is ready
-    toast.info("Fitur tambah hari libur via API belum tersedia");
-    setNewHolidayName("");
-    setNewHolidayDate("");
-    setNewHolidayType("NATIONAL");
-    setHolidayDialogOpen(false);
+    try {
+      await triggerCreateHoliday({
+        name: newHolidayName.trim(),
+        date: newHolidayDate,
+        type: newHolidayType as "NATIONAL" | "COMPANY" | "CUTI_BERSAMA",
+        isRecurring: false,
+      });
+      toast.success("Hari libur berhasil ditambahkan");
+      await mutateHolidays();
+      setNewHolidayName("");
+      setNewHolidayDate("");
+      setNewHolidayType("NATIONAL");
+      setHolidayDialogOpen(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menambah hari libur");
+    }
   };
 
   const sortedHolidays = useMemo(
@@ -434,9 +445,9 @@ export default function AttendancePage() {
                     </Button>
                     <Button
                       onClick={handleAddHoliday}
-                      disabled={!newHolidayName.trim() || !newHolidayDate}
+                      disabled={!newHolidayName.trim() || !newHolidayDate || creatingHoliday}
                     >
-                      Simpan
+                      {creatingHoliday ? "Menyimpan..." : "Simpan"}
                     </Button>
                   </div>
                 </DialogContent>

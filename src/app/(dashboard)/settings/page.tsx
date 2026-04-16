@@ -386,6 +386,8 @@ function CompanyTab({ company }: { company: Company | null }) {
             <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-dashed border-border bg-muted/40">
               {form.logoUrl ? (
                 <>
+                  {/* Logo disimpan sebagai base64 data URL — next/image tidak relevan. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={form.logoUrl}
                     alt="Logo perusahaan"
@@ -573,8 +575,7 @@ function PayrollTab({ company, appConfig }: { company: Company; appConfig: AppCo
     try {
       await Promise.all([
         updateCompany.trigger({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          umrAmount: String(umrAmount) as any,
+          umrAmount: String(umrAmount),
           umrRegion,
           cutOffDate: parseInt(cutOffDate),
           payDate: parseInt(payDate),

@@ -25,6 +25,19 @@ export const leaveQuerySchema = z.object({
   year: z.coerce.number().int().optional(),
 });
 
+export const createLeaveTypeSchema = z.object({
+  name: z.string().min(1, "Nama wajib diisi").max(100),
+  code: z.string().min(1, "Kode wajib diisi").max(30).regex(/^[A-Z0-9_]+$/, "Kode hanya boleh huruf kapital, angka, atau underscore"),
+  defaultQuota: z.number().int().min(0).max(365),
+  isPaid: z.boolean().default(true),
+  isCarryOver: z.boolean().default(false),
+  maxCarryOver: z.number().int().min(0).max(365).default(0),
+  requiresDoc: z.boolean().default(false),
+  allowHalfDay: z.boolean().default(false),
+  isActive: z.boolean().default(true),
+});
+
 export type CreateLeaveRequestInput = z.infer<typeof createLeaveRequestSchema>;
 export type ApproveLeaveInput = z.infer<typeof approveLeaveSchema>;
 export type LeaveQuery = z.infer<typeof leaveQuerySchema>;
+export type CreateLeaveTypeInput = z.infer<typeof createLeaveTypeSchema>;

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse } from "@/types/api";
@@ -31,7 +31,7 @@ function buildTree(employees: Omit<OrgNode, "children">[]): OrgNode[] {
   return roots;
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const session = await apiGuard({ minRole: "EMPLOYEE" });
   if (isGuardError(session)) return session;
 

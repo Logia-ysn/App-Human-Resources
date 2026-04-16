@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -36,7 +35,6 @@ export function DataTable<TData, TValue>({
   mobileCard,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const isMobile = useIsMobile();
 
   const table = useReactTable({
     data,
