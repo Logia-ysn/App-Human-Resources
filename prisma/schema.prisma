@@ -562,6 +562,8 @@ model Employee {
   approvedAdvances         EmployeeAdvance[]    @relation("AdvanceApprover")
   expenseClaims            ExpenseClaim[]
   approvedExpenseClaims    ExpenseClaim[]       @relation("ExpenseClaimApprover")
+  profileChangeRequests    ProfileChangeRequest[]
+  handledProfileChanges    ProfileChangeRequest[] @relation("ProfileChangeHandler")
 
   @@index([departmentId])
   @@index([positionId])
@@ -1515,4 +1517,29 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+enum ProfileChangeStatus {
+  PENDING
+  RESOLVED
+  REJECTED
+}
+
+model ProfileChangeRequest {
+  id          String              @id @default(cuid())
+  employeeId  String
+  message     String
+  status      ProfileChangeStatus @default(PENDING)
+  handledById String?
+  handledNote String?
+  handledAt   DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  employee Employee  @relation(fields: [employeeId], references: [id])
+  handler  Employee? @relation("ProfileChangeHandler", fields: [handledById], references: [id])
+
+  @@index([employeeId])
+  @@index([status])
+  @@map("profile_change_requests")
 }

@@ -35,6 +35,7 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { pattern: /^\/recruitment/, minRole: "HR_ADMIN" },
   { pattern: /^\/onboarding/, minRole: "HR_ADMIN" },
   { pattern: /^\/lifecycle/, minRole: "HR_ADMIN" },
+  { pattern: /^\/profile-requests/, minRole: "HR_ADMIN" },
   // Manager+
   { pattern: /^\/employees/, minRole: "MANAGER" },
   { pattern: /^\/org-chart/, minRole: "MANAGER" },

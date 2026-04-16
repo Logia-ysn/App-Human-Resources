@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Banknote,
   Receipt,
+  MessageSquare,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -76,6 +77,7 @@ const hrNav: NavItem[] = [
 const lifecycleNav: NavItem[] = [
   { title: "Onboarding", url: "/onboarding", icon: UserCheck, minRole: "HR_ADMIN" },
   { title: "Riwayat Karir", url: "/lifecycle", icon: TrendingUp, minRole: "HR_ADMIN" },
+  { title: "Permintaan Profil", url: "/profile-requests", icon: MessageSquare, minRole: "HR_ADMIN" },
 ];
 
 const financeNav: NavItem[] = [

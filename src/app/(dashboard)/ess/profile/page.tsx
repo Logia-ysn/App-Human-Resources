@@ -10,9 +10,24 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { UserCircle, Briefcase, MapPin, Phone, Mail, Shield, Camera, Trash2, Loader2 } from "lucide-react";
+import { UserCircle, Briefcase, MapPin, Phone, Mail, Shield, Camera, Trash2, Loader2, PencilLine, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/shared/loading-state";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  useProfileChangeRequests,
+  useCreateProfileChangeRequest,
+} from "@/hooks/use-profile-change-requests";
+import { formatDistanceToNow } from "date-fns";
 
 const GENDER_LABEL: Record<string, string> = { MALE: "Laki-laki", FEMALE: "Perempuan" };
 const RELIGION_LABEL: Record<string, string> = { ISLAM: "Islam", KRISTEN: "Kristen", KATOLIK: "Katolik", HINDU: "Hindu", BUDDHA: "Buddha", KONGHUCU: "Konghucu", LAINNYA: "Lainnya" };
@@ -35,6 +50,37 @@ export default function EssProfilePage() {
   const updatePhoto = useUpdateEmployeePhoto(employeeId ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  const {
+    requests: myChangeRequests,
+    isLoading: changeLoading,
+    mutate: mutateChangeRequests,
+  } = useProfileChangeRequests();
+  const createChange = useCreateProfileChangeRequest();
+
+  const [changeDialogOpen, setChangeDialogOpen] = useState(false);
+  const [changeMessage, setChangeMessage] = useState("");
+  const [submittingChange, setSubmittingChange] = useState(false);
+
+  async function handleSubmitChange() {
+    const trimmed = changeMessage.trim();
+    if (trimmed.length < 5) {
+      toast.error("Pesan minimal 5 karakter");
+      return;
+    }
+    setSubmittingChange(true);
+    try {
+      await createChange.trigger({ message: trimmed });
+      toast.success("Permintaan dikirim ke HR");
+      setChangeMessage("");
+      setChangeDialogOpen(false);
+      await mutateChangeRequests();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengirim permintaan");
+    } finally {
+      setSubmittingChange(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -112,12 +158,18 @@ export default function EssProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2.5 border-b border-border pb-4">
-        <UserCircle className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Profil Saya</h1>
-          <p className="text-xs text-muted-foreground">Informasi profil dan data kepegawaian Anda</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="flex items-center gap-2.5">
+          <UserCircle className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Profil Saya</h1>
+            <p className="text-xs text-muted-foreground">Informasi profil dan data kepegawaian Anda</p>
+          </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setChangeDialogOpen(true)}>
+          <PencilLine className="mr-1.5 h-4 w-4" />
+          Ajukan Perubahan Profil
+        </Button>
       </div>
 
       <Card>
@@ -244,6 +296,111 @@ export default function EssProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base">Riwayat Permintaan Perubahan Profil</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {changeLoading ? (
+            <p className="text-sm text-muted-foreground">Memuat...</p>
+          ) : myChangeRequests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Belum ada permintaan. Klik tombol <span className="font-medium">Ajukan Perubahan Profil</span> di atas untuk meminta HR mengubah data Anda.
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {myChangeRequests.map((r) => (
+                <li key={r.id} className="py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm whitespace-pre-wrap break-words">{r.message}</p>
+                      {r.handledNote && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          <span className="font-medium">Catatan HR:</span> {r.handledNote}
+                        </p>
+                      )}
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: idLocale })}
+                        {r.handler && r.handledAt && (
+                          <>
+                            {" · "}
+                            Diproses oleh {r.handler.firstName} {r.handler.lastName}
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={
+                        r.status === "PENDING"
+                          ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                          : r.status === "RESOLVED"
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                          : "border-destructive/40 bg-destructive/10 text-destructive"
+                      }
+                    >
+                      {r.status === "PENDING"
+                        ? "Menunggu"
+                        : r.status === "RESOLVED"
+                        ? "Disetujui"
+                        : "Ditolak"}
+                    </Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog
+        open={changeDialogOpen}
+        onOpenChange={(open) => {
+          setChangeDialogOpen(open);
+          if (!open) setChangeMessage("");
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajukan Perubahan Profil</DialogTitle>
+            <DialogDescription>
+              Tuliskan data apa yang ingin diperbarui. HR akan menindaklanjuti dan memperbarui data Anda.
+              Anda tidak dapat mengedit profil secara langsung.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="change-message">Pesan untuk HR</Label>
+            <Textarea
+              id="change-message"
+              rows={6}
+              placeholder="Contoh: Tolong perbarui nomor HP saya menjadi 0812xxxx dan alamat menjadi Jl. ..."
+              value={changeMessage}
+              onChange={(e) => setChangeMessage(e.target.value)}
+              disabled={submittingChange}
+            />
+            <p className="text-xs text-muted-foreground">
+              Sertakan detail lengkap (nilai lama, nilai baru, alasan) supaya HR mudah memproses.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setChangeDialogOpen(false)}
+              disabled={submittingChange}
+            >
+              Batal
+            </Button>
+            <Button onClick={handleSubmitChange} disabled={submittingChange}>
+              {submittingChange && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Kirim
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
