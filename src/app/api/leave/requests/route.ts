@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
         halfDayType: data.halfDayType,
         reason: data.reason,
         delegateToId: data.delegateToId,
+        documentUrl: data.documentUrl ?? null,
       },
       include: {
         employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } },

@@ -9,6 +9,12 @@ export const createLeaveRequestSchema = z.object({
   halfDayType: z.enum(["MORNING", "AFTERNOON"]).nullable().optional(),
   reason: z.string().min(1, "Alasan wajib diisi"),
   delegateToId: z.string().nullable().optional(),
+  documentUrl: z
+    .string()
+    .max(7 * 1024 * 1024, "Lampiran terlalu besar (maks 5MB)")
+    .regex(/^data:(image\/|application\/pdf)/, "Lampiran harus gambar atau PDF")
+    .nullable()
+    .optional(),
 });
 
 export const approveLeaveSchema = z.object({

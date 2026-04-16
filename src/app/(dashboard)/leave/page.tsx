@@ -297,6 +297,20 @@ export default function LeavePage() {
                         {format(new Date(req.endDate), "dd MMM yyyy", { locale: idLocale })}
                       </p>
                     </div>
+                    {req.documentUrl && (
+                      <div className="col-span-2">
+                        <p className="text-[11px] text-muted-foreground">Lampiran</p>
+                        <a
+                          href={req.documentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <FileText className="h-3 w-3" />
+                          Lihat lampiran
+                        </a>
+                      </div>
+                    )}
                   </div>
                   {req.status === "PENDING" && (
                     <div className="flex items-center gap-2 pt-2 border-t">
@@ -342,13 +356,14 @@ export default function LeavePage() {
                       <TableHead>Tipe Cuti</TableHead>
                       <TableHead>Tanggal</TableHead>
                       <TableHead>Jumlah Hari</TableHead>
+                      <TableHead>Lampiran</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {requests.length === 0 ? (
-                      <EmptyRow colSpan={7}>Tidak ada pengajuan cuti ditemukan.</EmptyRow>
+                      <EmptyRow colSpan={8}>Tidak ada pengajuan cuti ditemukan.</EmptyRow>
                     ) : (
                       requests.map((req) => (
                         <TableRow key={req.id} className="hover:bg-muted/50">
@@ -363,6 +378,21 @@ export default function LeavePage() {
                             {format(new Date(req.endDate), "dd MMM yyyy", { locale: idLocale })}
                           </TableCell>
                           <TableCell>{Number(req.totalDays)} hari</TableCell>
+                          <TableCell>
+                            {req.documentUrl ? (
+                              <a
+                                href={req.documentUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                              >
+                                <FileText className="h-3 w-3" />
+                                Lihat
+                              </a>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <StatusBadge status={req.status} />
                           </TableCell>

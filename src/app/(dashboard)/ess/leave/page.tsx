@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useAuth } from "@/components/providers/auth-context";
@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CalendarDays, Plus, Loader2 } from "lucide-react";
+import { CalendarDays, Plus, Loader2, Paperclip, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/shared/loading-state";
 import { EmptyRow } from "@/components/shared/empty-row";
@@ -37,6 +37,8 @@ type LeaveFormData = {
   startDate: string;
   endDate: string;
   reason: string;
+  documentUrl: string | null;
+  documentName: string | null;
 };
 
 const EMPTY_LEAVE_FORM: LeaveFormData = {
@@ -44,7 +46,21 @@ const EMPTY_LEAVE_FORM: LeaveFormData = {
   startDate: "",
   endDate: "",
   reason: "",
+  documentUrl: null,
+  documentName: null,
 };
+
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_ATTACHMENT_TYPES = "image/*,application/pdf";
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("Gagal membaca file"));
+    reader.readAsDataURL(file);
+  });
+}
 
 function calculateDays(start: string, end: string): number {
   if (!start || !end) return 0;
@@ -69,6 +85,37 @@ export default function EssLeavePage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<LeaveFormData>(EMPTY_LEAVE_FORM);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleAttachmentChange(file: File | null) {
+    if (!file) {
+      setForm((prev) => ({ ...prev, documentUrl: null, documentName: null }));
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      toast.error("Ukuran lampiran maksimal 5 MB");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      toast.error("Lampiran harus gambar atau PDF");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setForm((prev) => ({ ...prev, documentUrl: dataUrl, documentName: file.name }));
+    } catch {
+      toast.error("Gagal membaca file");
+    }
+  }
+
+  function clearAttachment() {
+    setForm((prev) => ({ ...prev, documentUrl: null, documentName: null }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
 
   const activeLeaveTypes = leaveTypes.filter((lt) => lt.isActive);
 
@@ -76,6 +123,7 @@ export default function EssLeavePage() {
 
   function handleOpenDialog() {
     setForm(EMPTY_LEAVE_FORM);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setDialogOpen(true);
   }
 
@@ -100,6 +148,7 @@ export default function EssLeavePage() {
         totalDays,
         isHalfDay: false,
         reason: form.reason.trim(),
+        documentUrl: form.documentUrl,
       });
       toast.success("Pengajuan cuti berhasil dikirim");
       setDialogOpen(false);
@@ -182,6 +231,17 @@ export default function EssLeavePage() {
                     {format(new Date(r.startDate), "dd MMM", { locale: idLocale })} — {format(new Date(r.endDate), "dd MMM yyyy", { locale: idLocale })} ({Number(r.totalDays)} hari)
                   </p>
                   <p className="text-xs text-muted-foreground line-clamp-2">{r.reason}</p>
+                  {r.documentUrl && (
+                    <a
+                      href={r.documentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <FileText className="h-3 w-3" />
+                      Lihat lampiran
+                    </a>
+                  )}
                 </div>
               ))
             )}
@@ -194,12 +254,13 @@ export default function EssLeavePage() {
                   <TableHead>Tanggal</TableHead>
                   <TableHead>Jumlah Hari</TableHead>
                   <TableHead>Alasan</TableHead>
+                  <TableHead>Lampiran</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {myRequests.length === 0 ? (
-                  <EmptyRow colSpan={5}>Belum ada pengajuan cuti.</EmptyRow>
+                  <EmptyRow colSpan={6}>Belum ada pengajuan cuti.</EmptyRow>
                 ) : (
                   myRequests.map((r) => (
                     <TableRow key={r.id}>
@@ -209,6 +270,21 @@ export default function EssLeavePage() {
                       </TableCell>
                       <TableCell>{Number(r.totalDays)} hari</TableCell>
                       <TableCell>{r.reason}</TableCell>
+                      <TableCell>
+                        {r.documentUrl ? (
+                          <a
+                            href={r.documentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            <FileText className="h-3 w-3" />
+                            Lihat
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell><StatusBadge status={r.status} /></TableCell>
                     </TableRow>
                   ))
@@ -299,6 +375,40 @@ export default function EssLeavePage() {
                   setForm((prev) => ({ ...prev, reason: e.target.value }))
                 }
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="leave-attachment">
+                Lampiran Pendukung <span className="text-xs text-muted-foreground">(opsional)</span>
+              </Label>
+              {form.documentUrl && form.documentName ? (
+                <div className="flex items-center justify-between rounded-sm border border-border bg-muted/30 px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate text-sm">{form.documentName}</span>
+                  </div>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="ghost"
+                    onClick={clearAttachment}
+                    aria-label="Hapus lampiran"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  ref={fileInputRef}
+                  id="leave-attachment"
+                  type="file"
+                  accept={ACCEPTED_ATTACHMENT_TYPES}
+                  onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
+                />
+              )}
+              <p className="text-xs text-muted-foreground">
+                Surat dokter, undangan, atau bukti lain. Format: gambar atau PDF, maks 5 MB.
+              </p>
             </div>
           </div>
 
