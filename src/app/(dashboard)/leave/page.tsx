@@ -435,6 +435,15 @@ export default function LeavePage() {
                     <Label>Karyawan</Label>
                     <Select
                       value={genForm.employeeId}
+                      items={{
+                        ALL: "Semua Karyawan Aktif",
+                        ...Object.fromEntries(
+                          allEmployees.map((emp) => [
+                            emp.id,
+                            `${emp.employeeNumber} — ${emp.firstName} ${emp.lastName}`,
+                          ])
+                        ),
+                      }}
                       onValueChange={(v: string | null) =>
                         setGenForm((p) => ({ ...p, employeeId: v ?? "ALL" }))
                       }
@@ -456,6 +465,14 @@ export default function LeavePage() {
                     <Label>Tipe Cuti</Label>
                     <Select
                       value={genForm.leaveTypeId}
+                      items={{
+                        ALL: "Semua Tipe Aktif",
+                        ...Object.fromEntries(
+                          types
+                            .filter((t) => t.isActive)
+                            .map((t) => [t.id, `${t.name} (${t.defaultQuota} hari)`])
+                        ),
+                      }}
                       onValueChange={(v: string | null) =>
                         setGenForm((p) => ({ ...p, leaveTypeId: v ?? "ALL" }))
                       }

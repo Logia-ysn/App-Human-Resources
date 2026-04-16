@@ -186,7 +186,11 @@ export default function EmployeesPage() {
 
   const filterControls = (
     <div className="space-y-3">
-      <Select value={departmentFilter} onValueChange={handleDepartmentChange}>
+      <Select
+        value={departmentFilter}
+        items={{ ALL: "Semua Departemen", ...Object.fromEntries(departments.map((d) => [d.id, d.name])) }}
+        onValueChange={handleDepartmentChange}
+      >
         <SelectTrigger>
           <SelectValue placeholder="Departemen" />
         </SelectTrigger>
@@ -339,7 +343,11 @@ export default function EmployeesPage() {
               />
             </InputGroup>
 
-            <Select value={departmentFilter} onValueChange={handleDepartmentChange}>
+            <Select
+              value={departmentFilter}
+              items={{ ALL: "Semua Departemen", ...Object.fromEntries(departments.map((d) => [d.id, d.name])) }}
+              onValueChange={handleDepartmentChange}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Departemen" />
               </SelectTrigger>

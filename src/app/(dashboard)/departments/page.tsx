@@ -300,6 +300,12 @@ export default function DepartmentsPage() {
               <Label>Departemen Induk</Label>
               <Select
                 value={form.parentId ?? ""}
+                items={{
+                  "": "Tidak ada (top-level)",
+                  ...Object.fromEntries(
+                    departments.filter((d) => d.id !== editingId).map((d) => [d.id, d.name])
+                  ),
+                }}
                 onValueChange={(val: string | null) =>
                   updateField("parentId", !val || val === "" ? null : val)
                 }

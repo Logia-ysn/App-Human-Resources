@@ -196,6 +196,7 @@ export default function PositionsPage() {
             <CardTitle>Daftar Jabatan</CardTitle>
             <Select
               value={filterDept}
+              items={{ all: "Semua Departemen", ...Object.fromEntries(departments.map((d) => [d.id, d.name])) }}
               onValueChange={(val) => setFilterDept(val as string)}
             >
               <SelectTrigger className="w-full sm:w-[200px]">
@@ -368,6 +369,7 @@ export default function PositionsPage() {
                 <Label>Departemen</Label>
                 <Select
                   value={form.departmentId || undefined}
+                  items={Object.fromEntries(departments.map((d) => [d.id, d.name]))}
                   onValueChange={(val) =>
                     setForm((prev) => ({
                       ...prev,
@@ -391,6 +393,7 @@ export default function PositionsPage() {
                 <Label>Level Organisasi</Label>
                 <Select
                   value={form.orgLevelId || undefined}
+                  items={Object.fromEntries(orgLevels.map((l) => [l.id, l.name]))}
                   onValueChange={(val) =>
                     setForm((prev) => ({
                       ...prev,
