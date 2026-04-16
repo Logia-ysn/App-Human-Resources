@@ -20,10 +20,17 @@ const MANAGER_RESTRICTED_FIELDS = [
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: Params) {
-  const session = await apiGuard({ minRole: "MANAGER" });
+  const session = await apiGuard();
   if (isGuardError(session)) return session;
 
   const { id } = await params;
+
+  // EMPLOYEE may only access their own record (Self-Service profile)
+  const isSelf = session.user.employeeId === id;
+  const isManagerUp = hasMinRole(session.user.role, "MANAGER");
+  if (!isSelf && !isManagerUp) {
+    return NextResponse.json(errorResponse("Tidak memiliki akses"), { status: 403 });
+  }
 
   const employee = await prisma.employee.findFirst({
     where: { id, isDeleted: false },
@@ -44,8 +51,9 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json(errorResponse("Karyawan tidak ditemukan"), { status: 404 });
   }
 
-  // Filter sensitive PII fields for MANAGER role (HR_ADMIN+ sees everything)
-  if (!hasMinRole(session.user.role, "HR_ADMIN")) {
+  // HR_ADMIN+ sees everything. The owner sees their own data fully.
+  // MANAGER viewing OTHER employees: filter sensitive PII.
+  if (!hasMinRole(session.user.role, "HR_ADMIN") && !isSelf) {
     const filtered = { ...employee } as Record<string, unknown>;
     for (const field of MANAGER_RESTRICTED_FIELDS) {
       delete filtered[field];
