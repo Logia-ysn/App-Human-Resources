@@ -5,12 +5,13 @@ import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { createLeaveTypeSchema } from "@/lib/validators/leave";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await apiGuard();
   if (isGuardError(session)) return session;
 
+  const includeInactive = req.nextUrl.searchParams.get("includeInactive") === "true";
   const leaveTypes = await prisma.leaveType.findMany({
-    where: { isActive: true },
+    where: includeInactive ? {} : { isActive: true },
     orderBy: { name: "asc" },
   });
 

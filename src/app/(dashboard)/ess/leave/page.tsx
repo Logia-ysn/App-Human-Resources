@@ -231,23 +231,30 @@ export default function EssLeavePage() {
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <Label>Tipe Cuti</Label>
-              <Select
-                value={form.leaveTypeId || undefined}
-                onValueChange={(val) =>
-                  setForm((prev) => ({ ...prev, leaveTypeId: val as string }))
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih tipe cuti" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeLeaveTypes.map((lt) => (
-                    <SelectItem key={lt.id} value={lt.id}>
-                      {lt.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {activeLeaveTypes.length === 0 ? (
+                <div className="rounded-sm border border-dashed border-border p-3 text-xs text-muted-foreground">
+                  Belum ada jenis cuti yang aktif. Hubungi admin HR untuk mengatur
+                  jenis cuti di <span className="font-medium">Settings → Cuti</span>.
+                </div>
+              ) : (
+                <Select
+                  value={form.leaveTypeId || undefined}
+                  onValueChange={(val) =>
+                    setForm((prev) => ({ ...prev, leaveTypeId: val as string }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih tipe cuti" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeLeaveTypes.map((lt) => (
+                      <SelectItem key={lt.id} value={lt.id}>
+                        {lt.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

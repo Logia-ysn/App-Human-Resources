@@ -37,7 +37,10 @@ export const createLeaveTypeSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+export const updateLeaveTypeSchema = createLeaveTypeSchema.partial();
+
 export type CreateLeaveRequestInput = z.infer<typeof createLeaveRequestSchema>;
 export type ApproveLeaveInput = z.infer<typeof approveLeaveSchema>;
 export type LeaveQuery = z.infer<typeof leaveQuerySchema>;
 export type CreateLeaveTypeInput = z.infer<typeof createLeaveTypeSchema>;
+export type UpdateLeaveTypeInput = z.infer<typeof updateLeaveTypeSchema>;

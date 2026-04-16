@@ -5,8 +5,9 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useCompany, useUpdateCompany, useCreateCompany, useAppConfig, useUpdateAppConfig } from "@/hooks/use-settings";
 import { useOrgLevels, useCreateOrgLevel, useUpdateOrgLevel, useDeleteOrgLevel } from "@/hooks/use-org-levels";
+import { useLeaveTypes, useCreateLeaveType, useUpdateLeaveType, useDeleteLeaveType } from "@/hooks/use-leave";
 import type { AppConfigData } from "@/hooks/use-settings";
-import type { Company } from "@prisma/client";
+import type { Company, LeaveType } from "@prisma/client";
 import {
   Card,
   CardContent,
@@ -1179,6 +1180,9 @@ function LeaveTab({ appConfig }: { appConfig: AppConfigData }) {
   }
 
   return (
+    <div className="space-y-6">
+      <LeaveTypesSection />
+
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
@@ -1333,6 +1337,342 @@ function LeaveTab({ appConfig }: { appConfig: AppConfigData }) {
         </Button>
       </div>
     </form>
+    </div>
+  );
+}
+
+// ---------- LeaveTypesSection (CRUD jenis cuti) ----------
+
+type LeaveTypeFormData = {
+  name: string;
+  code: string;
+  defaultQuota: string;
+  isPaid: boolean;
+  isCarryOver: boolean;
+  maxCarryOver: string;
+  requiresDoc: boolean;
+  allowHalfDay: boolean;
+  isActive: boolean;
+};
+
+const EMPTY_LEAVE_TYPE_FORM: LeaveTypeFormData = {
+  name: "",
+  code: "",
+  defaultQuota: "12",
+  isPaid: true,
+  isCarryOver: false,
+  maxCarryOver: "0",
+  requiresDoc: false,
+  allowHalfDay: false,
+  isActive: true,
+};
+
+function LeaveTypesSection() {
+  const { leaveTypes, isLoading, mutate } = useLeaveTypes({ includeInactive: true });
+  const createType = useCreateLeaveType();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<LeaveTypeFormData>(EMPTY_LEAVE_TYPE_FORM);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const updateType = useUpdateLeaveType(editingId ?? "");
+  const deleteType = useDeleteLeaveType(deleteTargetId ?? "");
+
+  function openCreate() {
+    setEditingId(null);
+    setForm(EMPTY_LEAVE_TYPE_FORM);
+    setDialogOpen(true);
+  }
+
+  function openEdit(lt: LeaveType) {
+    setEditingId(lt.id);
+    setForm({
+      name: lt.name,
+      code: lt.code,
+      defaultQuota: String(lt.defaultQuota),
+      isPaid: lt.isPaid,
+      isCarryOver: lt.isCarryOver,
+      maxCarryOver: String(lt.maxCarryOver),
+      requiresDoc: lt.requiresDoc,
+      allowHalfDay: lt.allowHalfDay,
+      isActive: lt.isActive,
+    });
+    setDialogOpen(true);
+  }
+
+  async function handleSubmit() {
+    if (!form.name.trim() || !form.code.trim()) {
+      toast.error("Nama dan kode wajib diisi");
+      return;
+    }
+    if (!/^[A-Z0-9_]+$/.test(form.code.trim())) {
+      toast.error("Kode hanya boleh huruf kapital, angka, atau underscore");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        name: form.name.trim(),
+        code: form.code.trim().toUpperCase(),
+        defaultQuota: parseInt(form.defaultQuota, 10) || 0,
+        isPaid: form.isPaid,
+        isCarryOver: form.isCarryOver,
+        maxCarryOver: parseInt(form.maxCarryOver, 10) || 0,
+        requiresDoc: form.requiresDoc,
+        allowHalfDay: form.allowHalfDay,
+        isActive: form.isActive,
+      };
+
+      if (editingId) {
+        await updateType.trigger(payload);
+        toast.success("Jenis cuti berhasil diperbarui");
+      } else {
+        await createType.trigger(payload);
+        toast.success("Jenis cuti berhasil ditambahkan");
+      }
+      await mutate();
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    try {
+      const res = await deleteType.trigger();
+      if (res?.softDeleted) {
+        toast.success(res.message ?? "Jenis cuti dinonaktifkan");
+      } else {
+        toast.success("Jenis cuti berhasil dihapus");
+      }
+      await mutate();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus");
+    }
+    setDeleteTargetId(null);
+  }
+
+  const deleteTarget = leaveTypes.find((lt) => lt.id === deleteTargetId);
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <CardTitle>Jenis Cuti</CardTitle>
+                <CardDescription>
+                  Kelola daftar jenis cuti (tahunan, sakit, melahirkan, dll).
+                </CardDescription>
+              </div>
+            </div>
+            <Button onClick={openCreate}>
+              <Plus className="size-4" data-icon="inline-start" />
+              Tambah Jenis
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-sm border border-border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left">Nama</th>
+                  <th className="px-3 py-2 text-left">Kode</th>
+                  <th className="px-3 py-2 text-center w-20">Jatah</th>
+                  <th className="px-3 py-2 text-center w-24">Dibayar</th>
+                  <th className="px-3 py-2 text-center w-24">Carry Over</th>
+                  <th className="px-3 py-2 text-center w-20">Status</th>
+                  <th className="px-3 py-2 text-right w-24">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaveTypes.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                      Belum ada jenis cuti. Klik &quot;Tambah Jenis&quot; untuk membuat.
+                    </td>
+                  </tr>
+                ) : (
+                  leaveTypes.map((lt) => (
+                    <tr key={lt.id} className="border-b last:border-0 hover:bg-muted/40 transition-colors">
+                      <td className="px-3 py-2 font-medium">{lt.name}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{lt.code}</td>
+                      <td className="px-3 py-2 text-center tabular-nums">{lt.defaultQuota}</td>
+                      <td className="px-3 py-2 text-center text-xs">
+                        {lt.isPaid ? "Ya" : "Tidak"}
+                      </td>
+                      <td className="px-3 py-2 text-center text-xs">
+                        {lt.isCarryOver ? `${lt.maxCarryOver} hari` : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-center text-xs">
+                        {lt.isActive ? (
+                          <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">Aktif</span>
+                        ) : (
+                          <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5">Nonaktif</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon-sm" onClick={() => openEdit(lt)}>
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setDeleteTargetId(lt.id)}
+                          >
+                            <Trash2 className="size-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit Jenis Cuti" : "Tambah Jenis Cuti"}</DialogTitle>
+            <DialogDescription>
+              Tentukan nama, kode, dan aturan jenis cuti.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="lt-name">Nama</Label>
+                <Input
+                  id="lt-name"
+                  placeholder="Contoh: Cuti Tahunan"
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lt-code">Kode</Label>
+                <Input
+                  id="lt-code"
+                  placeholder="ANNUAL"
+                  value={form.code}
+                  onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="lt-quota">Jatah Default (hari)</Label>
+                <Input
+                  id="lt-quota"
+                  type="number"
+                  min={0}
+                  max={365}
+                  value={form.defaultQuota}
+                  onChange={(e) => setForm((prev) => ({ ...prev, defaultQuota: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lt-max-carry">Maks. Carry Over (hari)</Label>
+                <Input
+                  id="lt-max-carry"
+                  type="number"
+                  min={0}
+                  max={365}
+                  disabled={!form.isCarryOver}
+                  value={form.maxCarryOver}
+                  onChange={(e) => setForm((prev) => ({ ...prev, maxCarryOver: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid gap-3 rounded-sm border border-border p-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="lt-paid" className="cursor-pointer">Dibayar</Label>
+                <Switch
+                  id="lt-paid"
+                  checked={form.isPaid}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isPaid: checked }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="lt-carry" className="cursor-pointer">Boleh Carry Over</Label>
+                <Switch
+                  id="lt-carry"
+                  checked={form.isCarryOver}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isCarryOver: checked }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="lt-doc" className="cursor-pointer">Perlu Dokumen Pendukung</Label>
+                <Switch
+                  id="lt-doc"
+                  checked={form.requiresDoc}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, requiresDoc: checked }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="lt-half" className="cursor-pointer">Boleh Setengah Hari</Label>
+                <Switch
+                  id="lt-half"
+                  checked={form.allowHalfDay}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, allowHalfDay: checked }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="lt-active" className="cursor-pointer">Aktif</Label>
+                <Switch
+                  id="lt-active"
+                  checked={form.isActive}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked }))}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingId ? "Simpan" : "Tambah"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTargetId(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Hapus Jenis Cuti</DialogTitle>
+            <DialogDescription>
+              Hapus jenis cuti <span className="font-semibold text-foreground">{deleteTarget?.name}</span>?
+              Jika masih digunakan, otomatis dinonaktifkan (soft delete).
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTargetId(null)}>Batal</Button>
+            <Button variant="destructive" onClick={confirmDelete}>Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

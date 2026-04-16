@@ -8,6 +8,7 @@ import type {
   CreateLeaveRequestInput,
   ApproveLeaveInput,
   CreateLeaveTypeInput,
+  UpdateLeaveTypeInput,
 } from "@/lib/validators/leave";
 
 type LeaveRequestWithRelations = LeaveRequest & {
@@ -64,12 +65,11 @@ export function useLeaveRequests(params: {
   };
 }
 
-export function useLeaveTypes() {
-  const { data, error, isLoading, mutate } = useSWR<LeaveType[]>(
-    "/api/leave/types",
-    fetcher
-  );
-
+export function useLeaveTypes(options: { includeInactive?: boolean } = {}) {
+  const url = options.includeInactive
+    ? "/api/leave/types?includeInactive=true"
+    : "/api/leave/types";
+  const { data, error, isLoading, mutate } = useSWR<LeaveType[]>(url, fetcher);
   return { leaveTypes: data ?? [], error, isLoading, mutate };
 }
 
@@ -79,6 +79,27 @@ async function createLeaveType(url: string, { arg }: { arg: CreateLeaveTypeInput
 
 export function useCreateLeaveType() {
   return useSWRMutation("/api/leave/types", createLeaveType);
+}
+
+async function updateLeaveType(
+  url: string,
+  { arg }: { arg: UpdateLeaveTypeInput }
+) {
+  return apiClient<LeaveType>(url, { method: "PATCH", body: arg });
+}
+
+export function useUpdateLeaveType(id: string) {
+  return useSWRMutation(`/api/leave/types/${id}`, updateLeaveType);
+}
+
+async function deleteLeaveType(url: string) {
+  return apiClient<{ deleted?: boolean; softDeleted?: boolean; message?: string }>(url, {
+    method: "DELETE",
+  });
+}
+
+export function useDeleteLeaveType(id: string) {
+  return useSWRMutation(`/api/leave/types/${id}`, deleteLeaveType);
 }
 
 type LeaveBalanceListResponse = {
