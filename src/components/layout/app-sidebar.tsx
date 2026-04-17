@@ -92,7 +92,7 @@ const essNav: NavItem[] = [
   { title: "Absensi Saya", url: "/ess/attendance", icon: Clock },
   { title: "Kinerja Saya", url: "/ess/performance", icon: ClipboardList },
   { title: "Training Saya", url: "/ess/training", icon: GraduationCap },
-  { title: "Kasbon Saya", url: "/ess/expenses", icon: Banknote },
+  { title: "Pengeluaran Saya", url: "/ess/expenses", icon: Receipt },
   { title: "Shift Saya", url: "/ess/shifts", icon: RefreshCw },
 ];
 
