@@ -10,28 +10,45 @@ export async function loadAppConfig(): Promise<AppConfigData> {
 
 type GpsCheck = { ok: true } | { ok: false; message: string };
 
-export function validateGpsRadius(
+export async function validateGpsRadius(
   config: AppConfigData,
   latitude: number | undefined,
   longitude: number | undefined,
-): GpsCheck {
+): Promise<GpsCheck> {
   if (config.attendanceMethod !== "GPS") return { ok: true };
 
   if (latitude == null || longitude == null) {
     return { ok: false, message: "Lokasi GPS diperlukan untuk absensi. Aktifkan GPS di perangkat Anda." };
   }
 
-  if (config.officeLat == null || config.officeLng == null) {
-    return { ok: false, message: "Koordinat kantor belum dikonfigurasi. Hubungi admin." };
+  const locations = await prisma.officeLocation.findMany({
+    where: { isActive: true },
+    select: { name: true, latitude: true, longitude: true, radius: true },
+  });
+
+  if (locations.length === 0) {
+    return { ok: false, message: "Belum ada lokasi kantor yang dikonfigurasi. Hubungi admin." };
   }
 
-  const distance = haversineDistance(latitude, longitude, config.officeLat, config.officeLng);
-  if (distance > config.gpsRadiusMeters) {
-    return {
-      ok: false,
-      message: `Anda berada ${Math.round(distance)} meter dari kantor. Maksimal radius: ${config.gpsRadiusMeters} meter.`,
-    };
+  let nearest = Infinity;
+  let nearestName = "";
+  for (const loc of locations) {
+    const dist = haversineDistance(
+      latitude,
+      longitude,
+      Number(loc.latitude),
+      Number(loc.longitude),
+    );
+    const effectiveRadius = loc.radius ?? config.gpsRadiusMeters;
+    if (dist <= effectiveRadius) return { ok: true };
+    if (dist < nearest) {
+      nearest = dist;
+      nearestName = loc.name;
+    }
   }
 
-  return { ok: true };
+  return {
+    ok: false,
+    message: `Anda berada ${Math.round(nearest)}m dari lokasi terdekat (${nearestName}). Absensi hanya dapat dilakukan di area kantor.`,
+  };
 }

@@ -2,6 +2,8 @@
 import { LoadingState } from "@/components/shared/loading-state";
 
 import { useState, useRef } from "react";
+import useSWR from "swr";
+import { fetcher, apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { useCompany, useUpdateCompany, useCreateCompany, useAppConfig, useUpdateAppConfig } from "@/hooks/use-settings";
 import { useOrgLevels, useCreateOrgLevel, useUpdateOrgLevel, useDeleteOrgLevel } from "@/hooks/use-org-levels";
@@ -1584,6 +1586,15 @@ function LeaveTypesSection() {
 // Tab 5: Absensi
 // =================================================================
 
+type OfficeLocationRow = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  isActive: boolean;
+};
+
 function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
   const { mutate } = useAppConfig();
   const updateConfig = useUpdateAppConfig();
@@ -1591,13 +1602,11 @@ function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
   const [form, setForm] = useState<
     Pick<
       AppConfigData,
-      "attendanceMethod" | "gpsRadiusMeters" | "officeLat" | "officeLng" | "autoCheckoutTime" | "allowOutOfSchedule"
+      "attendanceMethod" | "gpsRadiusMeters" | "autoCheckoutTime" | "allowOutOfSchedule"
     >
   >({
     attendanceMethod: appConfig.attendanceMethod,
     gpsRadiusMeters: appConfig.gpsRadiusMeters,
-    officeLat: appConfig.officeLat,
-    officeLng: appConfig.officeLng,
     autoCheckoutTime: appConfig.autoCheckoutTime,
     allowOutOfSchedule: appConfig.allowOutOfSchedule,
   });
@@ -1618,139 +1627,285 @@ function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Konfigurasi Absensi</CardTitle>
-          <CardDescription>
-            Atur metode absensi, radius GPS, dan kebijakan checkout otomatis.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="attendanceMethod">Metode Absensi</Label>
-              <Select
-                value={form.attendanceMethod}
-                onValueChange={(val) =>
-                  val !== null &&
-                  setForm((prev) => ({
-                    ...prev,
-                    attendanceMethod: val as AppConfigData["attendanceMethod"],
-                  }))
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih metode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MANUAL">Manual</SelectItem>
-                  <SelectItem value="GPS">GPS</SelectItem>
-                  <SelectItem value="FINGERPRINT">Fingerprint</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Konfigurasi Absensi</CardTitle>
+            <CardDescription>
+              Atur metode absensi, radius GPS, dan kebijakan checkout otomatis.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="attendanceMethod">Metode Absensi</Label>
+                <Select
+                  value={form.attendanceMethod}
+                  onValueChange={(val) =>
+                    val !== null &&
+                    setForm((prev) => ({
+                      ...prev,
+                      attendanceMethod: val as AppConfigData["attendanceMethod"],
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih metode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MANUAL">Manual</SelectItem>
+                    <SelectItem value="GPS">GPS</SelectItem>
+                    <SelectItem value="FINGERPRINT">Fingerprint</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="gpsRadiusMeters">Radius GPS (meter)</Label>
-              <Input
-                id="gpsRadiusMeters"
-                type="number"
-                min="0"
-                value={form.gpsRadiusMeters}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    gpsRadiusMeters: parseInt(e.target.value) || 0,
-                  }))
-                }
-                disabled={form.attendanceMethod !== "GPS"}
-              />
-              <p className="text-xs text-muted-foreground">
-                Hanya berlaku untuk metode GPS
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="officeLat">Latitude Kantor</Label>
-              <Input
-                id="officeLat"
-                type="number"
-                step="0.0000001"
-                placeholder="-6.2088"
-                value={form.officeLat ?? ""}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    officeLat: e.target.value ? parseFloat(e.target.value) : null,
-                  }))
-                }
-                disabled={form.attendanceMethod !== "GPS"}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="officeLng">Longitude Kantor</Label>
-              <Input
-                id="officeLng"
-                type="number"
-                step="0.0000001"
-                placeholder="106.8456"
-                value={form.officeLng ?? ""}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    officeLng: e.target.value ? parseFloat(e.target.value) : null,
-                  }))
-                }
-                disabled={form.attendanceMethod !== "GPS"}
-              />
-              <p className="text-xs text-muted-foreground">
-                Koordinat lokasi kantor (bisa dari Google Maps)
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="autoCheckoutTime">Auto Checkout Jam</Label>
-              <Input
-                id="autoCheckoutTime"
-                type="time"
-                value={form.autoCheckoutTime}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, autoCheckoutTime: e.target.value }))
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Checkout otomatis jika karyawan belum checkout
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between rounded-sm border border-border p-3">
-              <div className="space-y-0.5">
-                <Label htmlFor="allowOutOfSchedule">Izinkan Absensi di Luar Jadwal</Label>
+              <div className="space-y-2">
+                <Label htmlFor="gpsRadiusMeters">Radius Default (meter)</Label>
+                <Input
+                  id="gpsRadiusMeters"
+                  type="number"
+                  min="10"
+                  value={form.gpsRadiusMeters}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      gpsRadiusMeters: parseInt(e.target.value) || 100,
+                    }))
+                  }
+                  disabled={form.attendanceMethod !== "GPS"}
+                />
                 <p className="text-xs text-muted-foreground">
-                  Karyawan dapat melakukan absensi di luar jam kerja yang dijadwalkan
+                  Radius default jika lokasi tidak menentukan radius sendiri
                 </p>
               </div>
-              <Switch
-                id="allowOutOfSchedule"
-                checked={form.allowOutOfSchedule}
-                onCheckedChange={(checked: boolean) =>
-                  setForm((prev) => ({ ...prev, allowOutOfSchedule: checked }))
-                }
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={saving}>
-          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Simpan Pengaturan
-        </Button>
-      </div>
-    </form>
+              <div className="space-y-2">
+                <Label htmlFor="autoCheckoutTime">Auto Checkout Jam</Label>
+                <Input
+                  id="autoCheckoutTime"
+                  type="time"
+                  value={form.autoCheckoutTime}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, autoCheckoutTime: e.target.value }))
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Checkout otomatis jika karyawan belum checkout
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between rounded-sm border border-border p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="allowOutOfSchedule">Izinkan Absensi di Luar Jadwal</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Karyawan dapat melakukan absensi di luar jam kerja yang dijadwalkan
+                  </p>
+                </div>
+                <Switch
+                  id="allowOutOfSchedule"
+                  checked={form.allowOutOfSchedule}
+                  onCheckedChange={(checked: boolean) =>
+                    setForm((prev) => ({ ...prev, allowOutOfSchedule: checked }))
+                  }
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Simpan Pengaturan
+          </Button>
+        </div>
+      </form>
+
+      {form.attendanceMethod === "GPS" && <OfficeLocationsCard />}
+    </div>
+  );
+}
+
+function OfficeLocationsCard() {
+  const { data: locations, mutate } = useSWR<OfficeLocationRow[]>(
+    "/api/settings/office-locations",
+    fetcher,
+  );
+
+  const [adding, setAdding] = useState(false);
+  const [newLoc, setNewLoc] = useState({ name: "", latitude: "", longitude: "", radius: "100" });
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await apiClient("/api/settings/office-locations", {
+        method: "POST",
+        body: {
+          name: newLoc.name,
+          latitude: parseFloat(newLoc.latitude),
+          longitude: parseFloat(newLoc.longitude),
+          radius: parseInt(newLoc.radius) || 100,
+        },
+      });
+      await mutate();
+      setNewLoc({ name: "", latitude: "", longitude: "", radius: "100" });
+      setAdding(false);
+      toast.success("Lokasi berhasil ditambahkan");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menambah lokasi");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      await apiClient(`/api/settings/office-locations/${id}`, { method: "DELETE" });
+      await mutate();
+      toast.success("Lokasi berhasil dihapus");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus lokasi");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleToggle(id: string, isActive: boolean) {
+    try {
+      await apiClient(`/api/settings/office-locations/${id}`, {
+        method: "PATCH",
+        body: { isActive },
+      });
+      await mutate();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengubah status");
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle>Lokasi Kantor</CardTitle>
+          <CardDescription>
+            Daftarkan lokasi kantor/pabrik untuk absensi GPS. Karyawan bisa absen di salah satu lokasi aktif.
+          </CardDescription>
+        </div>
+        {!adding && (
+          <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
+            Tambah Lokasi
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {adding && (
+          <form onSubmit={handleAdd} className="rounded-sm border border-border p-4 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1 sm:col-span-2">
+                <Label>Nama Lokasi</Label>
+                <Input
+                  placeholder="Pabrik 1 — Cikarang"
+                  value={newLoc.name}
+                  onChange={(e) => setNewLoc((p) => ({ ...p, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Latitude</Label>
+                <Input
+                  type="number"
+                  step="0.0000001"
+                  placeholder="-6.2088"
+                  value={newLoc.latitude}
+                  onChange={(e) => setNewLoc((p) => ({ ...p, latitude: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Longitude</Label>
+                <Input
+                  type="number"
+                  step="0.0000001"
+                  placeholder="106.8456"
+                  value={newLoc.longitude}
+                  onChange={(e) => setNewLoc((p) => ({ ...p, longitude: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Radius (meter)</Label>
+                <Input
+                  type="number"
+                  min="10"
+                  max="10000"
+                  value={newLoc.radius}
+                  onChange={(e) => setNewLoc((p) => ({ ...p, radius: e.target.value }))}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Koordinat bisa didapat dari Google Maps — klik kanan pada titik lokasi, salin latitude/longitude.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(false)}>
+                Batal
+              </Button>
+              <Button type="submit" size="sm" disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Simpan Lokasi
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {!locations || locations.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            Belum ada lokasi kantor. Tambahkan minimal satu lokasi agar absensi GPS berfungsi.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {locations.map((loc) => (
+              <div
+                key={loc.id}
+                className="flex items-center justify-between rounded-sm border border-border p-3"
+              >
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">{loc.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {Number(loc.latitude).toFixed(7)}, {Number(loc.longitude).toFixed(7)} — radius {loc.radius}m
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={loc.isActive}
+                    onCheckedChange={(checked: boolean) => handleToggle(loc.id, checked)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    disabled={deletingId === loc.id}
+                    onClick={() => handleDelete(loc.id)}
+                  >
+                    {deletingId === loc.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Hapus"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

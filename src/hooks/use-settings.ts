@@ -68,8 +68,6 @@ export type AppConfigData = {
   // Absensi
   attendanceMethod: "MANUAL" | "GPS" | "FINGERPRINT";
   gpsRadiusMeters: number;
-  officeLat: number | null;
-  officeLng: number | null;
   autoCheckoutTime: string;
   allowOutOfSchedule: boolean;
 
@@ -108,8 +106,6 @@ export const DEFAULT_APP_CONFIG: AppConfigData = {
 
   attendanceMethod: "MANUAL",
   gpsRadiusMeters: 100,
-  officeLat: null,
-  officeLng: null,
   autoCheckoutTime: "23:59",
   allowOutOfSchedule: false,
 

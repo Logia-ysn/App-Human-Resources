@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const appConfig = await loadAppConfig();
-  const gpsCheck = validateGpsRadius(appConfig, parsed.data.latitude, parsed.data.longitude);
+  const gpsCheck = await validateGpsRadius(appConfig, parsed.data.latitude, parsed.data.longitude);
   if (!gpsCheck.ok) {
     return NextResponse.json(errorResponse(gpsCheck.message), { status: 400 });
   }

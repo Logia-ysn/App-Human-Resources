@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   const appConfig = await loadAppConfig();
-  const gpsCheck = validateGpsRadius(appConfig, latitude, longitude);
+  const gpsCheck = await validateGpsRadius(appConfig, latitude, longitude);
   if (!gpsCheck.ok) {
     return NextResponse.json(errorResponse(gpsCheck.message), { status: 400 });
   }
