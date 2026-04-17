@@ -79,7 +79,7 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Total Periode" value={stats.totalPeriods} icon={Calendar} />
         <StatCard title="Total Net" value={formatCurrency(stats.totalNet)} icon={TrendingUp} />
         <StatCard title="Total Karyawan" value={stats.totalEmployees} icon={Users} />
@@ -87,10 +87,10 @@ export default function PayrollPage() {
       </div>
 
       <Card>
-        <CardContent className="flex items-center gap-3 py-4">
+        <CardContent className="flex flex-wrap items-center gap-3 py-4">
           <span className="text-sm font-medium">Tahun:</span>
           <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-full sm:w-[140px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

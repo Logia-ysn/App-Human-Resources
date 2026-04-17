@@ -130,7 +130,7 @@ function EmployeeDashboard() {
       </Card>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           title="Sisa Cuti"
           value={
@@ -341,7 +341,7 @@ function AdminDashboard() {
       <GreetingBanner subtitle="Berikut ringkasan data karyawan hari ini" />
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:grid-cols-4">
         {statCards.map((card) =>
           card.href ? (
             <Link key={card.title} href={card.href}>

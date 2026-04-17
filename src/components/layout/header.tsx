@@ -118,14 +118,12 @@ export function Header({ userEmail, userRole }: HeaderProps) {
   const parent = getParent(pathname);
 
   return (
-    <header className="flex h-11 items-center gap-3 border-b bg-background px-4">
+    <header className="flex h-12 items-center gap-2 border-b bg-background px-3 sm:px-4">
       <SidebarTrigger />
       <Separator orientation="vertical" className="h-5" />
 
-      {/* Page title: breadcrumb on desktop, plain title on mobile, hidden on very small screens */}
       <div className="flex-1 min-w-0">
-        {/* Mobile: plain title, hidden below 400px */}
-        <h1 className="truncate text-sm font-semibold text-foreground md:hidden max-[399px]:hidden">
+        <h1 className="truncate text-sm font-semibold text-foreground md:hidden">
           {pageTitle}
         </h1>
         {/* Desktop: breadcrumb style */}
@@ -147,19 +145,17 @@ export function Header({ userEmail, userRole }: HeaderProps) {
         </nav>
       </div>
 
-      {/* Search button */}
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8"
+        className="hidden sm:inline-flex h-9 w-9"
         onClick={handleSearchClick}
       >
         <Search className="h-4 w-4" strokeWidth={1.75} />
       </Button>
 
-      {/* Notification bell with badge */}
       <Link href="/notifications">
-        <Button variant="ghost" size="icon" className="relative h-8 w-8">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9">
           <Bell className="h-4 w-4" strokeWidth={1.75} />
           <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
         </Button>
@@ -167,7 +163,7 @@ export function Header({ userEmail, userRole }: HeaderProps) {
 
       <DropdownMenu>
         <DropdownMenuTrigger>
-          <Avatar className="h-8 w-8 cursor-pointer rounded-sm">
+          <Avatar className="h-9 w-9 cursor-pointer rounded-sm">
             <AvatarFallback className="rounded-sm bg-primary text-primary-foreground text-xs font-semibold">
               {initials}
             </AvatarFallback>

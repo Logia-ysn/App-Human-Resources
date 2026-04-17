@@ -224,10 +224,10 @@ export default function EssProfilePage() {
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" strokeWidth={1.75} />{emp.email}</span>
-            <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" strokeWidth={1.75} />{emp.phone}</span>
-            <span className="flex items-center gap-1.5 font-mono font-tabular"><Briefcase className="h-3.5 w-3.5" strokeWidth={1.75} />{emp.employeeNumber}</span>
-            <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />{emp.city}, {emp.province}</span>
+            <span className="flex items-center gap-1.5 min-w-0 truncate"><Mail className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} /><span className="truncate">{emp.email}</span></span>
+            <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />{emp.phone}</span>
+            <span className="flex items-center gap-1.5 font-mono font-tabular"><Briefcase className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />{emp.employeeNumber}</span>
+            <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />{emp.city}, {emp.province}</span>
           </div>
         </CardContent>
       </Card>
@@ -240,7 +240,7 @@ export default function EssProfilePage() {
               <CardTitle className="text-base">Informasi Pribadi</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-5">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InfoItem label="NIK" value={emp.nik} />
             <InfoItem label="Tempat, Tgl Lahir" value={`${emp.placeOfBirth}, ${format(new Date(emp.dateOfBirth), "dd MMM yyyy", { locale: idLocale })}`} />
             <InfoItem label="Jenis Kelamin" value={GENDER_LABEL[emp.gender]} />
@@ -257,7 +257,7 @@ export default function EssProfilePage() {
               <CardTitle className="text-base">Data Kepegawaian</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-5">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InfoItem label="No. Karyawan" value={emp.employeeNumber} />
             <InfoItem label="Departemen" value={departmentName} />
             <InfoItem label="Jabatan" value={positionName} />
@@ -274,7 +274,7 @@ export default function EssProfilePage() {
               <CardTitle className="text-base">Alamat</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-5">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InfoItem label="Alamat" value={emp.address} />
             <InfoItem label="Kota" value={emp.city} />
             <InfoItem label="Provinsi" value={emp.province} />
@@ -289,7 +289,7 @@ export default function EssProfilePage() {
               <CardTitle className="text-base">Kontak Darurat</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-5">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InfoItem label="Nama" value={emp.emergencyName} />
             <InfoItem label="Telepon" value={emp.emergencyPhone} />
             <InfoItem label="Hubungan" value={emp.emergencyRelation} />

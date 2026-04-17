@@ -196,7 +196,7 @@ export default function EssLeavePage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         {myBalances.map((b) => (
           <Card key={b.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -334,7 +334,7 @@ export default function EssLeavePage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="leave-start">Tanggal Mulai</Label>
                 <Input

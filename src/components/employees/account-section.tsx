@@ -266,7 +266,7 @@ function AccountView({
                 disabled={savingRole}
                 items={ROLE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
