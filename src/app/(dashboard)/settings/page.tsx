@@ -1591,11 +1591,13 @@ function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
   const [form, setForm] = useState<
     Pick<
       AppConfigData,
-      "attendanceMethod" | "gpsRadiusMeters" | "autoCheckoutTime" | "allowOutOfSchedule"
+      "attendanceMethod" | "gpsRadiusMeters" | "officeLat" | "officeLng" | "autoCheckoutTime" | "allowOutOfSchedule"
     >
   >({
     attendanceMethod: appConfig.attendanceMethod,
     gpsRadiusMeters: appConfig.gpsRadiusMeters,
+    officeLat: appConfig.officeLat,
+    officeLng: appConfig.officeLng,
     autoCheckoutTime: appConfig.autoCheckoutTime,
     allowOutOfSchedule: appConfig.allowOutOfSchedule,
   });
@@ -1666,6 +1668,45 @@ function AttendanceTab({ appConfig }: { appConfig: AppConfigData }) {
               />
               <p className="text-xs text-muted-foreground">
                 Hanya berlaku untuk metode GPS
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="officeLat">Latitude Kantor</Label>
+              <Input
+                id="officeLat"
+                type="number"
+                step="0.0000001"
+                placeholder="-6.2088"
+                value={form.officeLat ?? ""}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    officeLat: e.target.value ? parseFloat(e.target.value) : null,
+                  }))
+                }
+                disabled={form.attendanceMethod !== "GPS"}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="officeLng">Longitude Kantor</Label>
+              <Input
+                id="officeLng"
+                type="number"
+                step="0.0000001"
+                placeholder="106.8456"
+                value={form.officeLng ?? ""}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    officeLng: e.target.value ? parseFloat(e.target.value) : null,
+                  }))
+                }
+                disabled={form.attendanceMethod !== "GPS"}
+              />
+              <p className="text-xs text-muted-foreground">
+                Koordinat lokasi kantor (bisa dari Google Maps)
               </p>
             </div>
 

@@ -5,13 +5,34 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useAuth } from "@/components/providers/auth-context";
 import { useAttendanceRecords, useTodayAttendance, useCheckIn, useCheckOut } from "@/hooks/use-attendance";
+import { useAppConfig } from "@/hooks/use-settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Clock, Loader2 } from "lucide-react";
+import { Clock, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/shared/loading-state";
+
+function getGeoLocation(): Promise<{ latitude: number; longitude: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Browser tidak mendukung GPS"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      (err) => {
+        const msg =
+          err.code === 1 ? "Izin lokasi ditolak. Aktifkan GPS di pengaturan browser."
+          : err.code === 2 ? "Lokasi tidak tersedia. Pastikan GPS aktif."
+          : "Timeout mendapatkan lokasi. Coba lagi.";
+        reject(new Error(msg));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  });
+}
 
 function formatTime(dateStr: string | Date | null): string {
   if (!dateStr) return "-";
@@ -27,6 +48,7 @@ function formatWorkHours(minutes: number | null): string {
 
 export default function EssAttendancePage() {
   const { employeeId } = useAuth();
+  const { config: appConfig } = useAppConfig();
   const { attendance: todayRecord, isLoading: todayLoading, mutate: mutateTodayAttendance } = useTodayAttendance(employeeId);
   const { records: myAttendance, isLoading: historyLoading } = useAttendanceRecords({
     employeeId: employeeId ?? undefined,
@@ -36,6 +58,7 @@ export default function EssAttendancePage() {
   const checkInMutation = useCheckIn();
   const checkOutMutation = useCheckOut(todayRecord?.id ?? "");
   const [processing, setProcessing] = useState(false);
+  const isGps = appConfig.attendanceMethod === "GPS";
 
   const todayStr = new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
@@ -65,7 +88,11 @@ export default function EssAttendancePage() {
   async function handleCheckIn() {
     setProcessing(true);
     try {
-      await checkInMutation.trigger({ employeeId: employeeId! });
+      let coords: { latitude: number; longitude: number } | undefined;
+      if (isGps) {
+        coords = await getGeoLocation();
+      }
+      await checkInMutation.trigger({ employeeId: employeeId!, ...coords });
       toast.success(`Clock In berhasil — ${new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`);
       await mutateTodayAttendance();
     } catch (err: unknown) {
@@ -79,7 +106,11 @@ export default function EssAttendancePage() {
     if (!todayRecord) return;
     setProcessing(true);
     try {
-      await checkOutMutation.trigger({});
+      let coords: { latitude: number; longitude: number } | undefined;
+      if (isGps) {
+        coords = await getGeoLocation();
+      }
+      await checkOutMutation.trigger({ ...coords });
       toast.success(`Clock Out berhasil — ${new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`);
       await mutateTodayAttendance();
     } catch (err: unknown) {
@@ -101,7 +132,13 @@ export default function EssAttendancePage() {
 
       <Card>
         <CardHeader><CardTitle>Clock In / Clock Out</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {isGps && (
+            <div className="flex items-center gap-2 rounded-sm border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+              <MapPin className="h-4 w-4 shrink-0" />
+              <span>Absensi menggunakan GPS — pastikan lokasi/GPS aktif di perangkat Anda (radius {appConfig.gpsRadiusMeters}m).</span>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-3">
               <Clock className="h-8 w-8 text-muted-foreground" />

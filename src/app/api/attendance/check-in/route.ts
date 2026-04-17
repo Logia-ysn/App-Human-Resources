@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { checkInSchema } from "@/lib/validators/attendance";
+import { loadAppConfig, validateGpsRadius } from "@/lib/attendance-gps";
 
 export async function POST(req: NextRequest) {
   const session = await apiGuard();
@@ -21,6 +22,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(errorResponse("Tidak memiliki akses"), { status: 403 });
   }
 
+  const appConfig = await loadAppConfig();
+  const gpsCheck = validateGpsRadius(appConfig, latitude, longitude);
+  if (!gpsCheck.ok) {
+    return NextResponse.json(errorResponse(gpsCheck.message), { status: 400 });
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -32,15 +39,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(errorResponse("Sudah melakukan check-in hari ini"), { status: 409 });
   }
 
-  // Calculate late minutes (based on 08:00 default)
   const now = new Date();
+  const [startH, startM] = appConfig.defaultStartTime.split(":").map(Number);
   const scheduleStart = new Date(today);
-  scheduleStart.setHours(8, 0, 0, 0);
+  scheduleStart.setHours(startH, startM, 0, 0);
   const lateMinutes = now > scheduleStart
     ? Math.floor((now.getTime() - scheduleStart.getTime()) / 60000)
     : 0;
 
-  const status = lateMinutes > 15 ? "LATE" : "PRESENT";
+  const status = lateMinutes > appConfig.lateToleranceMinutes ? "LATE" : "PRESENT";
 
   const attendance = await prisma.attendance.create({
     data: {

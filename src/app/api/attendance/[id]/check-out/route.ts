@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { apiGuard, isGuardError } from "@/lib/api-guard";
 import { successResponse, errorResponse } from "@/types/api";
 import { checkOutSchema } from "@/lib/validators/attendance";
+import { loadAppConfig, validateGpsRadius } from "@/lib/attendance-gps";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -31,13 +32,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json(errorResponse("Tidak memiliki akses"), { status: 403 });
   }
 
+  const appConfig = await loadAppConfig();
+  const gpsCheck = validateGpsRadius(appConfig, parsed.data.latitude, parsed.data.longitude);
+  if (!gpsCheck.ok) {
+    return NextResponse.json(errorResponse(gpsCheck.message), { status: 400 });
+  }
+
   const now = new Date();
   const checkIn = attendance.checkIn!;
   const workMinutes = Math.floor((now.getTime() - checkIn.getTime()) / 60000);
 
-  // Calculate early leave (before 17:00)
+  const [endH, endM] = appConfig.defaultEndTime.split(":").map(Number);
   const scheduleEnd = new Date(attendance.date);
-  scheduleEnd.setHours(17, 0, 0, 0);
+  scheduleEnd.setHours(endH, endM, 0, 0);
   const earlyLeaveMin = now < scheduleEnd
     ? Math.floor((scheduleEnd.getTime() - now.getTime()) / 60000)
     : 0;
