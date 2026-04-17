@@ -1,7 +1,9 @@
 "use client";
 
 import useSWR from "swr";
-import { fetcher } from "@/lib/api-client";
+import useSWRMutation from "swr/mutation";
+import { fetcher, apiClient } from "@/lib/api-client";
+import type { CreateExpenseClaimInput } from "@/lib/validators/expense";
 
 export type EmployeeAdvanceWithRelations = {
   id: string;
@@ -70,4 +72,15 @@ export function useClaims(params: { status?: string; employeeId?: string } = {})
     fetcher,
   );
   return { claims: data ?? [], error, isLoading, mutate };
+}
+
+async function createClaim(
+  url: string,
+  { arg }: { arg: CreateExpenseClaimInput },
+) {
+  return apiClient<ExpenseClaimWithRelations>(url, { method: "POST", body: arg });
+}
+
+export function useCreateClaim() {
+  return useSWRMutation("/api/expenses/claims", createClaim);
 }
